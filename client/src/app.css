@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@source "./**/*.{svelte,html,ts}";
+
+@theme {
+  --font-sans: system-ui, "Segoe UI", sans-serif;
+  --max-width-page: 650px;
+  --text-base: 14px;
+  --text-base--line-height: 1.5;
+  --text-sm: 14px;
+  --text-sm--line-height: 1.5;
+  --text-xs: 12px;
+  --text-xs--line-height: calc(16 / 12);
+}
+
+html.font-large {
+  --text-base: 16px;
+  --text-sm: 16px;
+  --text-xs: 14px;
+  --text-xs--line-height: calc(16 / 14);
+}
