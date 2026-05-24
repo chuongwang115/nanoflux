@@ -49,6 +49,8 @@ export async function* streamNewItems(): AsyncGenerator<
   let pendingTake: Promise<ItemBatch> | null = null;
 
   try {
+    yield { event: "ping", data: {} };
+
     for (;;) {
       if (!pendingTake) pendingTake = queue.take();
 

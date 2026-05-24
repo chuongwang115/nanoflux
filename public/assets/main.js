@@ -8059,6 +8059,33 @@ if (undefined) {}
 var FeedsManager_default = FeedsManager;
 delegate(["input", "click"]);
 
+// client/src/lib/item-stream.ts
+var listeners2 = new Set;
+var es = null;
+function dispatch(items) {
+  for (const listener of listeners2) {
+    listener(items);
+  }
+}
+function subscribeItemStream(listener) {
+  listeners2.add(listener);
+  return () => listeners2.delete(listener);
+}
+function connectItemStream() {
+  if (es)
+    return () => {};
+  es = new EventSource("/sse");
+  es.addEventListener("items", (ev) => {
+    try {
+      dispatch(JSON.parse(ev.data));
+    } catch {}
+  });
+  return () => {
+    es?.close();
+    es = null;
+  };
+}
+
 // client/src/lib/utils.ts
 function formatTime(iso) {
   if (!iso)
@@ -8229,15 +8256,7 @@ function ItemList($$anchor, $$props) {
     markAllReadHost.register(markAllRead);
     return () => markAllReadHost.register(undefined);
   });
-  user_effect(() => {
-    const es = new EventSource("/sse");
-    es.addEventListener("items", (ev) => {
-      try {
-        mergeIncomingItem(JSON.parse(ev.data));
-      } catch {}
-    });
-    return () => es.close();
-  });
+  onMount(() => subscribeItemStream(mergeIncomingItem));
   var $$exports = { markAllRead };
   next();
   var fragment = root14();
@@ -8425,4 +8444,5 @@ initTheme();
 initFontSize();
 initLocale();
 registerPwa();
+connectItemStream();
 mount(App_default, { target: document.getElementById("app") });

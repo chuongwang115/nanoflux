@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { getContext } from "svelte";
+  import { getContext, onMount } from "svelte";
   import { t } from "../lib/locale.svelte";
+  import { subscribeItemStream } from "../lib/item-stream";
   import {
     fetchItemsPage,
     markAllItemsRead,
@@ -124,19 +125,7 @@
     return () => markAllReadHost.register(undefined);
   });
 
-  $effect(() => {
-    const es = new EventSource("/sse");
-
-    es.addEventListener("items", (ev) => {
-      try {
-        mergeIncomingItem(JSON.parse(ev.data) as Item[]);
-      } catch {
-        /* ignore malformed payloads */
-      }
-    });
-
-    return () => es.close();
-  });
+  onMount(() => subscribeItemStream(mergeIncomingItem));
 </script>
 
 {#if error}
