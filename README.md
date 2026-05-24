@@ -2,6 +2,8 @@
 
 A lightweight, self-hosted RSS reader with a minimal web UI, real-time updates, and an MCP server for AI agents. Built on [Bun](https://bun.sh), [Elysia](https://elysiajs.com), and [Svelte 5](https://svelte.dev).
 
+![NanoFlux news list](screenshots/newslist.png)
+
 ## Features
 
 - **RSS/Atom feeds** — Add, edit, and remove feeds; metadata is auto-fetched from the feed URL.
