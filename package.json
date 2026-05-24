@@ -2,6 +2,7 @@
   "name": "nanoflux",
   "module": "main.ts",
   "type": "module",
+  "license": "MIT",
   "private": true,
   "scripts": {
     "build:web": "bun run build.ts",

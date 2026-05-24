@@ -162,4 +162,4 @@ NanoFlux exposes an MCP server at `/mcp` (JSON response mode enabled). Connect y
 
 ## License
 
-Private project — no license file specified.
+[MIT](LICENSE)
