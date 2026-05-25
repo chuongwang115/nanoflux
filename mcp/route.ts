@@ -1,28 +1,26 @@
 import { mcp } from "elysia-mcp";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
-import { registerAddFeed } from "./tools/add-feed";
-import { registerDeleteFeed } from "./tools/delete-feed";
 import { registerGetCurrentTime } from "./tools/get-current-time";
-import { registerGetNews } from "./tools/get-news";
-import { registerGetUnreadNews } from "./tools/get-unread-news";
-import { registerMarkNewsRead } from "./tools/mark-news-read";
-import { registerSearchFeeds } from "./tools/search-feeds";
-import { registerSearchGoogleNews } from "./tools/search-google-news";
-import { registerSearchNews } from "./tools/search-news";
+import { registerAddFeed } from "./tools/add-feed";
 import { registerUpdateFeed } from "./tools/update-feed";
+import { registerDeleteFeed } from "./tools/delete-feed";
+import { registerSearchFeeds } from "./tools/search-feeds";
+import { registerGetItems } from "./tools/get-items";
+import { registerGetUnreadItems } from "./tools/get-unread-items";
+import { registerMarkItemsRead } from "./tools/mark-items-read";
+import { registerSearchGoogleNews } from "./tools/search-google-news";
 
 export function registerMcpTools(server: McpServer): void {
+  registerGetCurrentTime(server);
   registerAddFeed(server);
   registerUpdateFeed(server);
   registerDeleteFeed(server);
-  registerGetCurrentTime(server);
-  registerGetNews(server);
-  registerGetUnreadNews(server);
-  registerSearchNews(server);
-  registerSearchGoogleNews(server);
   registerSearchFeeds(server);
-  registerMarkNewsRead(server);
+  registerGetItems(server);
+  registerGetUnreadItems(server);
+  registerMarkItemsRead(server);
+  registerSearchGoogleNews(server);
 }
 
 export const routes = mcp({

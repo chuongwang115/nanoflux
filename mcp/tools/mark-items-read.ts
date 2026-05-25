@@ -3,7 +3,7 @@ import { z } from "zod";
 import { markItemsRead } from "../../db/items";
 import { messages } from "../../client/src/lib/i18n/messages";
 
-export function registerMarkNewsRead(server: McpServer): void {
+export function registerMarkItemsRead(server: McpServer): void {
   server.registerTool(
     "mark_news_read",
     {

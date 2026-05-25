@@ -7,15 +7,9 @@ export function registerSearchFeeds(server: McpServer): void {
     "search_feeds",
     {
       description:
-        "Search feeds by keyword in title, URL, or description. When hasMore is true, call again with page incremented and the same keyword.",
+        "Search feeds by keyword in title.",
       inputSchema: {
         keyword: z.string().describe("Search keyword"),
-        page: z
-          .number()
-          .int()
-          .min(1)
-          .optional()
-          .describe("Page number, 1-based (default 1)"),
         limit: z
           .number()
           .int()
@@ -25,15 +19,11 @@ export function registerSearchFeeds(server: McpServer): void {
           .describe("Max feeds to return (default 20, max 50)"),
       },
     },
-    async ({ page, limit, keyword }) => {
+    async ({ limit, keyword }) => {
 
       try {
 
-        const selected = getFeeds({
-          page,
-          limit,
-          keyword,
-        });
+        const selected = getFeeds({ limit, keyword });
 
         return {
           content: [

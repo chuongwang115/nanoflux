@@ -1,8 +1,7 @@
 import Parser from "rss-parser";
-import { insertItems, type ItemInput } from "../db/items";
+import { addItems } from "../db/items";
 import { getDueFeeds, updateFeedFetchState } from "../db/feeds";
 import type { Feed } from "../db/schema";
-import { emitNewItems } from "../sse/streamer";
 import { httpGet } from "./http-fetcher";
 
 const RSS_USER_AGENT = "NanoFlux/1.0 (+https://github.com/nanoflux)";
@@ -17,6 +16,22 @@ function stripHtml(html: string): string {
     .trim();
 }
 
+function toStoredItem(entry: Parser.Item) {
+  const link = entry.link?.trim();
+  if (!link) return null;
+
+  const guid = entry.guid?.trim() || link;
+  const title = entry.title?.trim() || link;
+  const description =
+    entry.contentSnippet?.trim() ||
+    entry.summary?.trim() ||
+    (entry.content ? stripHtml(entry.content).slice(0, 2000) : "") ||
+    null;
+  const published_at = entry.isoDate || entry.pubDate || new Date().toISOString();
+
+  return { guid, title, link, description, published_at };
+}
+
 const MIN_INTERVAL_MIN = 5;
 const MAX_INTERVAL_MIN = 30;
 const DEFAULT_INTERVAL_MIN = 15;
@@ -26,21 +41,6 @@ export type FetchResult = {
   newItems: number;
   errors: string[];
 };
-
-function toItemInput(entry: Parser.Item): ItemInput | null {
-  const link = entry.link?.trim();
-  if (!link) return null;
-
-  const title = entry.title?.trim() || link;
-  const guid = (entry.guid || link).trim();
-  const description =
-    entry.contentSnippet?.trim() ||
-    entry.summary?.trim() ||
-    entry.content?.trim().slice(0, 2000) ||
-    "";
-  const published_at = entry.isoDate || entry.pubDate || "";
-  return { guid, title, link, description, published_at };
-}
 
 function medianPublishGapSec(feedItems: Parser.Item[]): number | null {
   const now = Date.now();
@@ -149,34 +149,26 @@ export async function fetchFeed(feed: Feed): Promise<{
 
   try {
     const parsed = await fetchAndParseRss(feed.url);
-    const items = (parsed.items ?? [])
-      .map(toItemInput)
-      .filter((entry): entry is ItemInput => entry !== null);
+    const rawItems = parsed.items ?? [];
+    const entries = rawItems
+      .map(toStoredItem)
+      .filter((item): item is NonNullable<typeof item> => item !== null);
 
-    const inserted = insertItems(feed.id, items);
-    if (inserted.length > 0) emitNewItems(inserted);
+    const inserted = addItems(feed.id, entries);
 
     const nextInterval = nextFetchIntervalMin(
       currentInterval,
-      inserted.length,
-      parsed.items ?? [],
+      inserted,
+      rawItems,
     );
-
     updateFeedFetchState(feed.id, {
-      fetch_interval_min: nextInterval,
       next_fetched_at: nextFetchedAtIso(nextInterval),
+      fetch_interval_min: nextInterval,
     });
 
-    return { newItems: inserted.length };
+    return { newItems: inserted };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    const retryInterval = clampIntervalMin(
-      Math.round(currentInterval * 1.1),
-    );
-    updateFeedFetchState(feed.id, {
-      fetch_interval_min: retryInterval,
-      next_fetched_at: nextFetchedAtIso(retryInterval),
-    });
     return { newItems: 0, error: `${feed.title}: ${message}` };
   }
 }

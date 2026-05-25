@@ -1,12 +1,20 @@
 import { Elysia } from "elysia";
-import { getItems, markItemsRead, markItemRead } from "../db/items";
+import {
+  getItems,
+  markItemsRead,
+  markItemRead,
+} from "../db/items";
 import { DEFAULT_LIMIT, MAX_LIMIT } from "../db/items";
-import { encodeCursor } from "../db/utils";
+import { encodeCursor, parseTimeUnit } from "../db/utils";
 
 function getItemsHandler({ query }: {
   query?: {
     cursor?: string;
     limit?: number;
+    since?: string;
+    until?: string;
+    unit?: string;
+    count?: number;
   }
 }) {
 
@@ -17,10 +25,22 @@ function getItemsHandler({ query }: {
       MAX_LIMIT,
     );
 
-    const items = getItems({ cursor: query?.cursor, limit: limit });
+    const unit = query?.unit ? parseTimeUnit(query.unit) : undefined;
+    if (query?.unit && !unit) {
+      return { code: 400, message: `Invalid time unit: ${query.unit}` };
+    }
 
-    const hasMore = items.length > limit;
-    const lastItem = items.at(-1);
+    const selected = getItems({
+      cursor: query?.cursor,
+      limit,
+      since: query?.since,
+      until: query?.until,
+      unit: unit ? unit.toString() : undefined,
+      count: query?.count,
+    });
+
+    const hasMore = selected.length > limit;
+    const lastItem = selected.at(-1);
     const nextCursor =
       hasMore && lastItem ? encodeCursor(lastItem.published_at, lastItem.id) : null;
   
@@ -28,7 +48,7 @@ function getItemsHandler({ query }: {
       code: 0, 
       message: "ok", 
       data: {
-        items: items.slice(0, limit),
+        items: selected.slice(0, limit),
         nextCursor: nextCursor,
         hasMore: hasMore,
       } 
