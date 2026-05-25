@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { searchFeeds } from "../../db/feeds";
+import { getFeeds } from "../../db/feeds";
 
 export function registerSearchFeeds(server: McpServer): void {
   server.registerTool(
@@ -25,40 +25,47 @@ export function registerSearchFeeds(server: McpServer): void {
           .describe("Max feeds to return (default 20, max 50)"),
       },
     },
-    async ({ keyword, page, limit }) => {
-      const resolvedPage = page ?? 1;
-      const { data: feeds, hasMore } = searchFeeds({
-        keyword,
-        page: resolvedPage,
-        limit,
-      });
+    async ({ page, limit, keyword }) => {
 
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
-              {
-                keyword,
-                currentPage: resolvedPage,
-                nextPage: hasMore ? resolvedPage + 1 : undefined,
-                total: feeds.length,
-                hasMore,
-                feeds: feeds.map((feed) => ({
-                  id: feed.id,
-                  title: feed.title,
-                  url: feed.url,
-                  description: feed.description,
-                  created_at: feed.created_at,
-                  updated_at: feed.updated_at,
-                })),
-              },
-              null,
-              2,
-            ),
-          },
-        ],
-      };
+      try {
+
+        const selected = getFeeds({
+          page,
+          limit,
+          keyword,
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  feeds: selected.map((feed) => ({
+                    id: feed.id,
+                    title: feed.title,
+                    url: feed.url,
+                    description: feed.description ?? null
+                  })) ?? [],
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to search feeds";
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ error: message }),
+            },
+          ],
+        };
+      }
     },
   );
 }

@@ -1,9 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {
-  feedIdFromUrl,
-  getFeedById,
-  isUniqueConstraintError,
   updateFeed,
 } from "../../db/feeds";
 
@@ -66,28 +63,15 @@ export function registerUpdateFeed(server: McpServer): void {
       }
 
       try {
-        const feed = updateFeed(id, input);
-        if (!feed) {
-          return {
-            content: [
-              {
-                type: "text",
-                text: JSON.stringify(
-                  { updated: false, error: "Feed not found", id },
-                  null,
-                  2,
-                ),
-              },
-            ],
-          };
-        }
+
+        const updated = updateFeed(id, input);
 
         return {
           content: [
             {
               type: "text",
               text: JSON.stringify(
-                { updated: true, feed: formatFeed(feed) },
+                { updated: true, feed: formatFeed(updated) },
                 null,
                 2,
               ),
@@ -95,29 +79,16 @@ export function registerUpdateFeed(server: McpServer): void {
           ],
         };
       } catch (error) {
-        if (isUniqueConstraintError(error)) {
-          const conflictUrl = input.url ?? "";
-          const existing = conflictUrl
-            ? getFeedById(feedIdFromUrl(conflictUrl))
-            : null;
-          return {
-            content: [
-              {
-                type: "text",
-                text: JSON.stringify(
-                  {
-                    updated: false,
-                    error: "Feed URL already exists",
-                    feed: existing ? formatFeed(existing) : null,
-                  },
-                  null,
-                  2,
-                ),
-              },
-            ],
-          };
-        }
-        throw error;
+        const message =
+          error instanceof Error ? error.message : "Failed to update feed";
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ updated: false, error: message }),
+            },
+          ],
+        };
       }
     },
   );

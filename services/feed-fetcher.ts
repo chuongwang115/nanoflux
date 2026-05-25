@@ -1,6 +1,6 @@
 import Parser from "rss-parser";
 import { insertItems, type ItemInput } from "../db/items";
-import { listDueFeeds, updateFeedFetchState } from "../db/feeds";
+import { getDueFeeds, updateFeedFetchState } from "../db/feeds";
 import type { Feed } from "../db/schema";
 import { emitNewItems } from "../sse/streamer";
 import { httpGet } from "./http-fetcher";
@@ -121,14 +121,23 @@ export async function fetchFeedMetadata(url: string): Promise<{
   title: string;
   description: string | null;
 }> {
-  const feed = await fetchAndParseRss(url);
-  const title = feed.title?.trim() || "";
-  const raw =
-    feed.description?.trim() ||
-    feed.itunes?.summary?.trim() ||
-    null;
-  const description = raw ? stripHtml(raw).slice(0, 500) || null : null;
-  return { title, description };
+  try {
+
+    const feed = await fetchAndParseRss(url);
+
+    const title = feed.title?.trim() || "";
+    const raw =
+      feed.description?.trim() ||
+      feed.itunes?.summary?.trim() ||
+      null;
+    const description = raw ? stripHtml(raw).slice(0, 500) || null : null;
+
+    return { title, description };
+
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Failed to fetch feed metadata: ${message}`);
+  }
 }
 
 export async function fetchFeed(feed: Feed): Promise<{
@@ -174,7 +183,7 @@ export async function fetchFeed(feed: Feed): Promise<{
 
 export async function fetchDueFeeds(label: string): Promise<FetchResult> {
   const started = Date.now();
-  const feeds = listDueFeeds();
+  const feeds = getDueFeeds();
   let newItems = 0;
   const errors: string[] = [];
 

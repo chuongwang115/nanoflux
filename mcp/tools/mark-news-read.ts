@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { markAllItemsRead } from "../../db/items";
+import { markItemsRead } from "../../db/items";
+import { messages } from "../../client/src/lib/i18n/messages";
 
 export function registerMarkNewsRead(server: McpServer): void {
   server.registerTool(
@@ -17,20 +18,32 @@ export function registerMarkNewsRead(server: McpServer): void {
       },
     },
     async ({ until }) => {
-      if (Number.isNaN(Date.parse(until))) {
-        throw new Error(`Invalid until timestamp: ${until}`);
+
+      try {
+
+        if (Number.isNaN(Date.parse(until))) {
+          throw new Error(`Invalid until timestamp: ${until}`);
+        }
+
+        markItemsRead(until);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ messages: 'news marked as read' }, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to mark news as read";
+        return {
+          content: [
+            { type: "text", text: JSON.stringify({ error: message }) },
+          ],
+        };
       }
-
-      const marked_count = markAllItemsRead(until);
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify({ until, marked_count }, null, 2),
-          },
-        ],
-      };
     },
   );
 }

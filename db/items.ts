@@ -10,10 +10,11 @@ import {
   sql,
 } from "drizzle-orm";
 import { db } from "./database";
-import { feeds, items, type Item, type Feed } from "./schema";
+import { feeds, items, type Item } from "./schema";
+import { newItemId, encodeCursor, decodeCursor } from "./utils";
 
-const DEFAULT_LIMIT = 20;
-const MAX_LIMIT = 50;
+export const DEFAULT_LIMIT = 20;
+export const MAX_LIMIT = 50;
 
 export type ItemWithFeed = Item & {
   feed_title: string;
@@ -57,11 +58,13 @@ export function insertItems(
   feedId: string,
   inputItems: ItemInput[],
 ): ItemWithFeed[] {
+
   const feedRow = db
     .select({ title: feeds.title })
     .from(feeds)
     .where(eq(feeds.id, feedId))
     .get();
+
   const feed_title = feedRow?.title ?? "";
   const insertedItems: ItemWithFeed[] = [];
 
@@ -104,36 +107,34 @@ export function insertItems(
   return insertedItems;
 }
 
-export function markAllItemsRead(until: string): number {
-  return db
-    .update(items)
+export function markItemsRead(until: string): void {
+  
+  try {
+
+    db.update(items)
     .set({ is_read: 1 })
     .where(and(lte(items.published_at, until), eq(items.is_read, 0)))
-    .returning()
-    .all()
-    .length;
+    .run();
+
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to mark items as read: ${detail}`);
+  }
 }
 
 export function markItemRead(id: string): void {
-  db.update(items)
+
+  try {
+
+    db.update(items)
     .set({ is_read: 1 })
     .where(and(eq(items.id, id), eq(items.is_read, 0)))
     .run();
-}
 
-function encodeCursor(publishedAt: string, id: string): string {
-  return `${publishedAt}|${id}`;
-}
-
-function decodeCursor(
-  cursor: string,
-): { publishedAt: string; id: string } | null {
-  const sep = cursor.lastIndexOf("|");
-  if (sep <= 0) return null;
-  const publishedAt = cursor.slice(0, sep);
-  const id = cursor.slice(sep + 1);
-  if (!publishedAt || !id) return null;
-  return { publishedAt, id };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to mark item ${id} as read: ${detail}`);
+  }
 }
 
 export type TimeUnit = "minute" | "hour" | "day";
@@ -294,45 +295,46 @@ export function listUnreadItems(options: {
   return { data, nextCursor, hasMore };
 }
 
-export function listItems(options?: {
+export function getItems(options?: {
   cursor?: string;
   limit?: number;
-}): ItemsPage {
-  const limit = Math.min(
-    Math.max(options?.limit ?? DEFAULT_LIMIT, 1),
-    MAX_LIMIT,
-  );
-  const decoded = options?.cursor ? decodeCursor(options.cursor) : null;
+}): ItemWithFeed[] {
 
-  const query = itemWithFeedQuery().orderBy(
-    desc(items.published_at),
-    desc(items.id),
-  );
+  try {
+  
+    const limit = Math.min(
+      Math.max(options?.limit ?? DEFAULT_LIMIT, 1),
+      MAX_LIMIT,
+    );
 
-  const rows = decoded
-    ? query
-        .where(
-          or(
-            lt(items.published_at, decoded.publishedAt),
-            and(
-              eq(items.published_at, decoded.publishedAt),
-              lt(items.id, decoded.id),
+    const decoded = options?.cursor ? decodeCursor(options.cursor) : null;
+
+    const query = itemWithFeedQuery().orderBy(
+      desc(items.published_at),
+      desc(items.id),
+    );
+
+    const selected = decoded
+      ? query
+          .where(
+            or(
+              lt(items.published_at, decoded.publishedAt),
+              and(
+                eq(items.published_at, decoded.publishedAt),
+                lt(items.id, decoded.id),
+              ),
             ),
-          ),
-        )
-        .limit(limit + 1)
-        .all()
-    : query.limit(limit + 1).all();
+          )
+          .limit(limit + 1)
+          .all()
+      : query.limit(limit + 1).all();
 
-  const data = rows
-    .map((row) => ({ ...row, feed_title: row.feed_title ?? "" }))
-    .slice(0, rows.length > limit ? limit : rows.length);
-  const hasMore = rows.length > limit;
-  const last = data.at(-1);
-  const nextCursor =
-    hasMore && last ? encodeCursor(last.published_at, last.id) : null;
-
-  return { data, nextCursor, hasMore };
+    return selected;
+  
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to get items: ${detail}`);
+  }
 }
 
 export function searchItems(options: {
@@ -393,8 +395,4 @@ export function searchItems(options: {
     hasMore && last ? encodeCursor(last.published_at, last.id) : null;
 
   return { data, nextCursor, hasMore };
-}
-
-export function newItemId(): string {
-  return Bun.randomUUIDv7();
 }

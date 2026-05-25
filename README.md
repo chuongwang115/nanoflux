@@ -1,21 +1,46 @@
 # NanoFlux
 
-A lightweight, self-hosted RSS reader with a minimal web UI, real-time updates, and an MCP server for AI agents. Built on [Bun](https://bun.sh), [Elysia](https://elysiajs.com), and [Svelte 5](https://svelte.dev).
+A lightweight, self-hosted RSS reader with a minimal web UI, real-time updates, and an MCP server for AI agents.
+
+Built on [Bun](https://bun.sh), [Elysia](https://elysiajs.com), and [Svelte 5](https://svelte.dev).
 
 ![NanoFlux news list](screenshots/newslist.png)
 
+## Table of Contents
+
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Requirements](#requirements)
+- [Quick Start](#quick-start)
+- [Development](#development)
+- [Configuration](#configuration)
+- [Background & Service Mode](#background--service-mode)
+- [MCP Integration](#mcp-integration)
+- [REST API](#rest-api)
+- [How Feed Fetching Works](#how-feed-fetching-works)
+- [Project Structure](#project-structure)
+- [License](#license)
+
 ## Features
 
-- **RSS/Atom feeds** — Add, edit, and remove feeds; metadata is auto-fetched from the feed URL.
-- **Adaptive polling** — A background scheduler fetches due feeds every minute and adjusts each feed's interval (5–30 min) based on publish frequency and new-item activity.
-- **Real-time UI** — New items are pushed to the browser over Server-Sent Events (SSE).
-- **Infinite scroll** — Cursor-based pagination for the news timeline.
-- **Read tracking** — Mark individual items or all visible items as read.
-- **Progressive Web App** — Installable, with a service worker for asset caching.
-- **Bilingual UI** — English and Chinese, with theme (light/dark) and font-size toggles.
-- **MCP integration** — Exposes tools for feed management, local news queries, and live Google News search so AI clients can interact with your reader.
-- **Proxy support** — HTTP and SOCKS proxies for outbound RSS fetches (useful behind firewalls or in restricted networks).
-- **Local-first security** — When bound to `127.0.0.1`, API, SSE, and MCP endpoints are restricted to localhost clients.
+**Reading**
+
+- RSS/Atom feed management with auto-fetched metadata
+- Adaptive polling (5–30 min per feed) based on publish frequency
+- Infinite scroll with cursor-based pagination
+- Read tracking for individual items or all visible items
+
+**UI & Experience**
+
+- Real-time updates via Server-Sent Events (SSE)
+- Progressive Web App (installable, offline asset caching)
+- Bilingual UI (English / Chinese), light/dark theme, adjustable font size
+
+**Integration & Networking**
+
+- MCP server for AI clients (feed management, local news queries, live Google News search)
+- HTTP and SOCKS proxy support for outbound fetches
+- Local-first security: when bound to `127.0.0.1`, API, SSE, and MCP are restricted to localhost clients
 
 ## Tech Stack
 
@@ -38,7 +63,7 @@ A lightweight, self-hosted RSS reader with a minimal web UI, real-time updates, 
 # Install dependencies
 bun install
 
-# Copy and edit environment variables (optional)
+# Optional: copy and edit environment variables
 cp .env.example .env
 
 # Build frontend and start the server
@@ -47,25 +72,31 @@ bun start
 
 Open `http://localhost:3000` in your browser.
 
-### Development
+### npm Scripts
+
+| Script | Description |
+| --- | --- |
+| `bun start` | Build frontend and start the server |
+| `bun run start:service` | Start backend only (requires a prior frontend build) |
+| `bun run build:web` | Build frontend assets to `public/` |
+| `bun run dev:web` | Rebuild frontend on file changes |
+| `bun run db:generate` | Generate Drizzle migration files |
+| `bun run db:push` | Push schema changes to the database |
+| `bun run db:studio` | Open Drizzle Studio |
+
+## Development
+
+Run the frontend watcher and backend in separate terminals:
 
 ```bash
-# Rebuild frontend on file changes
+# Terminal 1 — rebuild frontend on changes
 bun run dev:web
 
-# Run backend only (requires a prior build)
+# Terminal 2 — run backend (after at least one build)
 bun run start:service
 ```
 
-### Database
-
-Migrations run automatically on startup. To manage the schema manually:
-
-```bash
-bun run db:generate   # Generate migration files
-bun run db:push       # Push schema changes
-bun run db:studio     # Open Drizzle Studio
-```
+Database migrations run automatically on startup.
 
 ## Configuration
 
@@ -88,56 +119,52 @@ Outbound HTTP requests (RSS fetches, Google News) honor standard proxy environme
 | `PROXY_PROTOCOL` | Protocol when using host/port form (default: `socks5h`) |
 | `NO_PROXY` | Comma-separated hosts to bypass |
 
-## Windows Service
+## Background & Service Mode
 
-On Windows, run `install-service.bat` as Administrator to register NanoFlux as an auto-start service (uses [NSSM](https://nssm.cc/) as a wrapper). Logs are written to the `logs/` directory.
+### One-click start (macOS / Linux / Windows)
 
-## Project Structure
-
-```
-├── client/           Svelte frontend source
-├── public/           Built static assets (generated)
-├── routes/           REST API routes (feeds, items)
-├── mcp/              MCP server and tools
-├── sse/              Server-Sent Events streaming
-├── services/         Feed fetcher, scheduler, HTTP client
-├── db/               Drizzle schema and data access
-├── shared/           Shared types and utilities
-├── drizzle/          SQL migrations
-├── main.ts           Application entry point
-└── build.ts          Frontend build script
-```
-
-## REST API
-
-All endpoints return JSON. When `HOST=127.0.0.1`, these routes are localhost-only.
-
-### Feeds — `/api/feeds`
-
-| Method | Path | Description |
+| Platform | Start | Stop |
 | --- | --- | --- |
-| `GET` | `/api/feeds` | List all feeds |
-| `GET` | `/api/feeds/meta?url=…` | Preview feed title and description |
-| `GET` | `/api/feeds/:id` | Get a feed by ID |
-| `POST` | `/api/feeds` | Create a feed |
-| `PUT` | `/api/feeds/:id` | Update a feed |
-| `DELETE` | `/api/feeds/:id` | Delete a feed and its items |
+| macOS / Linux | `./start.sh` | `./stop.sh` |
+| Windows | `start.bat` | `stop.bat` |
 
-### Items — `/api/items`
+These scripts install dependencies if needed, start NanoFlux in the background, and open the browser automatically.
 
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/api/items?cursor=&limit=` | Paginated news list (newest first) |
-| `POST` | `/api/items/:id/read` | Mark one item as read |
-| `POST` | `/api/items/read-all` | Mark all items up to a timestamp as read |
+### Auto-start on boot
 
-### Real-time — `/sse`
+**macOS** — register as a user LaunchAgent:
 
-Connect with `EventSource` to receive `items` events when new articles arrive, plus periodic `ping` heartbeats.
+```bash
+chmod +x start.sh stop.sh install-service.sh uninstall-service.sh
+./install-service.sh   # register
+./uninstall-service.sh # remove
+```
 
-## MCP Server
+**Windows** — run `install-service.bat` as Administrator to register an auto-start service (uses [NSSM](https://nssm.cc/) as a wrapper). Run `uninstall-service.bat` to remove it.
 
-NanoFlux exposes an MCP server at `/mcp` (JSON response mode enabled). Connect your MCP client (e.g. Cursor, Claude Desktop) to use these tools:
+Service logs are written to the `logs/` directory on both platforms.
+
+## MCP Integration
+
+NanoFlux exposes an MCP server at `http://localhost:3000/mcp` (JSON response mode enabled).
+
+### Client configuration
+
+Add to your MCP client config (e.g. Cursor or Claude Desktop):
+
+```json
+{
+  "mcpServers": {
+    "nanoflux": {
+      "url": "http://localhost:3000/mcp"
+    }
+  }
+}
+```
+
+> When `HOST=127.0.0.1`, only localhost clients can reach the MCP endpoint.
+
+### Available tools
 
 | Tool | Description |
 | --- | --- |
@@ -152,6 +179,33 @@ NanoFlux exposes an MCP server at `/mcp` (JSON response mode enabled). Connect y
 | `search_google_news` | Live Google News search (not stored locally) |
 | `get_current_time` | Return the server's current UTC time |
 
+## REST API
+
+All endpoints return JSON. When `HOST=127.0.0.1`, these routes are localhost-only.
+
+### Feeds — `/api/feeds`
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/api/feeds` | List all feeds |
+| `GET` | `/api/feeds/:id` | Get a feed by ID |
+| `POST` | `/api/feeds/meta` | Preview feed title and description |
+| `POST` | `/api/feeds/create` | Create a feed |
+| `POST` | `/api/feeds/:id` | Update a feed |
+| `POST` | `/api/feeds/:id/delete` | Delete a feed and its items |
+
+### Items — `/api/items`
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/api/items?cursor=&limit=` | Paginated news list (newest first) |
+| `POST` | `/api/items/:id/read` | Mark one item as read |
+| `POST` | `/api/items/read-all` | Mark all items up to a timestamp as read |
+
+### Real-time — `/sse`
+
+Connect with `EventSource` to receive `items` events when new articles arrive, plus periodic `ping` heartbeats.
+
 ## How Feed Fetching Works
 
 1. On startup and every minute (UTC cron), the scheduler loads feeds whose `next_fetched_at` is due.
@@ -159,6 +213,23 @@ NanoFlux exposes an MCP server at `/mcp` (JSON response mode enabled). Connect y
 3. New items are deduplicated by `(feed_id, guid)` and inserted into SQLite.
 4. Inserted items are broadcast to connected SSE clients.
 5. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear.
+
+## Project Structure
+
+```
+├── client/           Svelte frontend source
+├── public/           Built static assets (generated)
+├── routes/           REST API routes (feeds, items)
+├── mcp/              MCP server and tools
+├── sse/              Server-Sent Events streaming
+├── services/         Feed fetcher, scheduler, HTTP client
+├── db/               Drizzle schema and data access
+├── shared/           Shared types and utilities
+├── utils/            Server-side helpers
+├── drizzle/          SQL migrations
+├── main.ts           Application entry point
+└── build.ts          Frontend build script
+```
 
 ## License
 

@@ -10,7 +10,11 @@
   } from "../lib/api";
   import { t } from "../lib/locale.svelte";
 
+  const PAGE_SIZE = 20;
+
   let feeds = $state<Feed[]>([]);
+  let hasMore = $state(false);
+  let nextPage = $state<number | null>(null);
   let editId = $state<string | null>(null);
   let title = $state("");
   let url = $state("");
@@ -18,12 +22,14 @@
   let formError = $state("");
   let listError = $state("");
   let loading = $state(true);
+  let loadingMore = $state(false);
   let previewing = $state(false);
   let previewError = $state("");
   let titleTouched = $state(false);
   let descriptionTouched = $state(false);
   let previewTimer: ReturnType<typeof setTimeout> | undefined;
   let previewRequest = 0;
+  let sentinel = $state<HTMLDivElement | null>(null);
 
   const isEditing = $derived(editId !== null);
 
@@ -74,17 +80,40 @@
     if (isValidFeedUrl(feedUrl)) void runPreview(feedUrl);
   }
 
-  async function loadFeeds() {
+  async function loadFeeds(page = 1, append = false) {
     listError = "";
     try {
-      const res = await fetchFeeds();
-      feeds = res.data;
+      const res = await fetchFeeds({ page, limit: PAGE_SIZE });
+      feeds = append ? [...feeds, ...res.data] : res.data;
+      hasMore = res.hasMore;
+      nextPage = res.nextPage;
     } catch (e) {
       listError = e instanceof Error ? e.message : t("feeds.loadFailed");
     } finally {
       loading = false;
+      loadingMore = false;
     }
   }
+
+  async function loadMore() {
+    if (loadingMore || !hasMore || nextPage === null) return;
+    loadingMore = true;
+    await loadFeeds(nextPage, true);
+  }
+
+  $effect(() => {
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) void loadMore();
+      },
+      { rootMargin: "200px" },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  });
 
   function resetForm() {
     editId = null;
@@ -120,6 +149,7 @@
       if (editId !== null) {
         await updateFeed(editId, {
           title: title.trim(),
+          url: url.trim(),
           description: description.trim() || null,
         });
       } else {
@@ -130,6 +160,7 @@
         });
       }
       resetForm();
+      loading = true;
       await loadFeeds();
     } catch (err) {
       formError = err instanceof Error ? err.message : t("feeds.saveFailed");
@@ -142,13 +173,16 @@
     try {
       await deleteFeed(id);
       if (editId === id) resetForm();
+      loading = true;
       await loadFeeds();
     } catch (e) {
       listError = e instanceof Error ? e.message : t("feeds.deleteFailed");
     }
   }
 
-  onMount(loadFeeds);
+  onMount(() => {
+    void loadFeeds();
+  });
 </script>
 
 <section class="mb-10">
@@ -268,5 +302,15 @@
         </li>
       {/each}
     </ul>
+    {#if loadingMore}
+      <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600">
+        {t("feeds.loading")}
+      </p>
+    {:else if !hasMore && feeds.length > 0}
+      <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600">
+        {t("feeds.noMore")}
+      </p>
+    {/if}
+    <div bind:this={sentinel} class="h-1" aria-hidden="true"></div>
   {/if}
 </section>

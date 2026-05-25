@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { deleteFeed, getFeedById } from "../../db/feeds";
+import { deleteFeed, getFeed } from "../../db/feeds";
 
 function formatFeed(feed: {
   id: string;
@@ -30,36 +30,40 @@ export function registerDeleteFeed(server: McpServer): void {
       },
     },
     async ({ id }) => {
-      const existing = getFeedById(id);
-      if (!existing) {
+      
+      try {
+
+        const deleted = deleteFeed(id);
+
         return {
           content: [
             {
               type: "text",
               text: JSON.stringify(
-                { deleted: false, error: "Feed not found", id },
+                { 
+                  deleted: deleted,
+                  message: 'Feed deleted successfully',
+                },
                 null,
                 2,
               ),
             },
           ],
         };
+      } catch (error) {
+
+        const message =
+          error instanceof Error ? error.message : "Failed to delete feed";
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ deleted: false, error: message }),
+            },
+          ],  
+        };
       }
-
-      deleteFeed(id);
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
-              { deleted: true, feed: formatFeed(existing) },
-              null,
-              2,
-            ),
-          },
-        ],
-      };
     },
   );
 }

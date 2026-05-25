@@ -1,10 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {
-  createFeed,
-  feedIdFromUrl,
-  getFeedById,
-  isUniqueConstraintError,
+  createFeed
 } from "../../db/feeds";
 import { fetchFeedMetadata } from "../../services/feed-fetcher";
 
@@ -31,7 +28,9 @@ export function registerAddFeed(server: McpServer): void {
       },
     },
     async ({ url, title, description }) => {
+
       const feedUrl = url.trim();
+
       let feedTitle = title?.trim();
       let feedDescription =
         description !== undefined ? description : undefined;
@@ -57,6 +56,7 @@ export function registerAddFeed(server: McpServer): void {
       }
 
       try {
+      
         const feed = createFeed({
           title: feedTitle,
           url: feedUrl,
@@ -86,33 +86,21 @@ export function registerAddFeed(server: McpServer): void {
           ],
         };
       } catch (error) {
-        if (isUniqueConstraintError(error)) {
-          const existing = getFeedById(feedIdFromUrl(feedUrl));
-          return {
-            content: [
-              {
-                type: "text",
-                text: JSON.stringify(
-                  {
-                    created: false,
-                    error: "Feed URL already exists",
-                    feed: existing
-                      ? {
-                          id: existing.id,
-                          title: existing.title,
-                          url: existing.url,
-                          description: existing.description,
-                        }
-                      : null,
-                  },
-                  null,
-                  2,
-                ),
-              },
-            ],
-          };
+
+        const message =
+          error instanceof Error ? error.message : "Failed to create feed";
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                created: false,
+                error: message,
+              }),
+            },
+          ],
         }
-        throw error;
       }
     },
   );

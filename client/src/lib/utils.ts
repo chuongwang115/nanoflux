@@ -1,11 +1,11 @@
 import { localeState, t, tf } from "./locale.svelte";
 
-export function formatTime(iso: string | null): string {
+export function formatTime(iso: string | null, nowMs: number = Date.now()): string {
   if (!iso) return "";
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
 
-  const now = new Date();
+  const now = new Date(nowMs);
   const diff = now.getTime() - date.getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return t("time.justNow");

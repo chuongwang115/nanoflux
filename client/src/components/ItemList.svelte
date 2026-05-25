@@ -25,6 +25,8 @@
   let error = $state("");
   let sentinel = $state<HTMLDivElement | null>(null);
   let started = $state(false);
+  /** Bumps every minute so relative timestamps (e.g. "18 min ago") stay current. */
+  let now = $state(Date.now());
 
   async function loadMore() {
     if (loading || !hasMore) return;
@@ -125,7 +127,16 @@
     return () => markAllReadHost.register(undefined);
   });
 
-  onMount(() => subscribeItemStream(mergeIncomingItem));
+  onMount(() => {
+    const unsubscribe = subscribeItemStream(mergeIncomingItem);
+    const timer = setInterval(() => {
+      now = Date.now();
+    }, 60_000);
+    return () => {
+      unsubscribe();
+      clearInterval(timer);
+    };
+  });
 </script>
 
 {#if error}
@@ -141,7 +152,7 @@
             class="flex items-baseline gap-1.5 text-xs text-neutral-400 dark:text-neutral-500"
           >
             <time datetime={item.published_at}>
-              {formatTime(item.published_at)}
+              {formatTime(item.published_at, now)}
             </time>
             <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true"
               >·</span

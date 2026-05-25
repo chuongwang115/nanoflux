@@ -6846,6 +6846,7 @@ var messages = {
     "feeds.parsing": "正在从 Feed 解析名称与摘要…",
     "feeds.feedList": "Feed 列表",
     "feeds.noFeeds": "暂无 Feeds",
+    "feeds.noMore": "没有更多了",
     "feeds.edit": "编辑",
     "feeds.delete": "删除",
     "feeds.confirmDelete": "确定删除该 Feed？",
@@ -6887,6 +6888,7 @@ var messages = {
     "feeds.parsing": "Fetching title and summary from feed…",
     "feeds.feedList": "Feeds",
     "feeds.noFeeds": "No feeds yet",
+    "feeds.noMore": "No more feeds",
     "feeds.edit": "Edit",
     "feeds.delete": "Delete",
     "feeds.confirmDelete": "Delete this feed?",
@@ -7560,6 +7562,17 @@ if (undefined) {}
 var Header_default = Header;
 
 // client/src/lib/api.ts
+function assertApiOk(body) {
+  if (body.code !== 0) {
+    throw new Error(body.message || "Request failed");
+  }
+}
+function normalizeItem(raw) {
+  return {
+    ...raw,
+    is_read: Boolean(raw.is_read)
+  };
+}
 async function request(url, options = {}) {
   const res = await fetch(url, {
     ...options,
@@ -7572,49 +7585,81 @@ async function request(url, options = {}) {
   }
   return body;
 }
-function fetchItemsPage(cursor, limit = 20) {
+async function fetchItemsPage(cursor, limit = 20) {
   const params = new URLSearchParams({ limit: String(limit) });
   if (cursor)
     params.set("cursor", cursor);
-  return request(`/api/items?${params}`);
+  const body = await request(`/api/items?${params}`);
+  assertApiOk(body);
+  if (!body.data) {
+    throw new Error(body.message || "Failed to load items");
+  }
+  return {
+    data: body.data.items.map(normalizeItem),
+    nextCursor: body.data.nextCursor,
+    hasMore: body.data.hasMore
+  };
 }
-function fetchFeeds() {
-  return request("/api/feeds");
+async function fetchFeeds(options) {
+  const params = new URLSearchParams;
+  if (options?.page)
+    params.set("page", String(options.page));
+  if (options?.limit)
+    params.set("limit", String(options.limit));
+  if (options?.keyword)
+    params.set("keyword", options.keyword);
+  const query = params.toString();
+  const body = await request(`/api/feeds${query ? `?${query}` : ""}`);
+  assertApiOk(body);
+  if (!body.data) {
+    throw new Error(body.message || "Failed to load feeds");
+  }
+  return {
+    data: body.data.feeds,
+    hasMore: body.data.hasMore,
+    currentPage: body.data.currentPage,
+    nextPage: body.data.nextPage
+  };
 }
 function previewFeed(url) {
   const params = new URLSearchParams({ url });
-  return request(`/api/feeds/meta?${params}`);
+  return request(`/api/feeds/meta?${params}`, {
+    method: "POST",
+    body: JSON.stringify({ url })
+  });
 }
 function createFeed(payload) {
-  return request("/api/feeds", {
+  return request("/api/feeds/create", {
     method: "POST",
     body: JSON.stringify(payload)
   });
 }
 function updateFeed(id, payload) {
   return request(`/api/feeds/${id}`, {
-    method: "PUT",
+    method: "POST",
     body: JSON.stringify(payload)
   });
 }
 function deleteFeed(id) {
-  return request(`/api/feeds/${id}`, {
-    method: "DELETE"
+  return request(`/api/feeds/${id}/delete`, {
+    method: "POST"
   });
 }
-function markAllItemsRead(until) {
+async function markAllItemsRead(until) {
   if (!until) {
-    return Promise.reject(new Error("Missing until timestamp"));
+    throw new Error("Missing until timestamp");
   }
-  return request("/api/items/read-all", {
+  const body = await request("/api/items/read-all", {
     method: "POST",
     body: JSON.stringify({ until })
   });
+  assertApiOk(body);
 }
-function markItemRead(id) {
-  return request(`/api/items/${id}/read`, {
+async function markItemRead(id) {
+  const body = await request(`/api/items/${id}/read`, {
     method: "POST"
   });
+  assertApiOk(body);
 }
 
 // client/src/components/FeedsManager.svelte
@@ -7657,10 +7702,18 @@ var root_9 = from_html(`
           </div>
         </li>
       `, 1);
+var root_11 = from_html(`
+      <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
+    `, 1);
+var root_122 = from_html(`
+      <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
+    `, 1);
 var root_8 = from_html(`
     <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
       <!>
     </ul>
+    <!>
+    <div class="h-1" aria-hidden="true"></div>
   `, 1);
 var root13 = from_html(`
 
@@ -7684,7 +7737,10 @@ var root13 = from_html(`
 </section>`, 1);
 function FeedsManager($$anchor, $$props) {
   push($$props, true);
+  const PAGE_SIZE = 20;
   let feeds = state(proxy([]));
+  let hasMore = state(false);
+  let nextPage = state(null);
   let editId = state(null);
   let title = state("");
   let url = state("");
@@ -7692,12 +7748,14 @@ function FeedsManager($$anchor, $$props) {
   let formError = state("");
   let listError = state("");
   let loading = state(true);
+  let loadingMore = state(false);
   let previewing = state(false);
   let previewError = state("");
   let titleTouched = state(false);
   let descriptionTouched = state(false);
   let previewTimer;
   let previewRequest = 0;
+  let sentinel = state(null);
   const isEditing = user_derived(() => get2(editId) !== null);
   function isValidFeedUrl(value) {
     try {
@@ -7747,17 +7805,36 @@ function FeedsManager($$anchor, $$props) {
     if (isValidFeedUrl(feedUrl))
       runPreview(feedUrl);
   }
-  async function loadFeeds() {
+  async function loadFeeds(page = 1, append2 = false) {
     set(listError, "");
     try {
-      const res = await fetchFeeds();
-      set(feeds, res.data, true);
+      const res = await fetchFeeds({ page, limit: PAGE_SIZE });
+      set(feeds, append2 ? [...get2(feeds), ...res.data] : res.data, true);
+      set(hasMore, res.hasMore, true);
+      set(nextPage, res.nextPage, true);
     } catch (e) {
       set(listError, e instanceof Error ? e.message : t("feeds.loadFailed"), true);
     } finally {
       set(loading, false);
+      set(loadingMore, false);
     }
   }
+  async function loadMore() {
+    if (get2(loadingMore) || !get2(hasMore) || get2(nextPage) === null)
+      return;
+    set(loadingMore, true);
+    await loadFeeds(get2(nextPage), true);
+  }
+  user_effect(() => {
+    if (!get2(sentinel))
+      return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting))
+        loadMore();
+    }, { rootMargin: "200px" });
+    observer.observe(get2(sentinel));
+    return () => observer.disconnect();
+  });
   function resetForm() {
     set(editId, null);
     set(title, "");
@@ -7789,6 +7866,7 @@ function FeedsManager($$anchor, $$props) {
       if (get2(editId) !== null) {
         await updateFeed(get2(editId), {
           title: get2(title).trim(),
+          url: get2(url).trim(),
           description: get2(description).trim() || null
         });
       } else {
@@ -7799,6 +7877,7 @@ function FeedsManager($$anchor, $$props) {
         });
       }
       resetForm();
+      set(loading, true);
       await loadFeeds();
     } catch (err) {
       set(formError, err instanceof Error ? err.message : t("feeds.saveFailed"), true);
@@ -7812,12 +7891,15 @@ function FeedsManager($$anchor, $$props) {
       await deleteFeed(id);
       if (get2(editId) === id)
         resetForm();
+      set(loading, true);
       await loadFeeds();
     } catch (e) {
       set(listError, e instanceof Error ? e.message : t("feeds.deleteFailed"), true);
     }
   }
-  onMount(loadFeeds);
+  onMount(() => {
+    loadFeeds();
+  });
   next();
   var fragment = root13();
   var section = sibling(first_child(fragment));
@@ -8007,6 +8089,39 @@ function FeedsManager($$anchor, $$props) {
       });
       next();
       reset(ul);
+      var node_6 = sibling(ul, 2);
+      {
+        var consequent_8 = ($$anchor3) => {
+          var fragment_11 = root_11();
+          var p_8 = sibling(first_child(fragment_11));
+          var text_14 = child(p_8);
+          reset(p_8);
+          next();
+          template_effect(($0) => set_text(text_14, `
+        ${$0 ?? ""}
+      `), [() => t("feeds.loading")]);
+          append($$anchor3, fragment_11);
+        };
+        var consequent_9 = ($$anchor3) => {
+          var fragment_12 = root_122();
+          var p_9 = sibling(first_child(fragment_12));
+          var text_15 = child(p_9);
+          reset(p_9);
+          next();
+          template_effect(($0) => set_text(text_15, `
+        ${$0 ?? ""}
+      `), [() => t("feeds.noMore")]);
+          append($$anchor3, fragment_12);
+        };
+        if_block(node_6, ($$render) => {
+          if (get2(loadingMore))
+            $$render(consequent_8);
+          else if (!get2(hasMore) && get2(feeds).length > 0)
+            $$render(consequent_9, 1);
+        });
+      }
+      var div_4 = sibling(node_6, 2);
+      bind_this(div_4, ($$value) => set(sentinel, $$value), () => get2(sentinel));
       next();
       append($$anchor2, fragment_8);
     };
@@ -8087,13 +8202,13 @@ function connectItemStream() {
 }
 
 // client/src/lib/utils.ts
-function formatTime(iso) {
+function formatTime(iso, nowMs = Date.now()) {
   if (!iso)
     return "";
   const date = new Date(iso);
   if (Number.isNaN(date.getTime()))
     return iso;
-  const now2 = new Date;
+  const now2 = new Date(nowMs);
   const diff = now2.getTime() - date.getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1)
@@ -8166,6 +8281,7 @@ function ItemList($$anchor, $$props) {
   let error = state("");
   let sentinel = state(null);
   let started = state(false);
+  let now2 = state(proxy(Date.now()));
   async function loadMore() {
     if (get2(loading) || !get2(hasMore))
       return;
@@ -8256,7 +8372,16 @@ function ItemList($$anchor, $$props) {
     markAllReadHost.register(markAllRead);
     return () => markAllReadHost.register(undefined);
   });
-  onMount(() => subscribeItemStream(mergeIncomingItem));
+  onMount(() => {
+    const unsubscribe = subscribeItemStream(mergeIncomingItem);
+    const timer = setInterval(() => {
+      set(now2, Date.now(), true);
+    }, 60000);
+    return () => {
+      unsubscribe();
+      clearInterval(timer);
+    };
+  });
   var $$exports = { markAllRead };
   next();
   var fragment = root14();
@@ -8335,7 +8460,7 @@ function ItemList($$anchor, $$props) {
           set_text(text_4, `
             ${get2(item).title ?? ""}
           `);
-        }, [() => formatTime(get2(item).published_at)]);
+        }, [() => formatTime(get2(item).published_at, get2(now2))]);
         delegated("click", a_1, () => handleOpenItem(get2(item)));
         append($$anchor3, fragment_4);
       });
