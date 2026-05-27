@@ -6235,7 +6235,7 @@ if (typeof window !== "undefined") {
 
 // node_modules/svelte/src/internal/flags/legacy.js
 enable_legacy_mode_flag();
-// client/src/lib/router.ts
+// web/src/lib/router.ts
 var scrollByRoute = new Map;
 var route = writable("/");
 function pathnameToRoute(pathname) {
@@ -6493,7 +6493,7 @@ function A_arrow_up($$anchor, $$props) {
 }
 if (undefined) {}
 var a_arrow_up_default = A_arrow_up;
-// client/src/lib/fontSize.svelte.ts
+// web/src/lib/fontSize.svelte.ts
 var STORAGE_KEY = "nanoflux-font-size";
 function readStored() {
   try {
@@ -6533,7 +6533,7 @@ function manifestHref(locale) {
   return `/manifest.webmanifest?locale=${locale}`;
 }
 
-// client/src/lib/i18n/messages.ts
+// web/src/lib/i18n/messages.ts
 var messages = {
   zh: {
     "items.latest": "最新资讯",
@@ -6621,7 +6621,7 @@ var messages = {
   }
 };
 
-// client/src/lib/locale.ts
+// web/src/lib/locale.ts
 function applyDocumentLocale(locale) {
   if (typeof document === "undefined")
     return;
@@ -6632,7 +6632,7 @@ function applyDocumentLocale(locale) {
     manifest.href = manifestHref(locale);
 }
 
-// client/src/lib/locale.svelte.ts
+// web/src/lib/locale.svelte.ts
 var STORAGE_KEY2 = "nanoflux-locale";
 function readStored2() {
   try {
@@ -6676,7 +6676,7 @@ function tf(key2, vars) {
   return Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, String(v)), t(key2));
 }
 
-// client/src/components/buttons/FontSizeToggle.svelte
+// web/src/components/buttons/FontSizeToggle.svelte
 var root_12 = from_html(`
     <!>
   `, 1);
@@ -6777,7 +6777,7 @@ function Check_check($$anchor, $$props) {
 }
 if (undefined) {}
 var check_check_default = Check_check;
-// client/src/components/buttons/MarkAllReadButton.svelte
+// web/src/components/buttons/MarkAllReadButton.svelte
 var root6 = from_html(`
 
 <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
@@ -6806,7 +6806,7 @@ if (undefined) {}
 var MarkAllReadButton_default = MarkAllReadButton;
 delegate(["click"]);
 
-// client/src/components/buttons/LanguageToggle.svelte
+// web/src/components/buttons/LanguageToggle.svelte
 var root7 = from_html(`
 
 <button type="button" class="inline-flex min-w-[2rem] cursor-pointer items-center justify-center rounded-md p-1.5 text-xs font-medium text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"> </button>`, 1);
@@ -6927,7 +6927,7 @@ function Sun($$anchor, $$props) {
 }
 if (undefined) {}
 var sun_default = Sun;
-// client/src/lib/theme.svelte.ts
+// web/src/lib/theme.svelte.ts
 var STORAGE_KEY3 = "nanoflux-theme";
 function readStored3() {
   try {
@@ -6961,7 +6961,7 @@ function toggleTheme() {
   setTheme(themeState.mode === "light" ? "dark" : "light");
 }
 
-// client/src/components/buttons/ThemeToggle.svelte
+// web/src/components/buttons/ThemeToggle.svelte
 var root_13 = from_html(`
     <!>
   `, 1);
@@ -7022,7 +7022,7 @@ if (undefined) {}
 var ThemeToggle_default = ThemeToggle;
 delegate(["click"]);
 
-// client/src/lib/mark-all-read.ts
+// web/src/lib/mark-all-read.ts
 var MARK_ALL_READ_KEY = Symbol("markAllRead");
 function createMarkAllReadHost() {
   let handler;
@@ -7036,7 +7036,7 @@ function createMarkAllReadHost() {
   };
 }
 
-// client/src/components/Header.svelte
+// web/src/components/Header.svelte
 var root_14 = from_html(`
         <a>NanoFlux</a>
       `, 1);
@@ -7272,7 +7272,7 @@ function Header($$anchor, $$props) {
   next();
   reset(header);
   template_effect(() => {
-    set_class(header, 1, `sticky top-0 z-20 -mx-6 mb-10 flex justify-between gap-4 border-b px-6 transition-colors duration-200 ease-out
+    set_class(header, 1, `sticky top-0 z-20 -mx-5 mb-10 flex justify-between gap-4 border-b px-5 transition-colors duration-200 ease-out
     ${get2(compact) ? "items-center border-neutral-100 bg-white py-3 dark:border-neutral-800 dark:bg-neutral-950" : "items-start border-transparent bg-transparent py-0"}`);
     set_class(div_1, 1, clsx2(get2(rowClass)));
   });
@@ -7284,7 +7284,7 @@ if (undefined) {}
 var Header_default = Header;
 delegate(["click"]);
 
-// client/src/lib/api.ts
+// web/src/lib/api.ts
 function assertApiOk(body) {
   if (body.code !== 0) {
     throw new Error(body.message || "Request failed");
@@ -7381,7 +7381,7 @@ async function markItemRead(id) {
   assertApiOk(body);
 }
 
-// client/src/components/FeedsManager.svelte
+// web/src/components/FeedsManager.svelte
 var root_15 = from_html(`
         <button type="button" class="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"> </button>
       `, 1);
@@ -7910,7 +7910,7 @@ if (undefined) {}
 var FeedsManager_default = FeedsManager;
 delegate(["input", "click"]);
 
-// client/src/lib/item-stream.ts
+// web/src/lib/item-stream.ts
 var listeners2 = new Set;
 var es = null;
 function dispatch(items) {
@@ -7937,7 +7937,7 @@ function connectItemStream() {
   };
 }
 
-// client/src/lib/utils.ts
+// web/src/lib/utils.ts
 function formatTime(iso, nowMs = Date.now()) {
   if (!iso)
     return "";
@@ -7965,7 +7965,7 @@ function formatTime(iso, nowMs = Date.now()) {
   });
 }
 
-// client/src/components/ItemList.svelte
+// web/src/components/ItemList.svelte
 var root_16 = from_html(`
   <p class="py-6 text-sm text-red-500"> </p>
 `, 1);
@@ -8254,7 +8254,7 @@ if (undefined) {}
 var ItemList_default = ItemList;
 delegate(["click"]);
 
-// client/src/App.svelte
+// web/src/App.svelte
 var root_17 = from_html(`
     <!>
   `, 1);
@@ -8263,7 +8263,7 @@ var root_26 = from_html(`
   `, 1);
 var root14 = from_html(`
 
-<main class="mx-auto max-w-page px-6 py-16 font-sans">
+<main class="mx-auto max-w-page px-5 py-16 font-sans">
   <!>
   <!>
 </main>`, 1);
@@ -8311,7 +8311,7 @@ function App($$anchor, $$props) {
 if (undefined) {}
 var App_default = App;
 
-// client/src/lib/pwa.ts
+// web/src/lib/pwa.ts
 function registerPwa() {
   if (!("serviceWorker" in navigator))
     return;
@@ -8320,7 +8320,7 @@ function registerPwa() {
   });
 }
 
-// client/src/main.ts
+// web/src/main.ts
 initRouter();
 initTheme();
 initFontSize();

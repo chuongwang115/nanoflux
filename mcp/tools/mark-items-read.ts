@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { markItemsRead } from "../../db/items";
-import { messages } from "../../client/src/lib/i18n/messages";
+import { messages } from "../../web/src/lib/i18n/messages";
 
 export function registerMarkItemsRead(server: McpServer): void {
   server.registerTool(

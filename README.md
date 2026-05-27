@@ -216,7 +216,7 @@ Connect with `EventSource` to receive `items` events when new articles arrive, p
 ## Project Structure
 
 ```
-├── client/           Svelte frontend source
+├── web/           Svelte frontend source
 ├── public/           Built static assets (generated)
 ├── routes/           REST API routes (feeds, items)
 ├── mcp/              MCP server and tools

@@ -13,7 +13,7 @@
   setContext(MARK_ALL_READ_KEY, markAllReadHost);
 </script>
 
-<main class="mx-auto max-w-page px-6 py-16 font-sans">
+<main class="mx-auto max-w-page px-5 py-16 font-sans">
   <Header />
   {#if $route === "/feeds"}
     <FeedsManager />

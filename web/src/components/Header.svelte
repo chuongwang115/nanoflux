@@ -73,7 +73,7 @@
 </script>
 
 <header
-  class="sticky top-0 z-20 -mx-6 mb-10 flex justify-between gap-4 border-b px-6 transition-colors duration-200 ease-out
+  class="sticky top-0 z-20 -mx-5 mb-10 flex justify-between gap-4 border-b px-5 transition-colors duration-200 ease-out
     {compact
       ? 'items-center border-neutral-100 bg-white py-3 dark:border-neutral-800 dark:bg-neutral-950'
       : 'items-start border-transparent bg-transparent py-0'}"

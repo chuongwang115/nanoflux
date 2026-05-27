@@ -5,15 +5,15 @@ import { SveltePlugin } from "bun-plugin-svelte";
 import postcss from "postcss";
 import postcssConfig from "./postcss.config.mjs";
 const root = import.meta.dir;
-const clientDir = path.join(root, "client");
+const webDir = path.join(root, "web");
 const publicDir = path.join(root, "public");
 const assetsDir = path.join(publicDir, "assets");
-const staticDir = path.join(clientDir, "static");
+const staticDir = path.join(webDir, "static");
 
 await rm(assetsDir, { recursive: true, force: true });
 await mkdir(assetsDir, { recursive: true });
 
-const appCssIn = path.join(clientDir, "src/app.css");
+const appCssIn = path.join(webDir, "src/app.css");
 const appCssOut = path.join(assetsDir, "app.css");
 const appCssResult = await postcss(postcssConfig.plugins).process(
   await readFile(appCssIn, "utf8"),
@@ -22,7 +22,7 @@ const appCssResult = await postcss(postcssConfig.plugins).process(
 await writeFile(appCssOut, appCssResult.css);
 
 const result = await Bun.build({
-  entrypoints: [path.join(clientDir, "src/main.ts")],
+  entrypoints: [path.join(webDir, "src/main.ts")],
   outdir: assetsDir,
   target: "browser",
   plugins: [SveltePlugin()],
@@ -42,7 +42,7 @@ if (!jsFile) {
 const jsName = path.basename(jsFile.path);
 
 const swResult = await Bun.build({
-  entrypoints: [path.join(clientDir, "src/sw.ts")],
+  entrypoints: [path.join(webDir, "src/sw.ts")],
   outdir: publicDir,
   target: "browser",
   format: "iife",
