@@ -6235,36 +6235,11 @@ if (typeof window !== "undefined") {
 
 // node_modules/svelte/src/internal/flags/legacy.js
 enable_legacy_mode_flag();
-
-// client/src/lib/base-path.ts
-function basePath() {
-  return "";
-}
-function withBase(path) {
-  const base = basePath();
-  const normalized = path.startsWith("/") ? path : `/${path}`;
-  if (!base)
-    return normalized;
-  if (normalized === "/")
-    return `${base}/`;
-  return `${base}${normalized}`;
-}
 // client/src/lib/router.ts
 var scrollByRoute = new Map;
 var route = writable("/");
 function pathnameToRoute(pathname) {
-  const base = basePath();
-  let path = pathname;
-  if (base) {
-    if (pathname === base || pathname === `${base}/`) {
-      path = "/";
-    } else if (pathname.startsWith(`${base}/`)) {
-      path = pathname.slice(base.length);
-    } else {
-      path = "/";
-    }
-  }
-  return path === "/feeds" ? "/feeds" : "/";
+  return pathname === "/feeds" ? "/feeds" : "/";
 }
 function saveScroll(current) {
   scrollByRoute.set(current, window.scrollY);
@@ -6278,7 +6253,7 @@ function syncRouteFromLocation() {
   route.set(pathnameToRoute(window.location.pathname));
 }
 function navigate(next2) {
-  const target = new URL(withBase(next2), window.location.origin);
+  const target = new URL(next2, window.location.origin);
   const current = get(route);
   if (window.location.pathname === target.pathname && current === next2)
     return;
@@ -6287,16 +6262,7 @@ function navigate(next2) {
   route.set(next2);
   restoreScroll(next2);
 }
-function migrateHashRoute() {
-  const { hash: hash2, search } = window.location;
-  if (!hash2.startsWith("#/"))
-    return;
-  const path = hash2.slice(1).split("?")[0] || "/";
-  const appPath = path === "/feeds" ? "/feeds" : "/";
-  history.replaceState(null, "", withBase(appPath) + search);
-}
 function initRouter() {
-  migrateHashRoute();
   syncRouteFromLocation();
   window.addEventListener("popstate", () => {
     syncRouteFromLocation();
@@ -6526,30 +6492,13 @@ function toggleFontSize() {
   setFontSize(fontSizeState.mode === "small" ? "large" : "small");
 }
 
-// shared/base-path.ts
-function resolveBasePath(env = process.env) {
-  const raw = env.BASE_PATH?.trim();
-  if (!raw)
-    return "";
-  const withLeading = raw.startsWith("/") ? raw : `/${raw}`;
-  return withLeading.replace(/\/+$/, "") || "";
-}
-function withBase2(path, base = resolveBasePath()) {
-  const normalized = path.startsWith("/") ? path : `/${path}`;
-  if (!base)
-    return normalized;
-  if (normalized === "/")
-    return `${base}/`;
-  return `${base}${normalized}`;
-}
-
 // shared/manifest.ts
 var PWA_META_DESCRIPTION = {
   zh: "轻量 RSS 阅读器",
   en: "Lightweight RSS reader"
 };
-function manifestHref(locale, base = "") {
-  return `${withBase2("/manifest.webmanifest", base)}?locale=${locale}`;
+function manifestHref(locale) {
+  return `/manifest.webmanifest?locale=${locale}`;
 }
 
 // client/src/lib/i18n/messages.ts
@@ -6648,7 +6597,7 @@ function applyDocumentLocale(locale) {
   document.querySelector('meta[name="description"]')?.setAttribute("content", description);
   const manifest = document.querySelector('link[rel="manifest"]');
   if (manifest)
-    manifest.href = manifestHref(locale, basePath());
+    manifest.href = manifestHref(locale);
 }
 
 // client/src/lib/locale.svelte.ts
@@ -7057,14 +7006,14 @@ function createMarkAllReadHost() {
 
 // client/src/components/Header.svelte
 var root_14 = from_html(`
-        <a>NanoFlux</a>
+        <a href="/">NanoFlux</a>
       `, 1);
 var root_23 = from_html(`
         <h1>NanoFlux</h1>
       `, 1);
 var root_3 = from_html(`
         <div>
-          <a class="inline-flex shrink-0 rounded-md p-1 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100">
+          <a href="/" class="inline-flex shrink-0 rounded-md p-1 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="m12 19-7-7 7-7"></path>
               <path d="M19 12H5"></path>
@@ -7077,7 +7026,7 @@ var root_4 = from_html(`
         <nav>
           <span> </span>
           <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
-          <a class="hover:text-neutral-900 dark:hover:text-neutral-100"> </a>
+          <a href="/feeds" class="hover:text-neutral-900 dark:hover:text-neutral-100"> </a>
         </nav>
       `, 1);
 var root_5 = from_html(`
@@ -7167,7 +7116,6 @@ function Header($$anchor, $$props) {
       var event_handler = user_derived(() => navClick("/"));
       set_class(a, 1, "shrink-0 text-lg font-medium tracking-tight hover:opacity-70");
       next();
-      template_effect(($0) => set_attribute2(a, "href", $0), [() => withBase("/")]);
       delegated("click", a, function(...$$args) {
         get2(event_handler)?.apply(this, $$args);
       });
@@ -7200,14 +7148,12 @@ function Header($$anchor, $$props) {
       next();
       reset(div_2);
       next();
-      template_effect(($0, $1, $2, $3) => {
+      template_effect(($0, $1, $2) => {
         set_class(div_2, 1, `${get2(subClass) ?? ""} gap-3`);
-        set_attribute2(a_1, "href", $0);
-        set_attribute2(a_1, "aria-label", $1);
-        set_attribute2(a_1, "title", $2);
-        set_text(text2, $3);
+        set_attribute2(a_1, "aria-label", $0);
+        set_attribute2(a_1, "title", $1);
+        set_text(text2, $2);
       }, [
-        () => withBase("/"),
         () => t("feeds.back"),
         () => t("feeds.back"),
         () => t("feeds.title")
@@ -7230,18 +7176,16 @@ function Header($$anchor, $$props) {
       next();
       reset(nav);
       next();
-      template_effect(($0, $1, $2, $3) => {
+      template_effect(($0, $1, $2) => {
         set_class(nav, 1, clsx2(get2(subClass)));
         set_attribute2(nav, "aria-label", $0);
         set_text(text_1, $1);
-        set_attribute2(a_2, "href", $2);
         set_text(text_2, `
-            ${$3 ?? ""}
+            ${$2 ?? ""}
           `);
       }, [
         () => t("items.latest"),
         () => t("items.latest"),
-        () => withBase("/feeds"),
         () => t("items.feeds")
       ]);
       delegated("click", a_2, function(...$$args) {
@@ -7318,7 +7262,7 @@ function normalizeItem(raw) {
   };
 }
 async function request(url, options = {}) {
-  const res = await fetch(withBase(url), {
+  const res = await fetch(url, {
     ...options,
     headers: { "Content-Type": "application/json", ...options.headers }
   });
@@ -7946,7 +7890,7 @@ function subscribeItemStream(listener) {
 function connectItemStream() {
   if (es)
     return () => {};
-  es = new EventSource(withBase("/sse"));
+  es = new EventSource("/sse");
   es.addEventListener("items", (ev) => {
     try {
       dispatch(JSON.parse(ev.data));
@@ -8336,10 +8280,8 @@ var App_default = App;
 function registerPwa() {
   if (!("serviceWorker" in navigator))
     return;
-  const swUrl = withBase("/sw.js");
-  const scope = withBase("/");
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register(swUrl, { scope }).catch((err) => console.warn("[pwa] service worker registration failed", err));
+    navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch((err) => console.warn("[pwa] service worker registration failed", err));
   });
 }
 

@@ -1,5 +1,4 @@
 import type { Item } from "./api";
-import { withBase } from "./base-path";
 
 type Listener = (items: Item[]) => void;
 
@@ -22,7 +21,7 @@ export function subscribeItemStream(listener: Listener): () => void {
 export function connectItemStream(): () => void {
   if (es) return () => {};
 
-  es = new EventSource(withBase("/sse"));
+  es = new EventSource("/sse");
 
   es.addEventListener("items", (ev) => {
     try {

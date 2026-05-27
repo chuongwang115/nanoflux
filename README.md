@@ -107,34 +107,6 @@ Create a `.env` file (see `.env.example`):
 | `PORT` | (see `.env.example`) | HTTP listen port (required) |
 | `HOST` | `127.0.0.1` | Bind address. `127.0.0.1` also restricts API/SSE/MCP to localhost. Use `0.0.0.0` to listen on all interfaces without restriction. |
 | `DB_PATH` | `data.sqlite` | SQLite database file path |
-| `BASE_PATH` | (empty) | URL prefix when served under a subpath (e.g. `/news`). Set this to match your reverse-proxy mount, then rebuild the frontend (`bun run build:web`). |
-
-### Reverse proxy (subpath)
-
-To serve NanoFlux at `https://example.com/news`:
-
-1. Set `BASE_PATH=/news` in `.env`.
-2. Rebuild and restart: `bun run build:web` then `bun start` (or your service script).
-3. Proxy **with** the prefix preserved (do not strip `/news`):
-
-```nginx
-location = /news {
-    return 301 /news/;
-}
-
-location /news/ {
-    proxy_pass http://127.0.0.1:3000/news/;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_buffering off;
-    proxy_read_timeout 86400s;
-}
-```
-
-Open `https://example.com/news/` in the browser (trailing slash recommended).
 
 ### Proxy (optional)
 

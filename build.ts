@@ -4,10 +4,7 @@ import { $ } from "bun";
 import { SveltePlugin } from "bun-plugin-svelte";
 import postcss from "postcss";
 import postcssConfig from "./postcss.config.mjs";
-import { resolveBasePath, withBase } from "./shared/base-path";
-
 const root = import.meta.dir;
-const basePath = resolveBasePath();
 const clientDir = path.join(root, "client");
 const publicDir = path.join(root, "public");
 const assetsDir = path.join(publicDir, "assets");
@@ -29,9 +26,6 @@ const result = await Bun.build({
   outdir: assetsDir,
   target: "browser",
   plugins: [SveltePlugin()],
-  define: {
-    __BASE_PATH__: JSON.stringify(basePath),
-  },
 });
 
 if (!result.success) {
@@ -53,10 +47,9 @@ const swResult = await Bun.build({
   target: "browser",
   format: "iife",
   define: {
-    BUILD_BASE_PATH: JSON.stringify(basePath),
     BUILD_PRECACHE: JSON.stringify([
-      withBase(`/assets/${jsName}`, basePath),
-      withBase("/assets/app.css", basePath),
+      `/assets/${jsName}`,
+      "/assets/app.css",
     ]),
   },
 });
@@ -83,7 +76,7 @@ const prefsInitScript = `<script>
     var meta = document.querySelector('meta[name="description"]');
     if (meta) meta.setAttribute("content", desc);
     var mf = document.querySelector('link[rel="manifest"]');
-    if (mf) mf.href = "${withBase("/manifest.webmanifest", basePath)}?locale=" + loc;
+    if (mf) mf.href = "/manifest.webmanifest?locale=" + loc;
     var t = localStorage.getItem("nanoflux-theme");
     if (t === "dark" || (!t && matchMedia("(prefers-color-scheme: dark)").matches))
       document.documentElement.classList.add("dark");
@@ -92,10 +85,6 @@ const prefsInitScript = `<script>
   } catch (e) {}
 })();
 </script>`;
-
-const baseTag = basePath
-  ? `    <base href="${withBase("/", basePath)}" />\n`
-  : "";
 
 await writeFile(
   path.join(publicDir, "index.html"),
@@ -112,12 +101,12 @@ await writeFile(
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="NanoFlux" />
     <title>NanoFlux</title>
-${baseTag}    <link rel="manifest" href="${withBase("/manifest.webmanifest", basePath)}?locale=zh" />
-    <link rel="icon" href="${withBase("/icons/icon.svg", basePath)}" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="${withBase("/icons/icon-192.png", basePath)}" />
+    <link rel="manifest" href="/manifest.webmanifest?locale=zh" />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     ${prefsInitScript}
-    <link rel="stylesheet" href="${withBase("/assets/app.css", basePath)}" />
-    <script type="module" crossorigin src="${withBase(`/assets/${jsName}`, basePath)}"></script>
+    <link rel="stylesheet" href="/assets/app.css" />
+    <script type="module" crossorigin src="/assets/${jsName}"></script>
   </head>
   <body class="min-h-screen bg-white text-base text-neutral-900 antialiased font-sans dark:bg-neutral-950 dark:text-neutral-100">
     <div id="app"></div>
