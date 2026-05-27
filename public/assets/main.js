@@ -6241,8 +6241,24 @@ var route = writable("/");
 function pathnameToRoute(pathname) {
   return pathname.endsWith("/feeds") ? "/feeds" : "/";
 }
-function routeHref(next2) {
-  return next2 === "/" ? ".." : "feeds";
+function parentPathname() {
+  const parts = window.location.pathname.replace(/\/$/, "").split("/").filter(Boolean);
+  parts.pop();
+  return parts.length ? `/${parts.join("/")}/` : "/";
+}
+function parentHref() {
+  return "..";
+}
+function navigateToParent() {
+  const targetPath = parentPathname();
+  const current = get(route);
+  const next2 = pathnameToRoute(targetPath);
+  if (window.location.pathname === targetPath && current === next2)
+    return;
+  saveScroll(current);
+  history.pushState(null, "", targetPath + window.location.search);
+  route.set(next2);
+  restoreScroll(next2);
 }
 function saveScroll(current) {
   scrollByRoute.set(current, window.scrollY);
@@ -6256,7 +6272,7 @@ function syncRouteFromLocation() {
   route.set(pathnameToRoute(window.location.pathname));
 }
 function navigate(next2) {
-  const target = new URL(routeHref(next2), window.location.href);
+  const target = new URL(next2 === "/feeds" ? "feeds" : next2, window.location.href);
   const current = get(route);
   if (window.location.pathname === target.pathname && current === next2)
     return;
@@ -6272,13 +6288,26 @@ function initRouter() {
     restoreScroll(get(route));
   });
 }
+function shouldHandleNavClick(event2) {
+  if (event2.defaultPrevented || event2.button !== 0 || event2.metaKey || event2.ctrlKey || event2.shiftKey || event2.altKey) {
+    return false;
+  }
+  return true;
+}
 function navClick(next2) {
   return (event2) => {
-    if (event2.defaultPrevented || event2.button !== 0 || event2.metaKey || event2.ctrlKey || event2.shiftKey || event2.altKey) {
+    if (!shouldHandleNavClick(event2))
       return;
-    }
     event2.preventDefault();
     navigate(next2);
+  };
+}
+function navClickParent() {
+  return (event2) => {
+    if (!shouldHandleNavClick(event2))
+      return;
+    event2.preventDefault();
+    navigateToParent();
   };
 }
 
@@ -7116,10 +7145,10 @@ function Header($$anchor, $$props) {
     var consequent = ($$anchor2) => {
       var fragment_1 = root_14();
       var a = sibling(first_child(fragment_1));
-      var event_handler = user_derived(() => navClick("/"));
+      var event_handler = user_derived(navClickParent);
       set_class(a, 1, "shrink-0 text-lg font-medium tracking-tight hover:opacity-70");
       next();
-      template_effect(($0) => set_attribute2(a, "href", $0), [() => routeHref("/")]);
+      template_effect(($0) => set_attribute2(a, "href", $0), [() => parentHref()]);
       delegated("click", a, function(...$$args) {
         get2(event_handler)?.apply(this, $$args);
       });
@@ -7145,7 +7174,7 @@ function Header($$anchor, $$props) {
       var fragment_3 = root_3();
       var div_2 = sibling(first_child(fragment_3));
       var a_1 = sibling(child(div_2));
-      var event_handler_1 = user_derived(() => navClick("/"));
+      var event_handler_1 = user_derived(navClickParent);
       var p = sibling(a_1, 2);
       var text2 = child(p, true);
       reset(p);
@@ -7159,7 +7188,7 @@ function Header($$anchor, $$props) {
         set_attribute2(a_1, "title", $2);
         set_text(text2, $3);
       }, [
-        () => routeHref("/"),
+        () => parentHref(),
         () => t("feeds.back"),
         () => t("feeds.back"),
         () => t("feeds.title")
