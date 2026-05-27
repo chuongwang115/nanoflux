@@ -6,16 +6,6 @@ cd "$(dirname "$0")"
 LABEL="com.nanoflux.app"
 PLIST="${HOME}/Library/LaunchAgents/${LABEL}.plist"
 
-read_port() {
-  local port="3000"
-  if [[ -f .env ]]; then
-    local val
-    val="$(grep -E '^[[:space:]]*PORT[[:space:]]*=' .env | tail -1 | cut -d= -f2- | tr -d '\r' | xargs || true)"
-    [[ -n "$val" ]] && port="$val"
-  fi
-  echo "$port"
-}
-
 stopped=0
 
 if [[ -f "$PLIST" ]]; then
@@ -27,7 +17,7 @@ if [[ -f "$PLIST" ]]; then
   fi
 fi
 
-PORT="$(read_port)"
+PORT="$(bash "./scripts/read-env-port.sh")"
 pids="$(lsof -tiTCP:"$PORT" -sTCP:LISTEN 2>/dev/null || true)"
 
 if [[ -n "$pids" ]]; then

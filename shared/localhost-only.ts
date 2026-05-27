@@ -2,11 +2,6 @@ import { Elysia } from "elysia";
 
 export const DEFAULT_HOST = "127.0.0.1";
 
-export function resolveHost(): string {
-  const raw = Bun.env.HOST?.trim();
-  return raw || DEFAULT_HOST;
-}
-
 /** `HOST=127.0.0.1` enables API/SSE/MCP localhost-only middleware. */
 export function isLocalhostRestricted(host: string): boolean {
   return host === DEFAULT_HOST;

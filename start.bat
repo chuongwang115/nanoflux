@@ -28,9 +28,10 @@ if not exist "node_modules\" (
     echo.
 )
 
-set "PORT=3000"
-if exist ".env" for /f "usebackq eol=# tokens=1,* delims==" %%a in (".env") do (
-    if /i "%%~a"=="PORT" if not "%%~b"=="" set "PORT=%%~b"
+call "%~dp0scripts\read-env-port.bat"
+if errorlevel 1 (
+    pause
+    exit /b 1
 )
 
 echo.

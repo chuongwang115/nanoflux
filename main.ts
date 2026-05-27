@@ -1,9 +1,9 @@
 import { join } from "node:path";
 import { Elysia } from "elysia";
+import { resolveHost, resolvePort } from "./shared/env";
 import {
   isLocalhostRestricted,
   localhostOnly,
-  resolveHost,
 } from "./shared/localhost-only";
 import { buildWebManifest } from "./shared/manifest";
 import type { Locale } from "./shared/locale";
@@ -58,7 +58,7 @@ const app = new Elysia()
   )
   .use(protectedBackendRoutes);
 
-const port = Number(Bun.env.PORT ?? 3000);
+const port = resolvePort();
 app.listen({ port, hostname: host });
 
 if (restrictLocalhost) {

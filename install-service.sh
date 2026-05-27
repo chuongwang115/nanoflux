@@ -19,16 +19,6 @@ find_bun() {
   return 1
 }
 
-read_port() {
-  local port="3000"
-  if [[ -f .env ]]; then
-    local val
-    val="$(grep -E '^[[:space:]]*PORT[[:space:]]*=' .env | tail -1 | cut -d= -f2- | tr -d '\r' | xargs || true)"
-    [[ -n "$val" ]] && port="$val"
-  fi
-  echo "$port"
-}
-
 wait_for_port() {
   local port="$1"
   local deadline=$((SECONDS + 120))
@@ -97,7 +87,7 @@ EOF
 echo "Loading LaunchAgent..."
 launchctl bootstrap "gui/$(id -u)" "$PLIST" 2>/dev/null || launchctl load "$PLIST"
 
-PORT="$(read_port)"
+PORT="$(bash "./scripts/read-env-port.sh")"
 
 echo "Waiting for server, then opening browser..."
 if wait_for_port "$PORT"; then

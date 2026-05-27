@@ -70,7 +70,7 @@ cp .env.example .env
 bun start
 ```
 
-Open `http://localhost:3000` in your browser.
+Open `http://localhost:<PORT>` in your browser (`PORT` from your `.env`).
 
 ### npm Scripts
 
@@ -104,7 +104,7 @@ Create a `.env` file (see `.env.example`):
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `PORT` | `3000` | HTTP listen port |
+| `PORT` | (see `.env.example`) | HTTP listen port (required) |
 | `HOST` | `127.0.0.1` | Bind address. `127.0.0.1` also restricts API/SSE/MCP to localhost. Use `0.0.0.0` to listen on all interfaces without restriction. |
 | `DB_PATH` | `data.sqlite` | SQLite database file path |
 
@@ -146,7 +146,7 @@ Service logs are written to the `logs/` directory on both platforms.
 
 ## MCP Integration
 
-NanoFlux exposes an MCP server at `http://localhost:3000/mcp` (JSON response mode enabled).
+NanoFlux exposes an MCP server at `http://localhost:<PORT>/mcp` (JSON response mode enabled; `PORT` from `.env`).
 
 ### Client configuration
 

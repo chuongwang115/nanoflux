@@ -16,16 +16,6 @@ find_bun() {
   return 1
 }
 
-read_port() {
-  local port="3000"
-  if [[ -f .env ]]; then
-    local val
-    val="$(grep -E '^[[:space:]]*PORT[[:space:]]*=' .env | tail -1 | cut -d= -f2- | tr -d '\r' | xargs || true)"
-    [[ -n "$val" ]] && port="$val"
-  fi
-  echo "$port"
-}
-
 wait_for_port() {
   local port="$1"
   local deadline=$((SECONDS + 120))
@@ -55,7 +45,7 @@ if [[ ! -d node_modules ]]; then
   echo
 fi
 
-PORT="$(read_port)"
+PORT="$(bash "./scripts/read-env-port.sh")"
 
 echo
 echo "========================================"
