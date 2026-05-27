@@ -5,46 +5,39 @@ import {
   deleteFeed,
   getFeed,
   getFeeds,
-  DEFAULT_PAGE,
-  DEFAULT_LIMIT,
-  MAX_LIMIT,
 } from "../db/feeds";
+import { encodeCursor } from "../db/utils";
+import { DEFAULT_LIMIT, MAX_LIMIT } from "../db/schema";
 import { fetchFeedMetadata } from "../services/feed-fetcher";
 
-function getFeedsHandler({ query }: { 
-  query: {
-    keyword?: string;
-    page?: number;
-    limit?: number;
-  } 
-}) {
+function getFeedsHandler({ query }: { query: { keyword?: string; cursor?: string; limit?: number; }}) {
 
   try {
 
-    const page = Math.max(query.page ?? DEFAULT_PAGE, 1);
-
-    const limit = Math.min(
+    const adjustedLimit = Math.min(
       Math.max(query.limit ?? DEFAULT_LIMIT, 1),
       MAX_LIMIT,
     );
 
-    const feeds = getFeeds({
-      page: page,
-      limit: limit,
+    const selected = getFeeds({
+      cursor: query.cursor,
+      limit: adjustedLimit,
       keyword: query.keyword,
     })
 
-    const hasMore = feeds.length > limit;
-    const nextPage = hasMore ? page + 1 : null;
+    const hasMore = selected.length > adjustedLimit;
+    const returned = selected.slice(0, adjustedLimit);
 
-    return { 
-      code: 0, 
-      message: "ok", 
+    const lastFeed = returned.at(-1);
+    const nextCursor = hasMore && lastFeed ? encodeCursor(lastFeed.updated_at, lastFeed.id) : null;
+
+    return {
+      code: 0,
+      message: "ok",
       data: {
-        feeds: feeds.slice(0, limit),
-        currentPage: page,
-        nextPage: nextPage,
+        feeds: returned,
         hasMore: hasMore,
+        nextCursor: nextCursor,
       }
     };
 
@@ -55,12 +48,9 @@ function getFeedsHandler({ query }: {
   }
 }
 
-async function getFeedMetaHandler({ body }: {
-  body: any;
-}) {
+async function getFeedMetaHandler({ body }: { body: any; }) {
 
   try {
-
     const data = await fetchFeedMetadata(body.url);
     return { code: 0, message: "ok", data: data };
 
@@ -71,14 +61,9 @@ async function getFeedMetaHandler({ body }: {
   }
 }
 
-function getFeedHandler({ params }: { 
-  params: {
-    id: string;
-  }
-}) {
+function getFeedHandler({ params }: { params: { id: string; }; }) {
 
   try {
-
     const feed = getFeed(params.id);
     return { code: 0, message: "ok", data: feed };
 
@@ -89,15 +74,12 @@ function getFeedHandler({ params }: {
   }
 }
 
-function createFeedHandler({ body }: { 
-  body: any;
-}) {
-  
+function createFeedHandler({ body }: { body: any; }) {
+
   try {
-  
     const created = createFeed(body);
     return { code: 0, message: "ok", data: created };
-  
+
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to create feed";
@@ -105,15 +87,9 @@ function createFeedHandler({ body }: {
   }
 }
 
-function updateFeedHandler({ params, body }: {
-  params: {
-    id: string;
-  };
-  body: any;
-}) {
+function updateFeedHandler({ params, body }: { params: { id: string; }; body: any; }) {
 
   try {
-
     const feed = updateFeed(params.id, body);
     return { code: 0, message: "ok", data: feed };
 
@@ -124,12 +100,7 @@ function updateFeedHandler({ params, body }: {
   }
 }
 
-function deleteFeedHandler({ params }: { 
-  params: {
-    id: string;
-  };
-}) {  
-  
+function deleteFeedHandler({ params }: { params: { id: string; }; }) {
   try {
     deleteFeed(params.id);
     return { code: 0, message: "ok" };

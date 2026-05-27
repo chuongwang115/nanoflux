@@ -1,24 +1,20 @@
 import {
-  and,
   desc,
   eq,
   isNull,
   like,
-  lte,
+  lt,
+  and,
   or,
   sql,
 } from "drizzle-orm";
 import { db } from "./database";
-import { feeds, type Feed } from "./schema";
-import { feedIdFromUrl } from "./utils";
-
-export const DEFAULT_PAGE = 1;
-export const DEFAULT_LIMIT = 20;
-export const MAX_LIMIT = 50;
+import { feeds, type Feed, DEFAULT_LIMIT, MAX_LIMIT } from "./schema";
+import { decodeCursor, feedIdFromUrl } from "./utils";
 
 export function getFeeds( 
   options?: {
-    page?: number;
+    cursor?: string;
     limit?: number;
     keyword?: string;
   }
@@ -26,12 +22,22 @@ export function getFeeds(
 
   try {
 
-    const page = Math.max(options?.page ?? DEFAULT_PAGE, 1);
-    const limit = Math.min(
+    const decoded = options?.cursor ? decodeCursor(options.cursor) : null;
+    if (options?.cursor && !decoded) {
+      throw new Error(`Invalid cursor: ${options.cursor}`);
+    }
+
+    const cursorFilter = decoded
+      ? or(
+          lt(feeds.updated_at, decoded.sortTime),
+          and(eq(feeds.updated_at, decoded.sortTime), lt(feeds.id, decoded.id)),
+        )
+      : undefined;
+
+    const adjustedLimit = Math.min(
       Math.max(options?.limit ?? DEFAULT_LIMIT, 1),
       MAX_LIMIT,
     );
-    const offset = (page - 1) * limit;
 
     const keyword = options?.keyword?.trim();
 
@@ -42,10 +48,9 @@ export function getFeeds(
     const selected = db
       .select()
       .from(feeds)
-      .where(feedFilter)
-      .orderBy(desc(feeds.updated_at))
-      .limit(limit + 1)
-      .offset(offset)
+      .where(and(cursorFilter, feedFilter))
+      .orderBy(desc(feeds.updated_at), desc(feeds.id))
+      .limit(adjustedLimit + 1)
       .all();
 
     return selected
@@ -53,30 +58,6 @@ export function getFeeds(
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to get feeds: ${detail}`);
-  }
-}
-
-export function getDueFeeds(): Feed[] {
-
-  try {
-
-    const selected = db
-      .select()
-      .from(feeds)
-      .where(
-        or(
-          isNull(feeds.next_fetched_at),
-          sql`datetime(${feeds.next_fetched_at}) <= datetime('now')`,
-        ),
-      )
-      .orderBy(sql`COALESCE(${feeds.next_fetched_at}, '1970-01-01')`)
-      .all();
-
-    return selected;
-
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to get due feeds: ${detail}`);
   }
 }
 
@@ -175,6 +156,55 @@ export function updateFeed(
   }
 }
 
+export function deleteFeed(id: string): boolean {
+
+  try {
+
+    const existing = getFeed(id);
+
+    if (!existing) {
+      throw new Error("Feed does not exist");
+    }
+
+    db.delete(feeds)
+    .where(eq(feeds.id, id))
+    .run();
+
+    return true;
+
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to delete feed: ${detail}`);
+  }
+}
+
+
+// About fetching
+
+export function getDueFeeds(): Feed[] {
+
+  try {
+
+    const selected = db
+      .select()
+      .from(feeds)
+      .where(
+        or(
+          isNull(feeds.next_fetched_at),
+          sql`datetime(${feeds.next_fetched_at}) <= datetime('now')`,
+        ),
+      )
+      .orderBy(sql`COALESCE(${feeds.next_fetched_at}, '1970-01-01')`)
+      .all();
+
+    return selected;
+
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to get due feeds: ${detail}`);
+  }
+}
+
 export function updateFeedFetchState(
   id: string,
   input: { 
@@ -199,24 +229,3 @@ export function updateFeedFetchState(
   }
 }
 
-export function deleteFeed(id: string): boolean {
-
-  try {
-
-    const existing = getFeed(id);
-
-    if (!existing) {
-      throw new Error("Feed does not exist");
-    }
-
-    db.delete(feeds)
-    .where(eq(feeds.id, id))
-    .run();
-
-    return true;
-
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to delete feed: ${detail}`);
-  }
-}

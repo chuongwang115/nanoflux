@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { getItems } from "../../db/items";
-import { parseTimeUnit, encodeCursor } from "../../db/utils";
+import { DEFAULT_LIMIT, MAX_LIMIT } from "../../db/schema";
 
 export function registerGetItems(server: McpServer): void {
   server.registerTool(
@@ -33,7 +33,7 @@ export function registerGetItems(server: McpServer): void {
           .number()
           .int()
           .min(1)
-          .max(50)
+          .max(MAX_LIMIT)
           .optional()
           .describe("Max news entries to return (default 20, max 50)"),
       },
@@ -42,13 +42,31 @@ export function registerGetItems(server: McpServer): void {
 
       try {
 
-        const selected = getItems({ since, until, unit, count, limit });
+        const adjustedLimit = Math.min(
+          Math.max(limit ?? DEFAULT_LIMIT, 1),
+          MAX_LIMIT,
+        );
+
+        const selected = getItems({ since, until, unit, count, limit: adjustedLimit });
+
+        const hasMore = selected.length > adjustedLimit;
+        const returned = selected.slice(0, adjustedLimit);
 
         return {
           content: [
             {
               type: "text",
-              text: JSON.stringify( { items: selected.slice(0, limit) }),
+              text: JSON.stringify( { 
+                items: returned.map((item) => ({
+                  id: item.id,
+                  title: item.title,
+                  link: item.link,
+                  description: item.description ?? null,
+                  published_at: item.published_at,
+                  feed_title: item.feed_title,
+                })) ?? [],
+                hasMore: hasMore,
+              }),
             },
           ],
         };

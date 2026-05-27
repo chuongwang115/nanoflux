@@ -6,7 +6,7 @@ import * as schema from "./schema";
 
 const DB_PATH = Bun.env.DB_PATH ?? "data.sqlite";
 
-export const sqlite = new Database(DB_PATH);
+const sqlite = new Database(DB_PATH);
 
 sqlite.run("PRAGMA journal_mode = WAL");
 sqlite.run("PRAGMA synchronous = NORMAL");

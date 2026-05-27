@@ -7600,25 +7600,21 @@ async function fetchItemsPage(cursor, limit = 20) {
     hasMore: body.data.hasMore
   };
 }
-async function fetchFeeds(options) {
-  const params = new URLSearchParams;
-  if (options?.page)
-    params.set("page", String(options.page));
-  if (options?.limit)
-    params.set("limit", String(options.limit));
-  if (options?.keyword)
-    params.set("keyword", options.keyword);
-  const query = params.toString();
-  const body = await request(`/api/feeds${query ? `?${query}` : ""}`);
+async function fetchFeedsPage(cursor, limit = 20, keyword) {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (cursor)
+    params.set("cursor", cursor);
+  if (keyword)
+    params.set("keyword", keyword);
+  const body = await request(`/api/feeds?${params}`);
   assertApiOk(body);
   if (!body.data) {
     throw new Error(body.message || "Failed to load feeds");
   }
   return {
     data: body.data.feeds,
-    hasMore: body.data.hasMore,
-    currentPage: body.data.currentPage,
-    nextPage: body.data.nextPage
+    nextCursor: body.data.nextCursor,
+    hasMore: body.data.hasMore
   };
 }
 function previewFeed(url) {
@@ -7739,8 +7735,8 @@ function FeedsManager($$anchor, $$props) {
   push($$props, true);
   const PAGE_SIZE = 20;
   let feeds = state(proxy([]));
-  let hasMore = state(false);
-  let nextPage = state(null);
+  let cursor = state(null);
+  let hasMore = state(true);
   let editId = state(null);
   let title = state("");
   let url = state("");
@@ -7765,12 +7761,22 @@ function FeedsManager($$anchor, $$props) {
       return false;
     }
   }
+  function cancelPreview() {
+    previewRequest++;
+    set(previewing, false);
+    clearTimeout(previewTimer);
+  }
   async function runPreview(feedUrl) {
+    const trimmed = feedUrl.trim();
+    if (!isValidFeedUrl(trimmed)) {
+      cancelPreview();
+      return;
+    }
     const requestId = ++previewRequest;
     set(previewing, true);
     set(previewError, "");
     try {
-      const res = await previewFeed(feedUrl);
+      const res = await previewFeed(trimmed);
       if (requestId !== previewRequest)
         return;
       if (!get2(titleTouched) && res.data.title)
@@ -7790,28 +7796,40 @@ function FeedsManager($$anchor, $$props) {
     clearTimeout(previewTimer);
     set(previewError, "");
     const feedUrl = get2(url).trim();
-    if (!isValidFeedUrl(feedUrl))
+    if (!isValidFeedUrl(feedUrl)) {
+      cancelPreview();
       return;
+    }
     previewTimer = setTimeout(() => void runPreview(feedUrl), 600);
   }
   function onUrlInput() {
-    previewRequest++;
-    set(previewing, false);
     schedulePreview();
   }
   function onUrlBlur() {
     clearTimeout(previewTimer);
     const feedUrl = get2(url).trim();
-    if (isValidFeedUrl(feedUrl))
-      runPreview(feedUrl);
+    if (!isValidFeedUrl(feedUrl)) {
+      cancelPreview();
+      return;
+    }
+    runPreview(feedUrl);
   }
-  async function loadFeeds(page = 1, append2 = false) {
+  async function loadFeeds(append2 = false) {
     set(listError, "");
+    if (append2) {
+      if (get2(loadingMore) || !get2(hasMore))
+        return;
+      set(loadingMore, true);
+    } else {
+      set(loading, true);
+      set(cursor, null);
+      set(hasMore, true);
+    }
     try {
-      const res = await fetchFeeds({ page, limit: PAGE_SIZE });
-      set(feeds, append2 ? [...get2(feeds), ...res.data] : res.data, true);
-      set(hasMore, res.hasMore, true);
-      set(nextPage, res.nextPage, true);
+      const page = await fetchFeedsPage(append2 ? get2(cursor) ?? undefined : undefined, PAGE_SIZE);
+      set(feeds, append2 ? [...get2(feeds), ...page.data] : page.data, true);
+      set(cursor, page.nextCursor, true);
+      set(hasMore, page.hasMore, true);
     } catch (e) {
       set(listError, e instanceof Error ? e.message : t("feeds.loadFailed"), true);
     } finally {
@@ -7820,10 +7838,7 @@ function FeedsManager($$anchor, $$props) {
     }
   }
   async function loadMore() {
-    if (get2(loadingMore) || !get2(hasMore) || get2(nextPage) === null)
-      return;
-    set(loadingMore, true);
-    await loadFeeds(get2(nextPage), true);
+    await loadFeeds(true);
   }
   user_effect(() => {
     if (!get2(sentinel))
@@ -7844,8 +7859,7 @@ function FeedsManager($$anchor, $$props) {
     set(previewError, "");
     set(titleTouched, false);
     set(descriptionTouched, false);
-    previewRequest++;
-    clearTimeout(previewTimer);
+    cancelPreview();
   }
   function startEdit(feed) {
     set(editId, feed.id, true);
@@ -7856,8 +7870,7 @@ function FeedsManager($$anchor, $$props) {
     set(previewError, "");
     set(titleTouched, true);
     set(descriptionTouched, true);
-    previewRequest++;
-    clearTimeout(previewTimer);
+    cancelPreview();
   }
   async function handleSubmit(e) {
     e.preventDefault();

@@ -9,11 +9,74 @@ import {
 } from "drizzle-orm";
 import { db } from "./database";
 import { getFeed } from "./feeds";
-import { feeds, items } from "./schema";
+import { feeds, items, DEFAULT_LIMIT, MAX_LIMIT } from "./schema";
 import { newItemId, decodeCursor, parseTimeRange } from "./utils";
 
-export const DEFAULT_LIMIT = 20;
-export const MAX_LIMIT = 50;
+export function getItems(options?: {
+  since?: string;
+  until?: string;
+  unit?: string;
+  count?: number;
+  keyword?: string;
+  isRead?: number;
+  cursor?: string;
+  limit?: number;
+}): any[] {
+
+  try {
+
+    const decoded = options?.cursor ? decodeCursor(options.cursor) : null;
+    if (options?.cursor && !decoded) {
+      throw new Error(`Invalid cursor: ${options.cursor}`);
+    }
+
+    const adjustedLimit = Math.min(
+      Math.max(options?.limit ?? DEFAULT_LIMIT, 1),
+      MAX_LIMIT,
+    );
+
+    const timeRange = options?.unit && options?.count ? parseTimeRange(options.unit, options.count) : undefined;
+    const timeFilter = timeRange ? and(
+      gte(items.published_at, timeRange.since),
+      lte(items.published_at, timeRange.until),
+    ) : undefined;
+
+    const cursorFilter = decoded
+      ? or(
+          lt(items.published_at, decoded.sortTime),
+          and(eq(items.published_at, decoded.sortTime), lt(items.id, decoded.id)),
+        )
+      : undefined;
+
+    const readFilter = options?.isRead ? eq(items.is_read, options.isRead) : undefined;
+
+    const selected = db
+      .select({
+        id: items.id,
+        feed_id: items.feed_id,
+        guid: items.guid,
+        title: items.title,
+        link: items.link,
+        description: items.description,
+        published_at: items.published_at,
+        is_read: items.is_read,
+        created_at: items.created_at,
+        feed_title: feeds.title,
+      })
+      .from(items)
+      .innerJoin(feeds, eq(items.feed_id, feeds.id))
+      .where(and(cursorFilter, timeFilter, readFilter))
+      .orderBy(desc(items.published_at), desc(items.id))
+      .limit(adjustedLimit + 1)
+      .all();
+
+    return selected;
+  
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to get items: ${detail}`);
+  }
+}
 
 export function addItems(
   feedId: string,
@@ -51,10 +114,13 @@ export function addItems(
         .returning()
         .get();
 
-      insertedItems.push({
-        ...inserted,
-        feed_title,
-      });
+
+      if (inserted) {
+        insertedItems.push({
+          ...inserted,
+          feed_title,
+        });
+      }
     }
 
     return insertedItems;
@@ -62,80 +128,6 @@ export function addItems(
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to add items: ${detail}`);
-  }
-}
-
-export function getItems(options?: {
-  since?: string;
-  until?: string;
-  unit?: string;
-  count?: number;
-  keyword?: string;
-  isRead?: number;
-  cursor?: string;
-  limit?: number;
-}): any[] {
-
-  try {
-  
-    const limit = Math.min(
-      Math.max(options?.limit ?? DEFAULT_LIMIT, 1),
-      MAX_LIMIT,
-    );
-
-    const decoded = options?.cursor ? decodeCursor(options.cursor) : null;
-    if (options?.cursor && !decoded) {
-      throw new Error(`Invalid cursor: ${options.cursor}`);
-    }
-
-    const timeRange = options?.unit && options?.count ? parseTimeRange(options.unit, options.count) : undefined;
-    const timeFilter = timeRange ? and(
-      gte(items.published_at, timeRange.since),
-      lte(items.published_at, timeRange.until),
-    ) : undefined;
-
-    const cursorFilter = decoded
-      ? or(
-          lt(items.published_at, decoded.publishedAt),
-          and(
-            eq(items.published_at, decoded.publishedAt),
-            lt(items.id, decoded.id),
-          ),
-        )
-      : undefined;
-
-    const readFilter = options?.isRead ? eq(items.is_read, options.isRead) : undefined;
-
-    const whereClause =
-      timeFilter && cursorFilter && readFilter
-        ? and(timeFilter, cursorFilter, readFilter)
-        : (timeFilter ?? cursorFilter ?? readFilter);
-
-    const selected = db
-      .select({
-        id: items.id,
-        feed_id: items.feed_id,
-        guid: items.guid,
-        title: items.title,
-        link: items.link,
-        description: items.description,
-        published_at: items.published_at,
-        is_read: items.is_read,
-        created_at: items.created_at,
-        feed_title: feeds.title,
-      })
-      .from(items)
-      .innerJoin(feeds, eq(items.feed_id, feeds.id))
-      .where(whereClause)
-      .orderBy(desc(items.published_at), desc(items.id))
-      .limit(limit + 1)
-      .all();
-
-    return selected;
-  
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to get items: ${detail}`);
   }
 }
 

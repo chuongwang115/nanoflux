@@ -174,7 +174,6 @@ Add to your MCP client config (e.g. Cursor or Claude Desktop):
 | `search_feeds` | Search feeds by keyword |
 | `get_news` | Fetch news in an absolute or relative time range |
 | `get_unread_news` | Fetch unread news in a relative time window |
-| `search_news` | Keyword search in title/summary within a date range |
 | `mark_news_read` | Mark items as read by ID or time range |
 | `search_google_news` | Live Google News search (not stored locally) |
 | `get_current_time` | Return the server's current UTC time |

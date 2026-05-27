@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { getFeeds } from "../../db/feeds";
+import { DEFAULT_LIMIT, MAX_LIMIT } from "../../db/schema";
 
 export function registerSearchFeeds(server: McpServer): void {
   server.registerTool(
@@ -14,7 +15,7 @@ export function registerSearchFeeds(server: McpServer): void {
           .number()
           .int()
           .min(1)
-          .max(50)
+          .max(MAX_LIMIT)
           .optional()
           .describe("Max feeds to return (default 20, max 50)"),
       },
@@ -23,7 +24,16 @@ export function registerSearchFeeds(server: McpServer): void {
 
       try {
 
-        const selected = getFeeds({ limit, keyword });
+
+        const adjustedLimit = Math.min(
+          Math.max(limit ?? DEFAULT_LIMIT, 1),
+          MAX_LIMIT,
+        );
+
+        const selected = getFeeds({ limit: adjustedLimit, keyword });
+
+        const hasMore = selected.length > adjustedLimit;
+        const returned = selected.slice(0, adjustedLimit);
 
         return {
           content: [
@@ -31,12 +41,13 @@ export function registerSearchFeeds(server: McpServer): void {
               type: "text",
               text: JSON.stringify(
                 {
-                  feeds: selected.map((feed) => ({
+                  feeds: returned.map((feed) => ({
                     id: feed.id,
                     title: feed.title,
                     url: feed.url,
                     description: feed.description ?? null
                   })) ?? [],
+                  hasMore: hasMore,
                 },
                 null,
                 2,

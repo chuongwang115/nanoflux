@@ -2,6 +2,7 @@ import Parser from "rss-parser";
 import { addItems } from "../db/items";
 import { getDueFeeds, updateFeedFetchState } from "../db/feeds";
 import type { Feed } from "../db/schema";
+import { emitNewItems } from "../sse/streamer";
 import { httpGet } from "./http-fetcher";
 
 const RSS_USER_AGENT = "NanoFlux/1.0 (+https://github.com/nanoflux)";
@@ -35,12 +36,6 @@ function toStoredItem(entry: Parser.Item) {
 const MIN_INTERVAL_MIN = 5;
 const MAX_INTERVAL_MIN = 30;
 const DEFAULT_INTERVAL_MIN = 15;
-
-export type FetchResult = {
-  feeds: number;
-  newItems: number;
-  errors: string[];
-};
 
 function medianPublishGapSec(feedItems: Parser.Item[]): number | null {
   const now = Date.now();
@@ -141,7 +136,7 @@ export async function fetchFeedMetadata(url: string): Promise<{
 }
 
 export async function fetchFeed(feed: Feed): Promise<{
-  newItems: number;
+  newItems: any[];
   error?: string;
 }> {
   const currentInterval =
@@ -155,10 +150,11 @@ export async function fetchFeed(feed: Feed): Promise<{
       .filter((item): item is NonNullable<typeof item> => item !== null);
 
     const inserted = addItems(feed.id, entries);
+    if (inserted.length > 0) emitNewItems(inserted);
 
     const nextInterval = nextFetchIntervalMin(
       currentInterval,
-      inserted,
+      inserted.length,
       rawItems,
     );
     updateFeedFetchState(feed.id, {
@@ -169,25 +165,31 @@ export async function fetchFeed(feed: Feed): Promise<{
     return { newItems: inserted };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    return { newItems: 0, error: `${feed.title}: ${message}` };
+    return { newItems: [], error: `${feed.title}: ${message}` };
   }
 }
 
-export async function fetchDueFeeds(label: string): Promise<FetchResult> {
+export async function fetchDueFeeds(label: string): Promise<{
+  feeds: number;
+  newItems: number;
+  errors: string[];
+}> {
+
   const started = Date.now();
   const feeds = getDueFeeds();
-  let newItems = 0;
+
+  let newItemsCount = 0;
   const errors: string[] = [];
 
   for (const feed of feeds) {
     const result = await fetchFeed(feed);
-    newItems += result.newItems;
+    newItemsCount += result.newItems.length;
     if (result.error) errors.push(result.error);
   }
 
-  const result: FetchResult = {
+  const result = {
     feeds: feeds.length,
-    newItems,
+    newItems: newItemsCount,
     errors,
   };
 

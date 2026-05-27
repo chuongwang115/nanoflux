@@ -3,7 +3,7 @@
   import {
     createFeed,
     deleteFeed,
-    fetchFeeds,
+    fetchFeedsPage,
     previewFeed,
     updateFeed,
     type Feed,
@@ -13,8 +13,8 @@
   const PAGE_SIZE = 20;
 
   let feeds = $state<Feed[]>([]);
-  let hasMore = $state(false);
-  let nextPage = $state<number | null>(null);
+  let cursor = $state<string | null>(null);
+  let hasMore = $state(true);
   let editId = $state<string | null>(null);
   let title = $state("");
   let url = $state("");
@@ -42,12 +42,24 @@
     }
   }
 
+  function cancelPreview() {
+    previewRequest++;
+    previewing = false;
+    clearTimeout(previewTimer);
+  }
+
   async function runPreview(feedUrl: string) {
+    const trimmed = feedUrl.trim();
+    if (!isValidFeedUrl(trimmed)) {
+      cancelPreview();
+      return;
+    }
+
     const requestId = ++previewRequest;
     previewing = true;
     previewError = "";
     try {
-      const res = await previewFeed(feedUrl);
+      const res = await previewFeed(trimmed);
       if (requestId !== previewRequest) return;
       if (!titleTouched && res.data.title) title = res.data.title;
       if (!descriptionTouched && res.data.description)
@@ -64,29 +76,46 @@
     clearTimeout(previewTimer);
     previewError = "";
     const feedUrl = url.trim();
-    if (!isValidFeedUrl(feedUrl)) return;
+    if (!isValidFeedUrl(feedUrl)) {
+      cancelPreview();
+      return;
+    }
     previewTimer = setTimeout(() => void runPreview(feedUrl), 600);
   }
 
   function onUrlInput() {
-    previewRequest++;
-    previewing = false;
     schedulePreview();
   }
 
   function onUrlBlur() {
     clearTimeout(previewTimer);
     const feedUrl = url.trim();
-    if (isValidFeedUrl(feedUrl)) void runPreview(feedUrl);
+    if (!isValidFeedUrl(feedUrl)) {
+      cancelPreview();
+      return;
+    }
+    void runPreview(feedUrl);
   }
 
-  async function loadFeeds(page = 1, append = false) {
+  async function loadFeeds(append = false) {
     listError = "";
+    if (append) {
+      if (loadingMore || !hasMore) return;
+      loadingMore = true;
+    } else {
+      loading = true;
+      cursor = null;
+      hasMore = true;
+    }
+
     try {
-      const res = await fetchFeeds({ page, limit: PAGE_SIZE });
-      feeds = append ? [...feeds, ...res.data] : res.data;
-      hasMore = res.hasMore;
-      nextPage = res.nextPage;
+      const page = await fetchFeedsPage(
+        append ? (cursor ?? undefined) : undefined,
+        PAGE_SIZE,
+      );
+      feeds = append ? [...feeds, ...page.data] : page.data;
+      cursor = page.nextCursor;
+      hasMore = page.hasMore;
     } catch (e) {
       listError = e instanceof Error ? e.message : t("feeds.loadFailed");
     } finally {
@@ -96,9 +125,7 @@
   }
 
   async function loadMore() {
-    if (loadingMore || !hasMore || nextPage === null) return;
-    loadingMore = true;
-    await loadFeeds(nextPage, true);
+    await loadFeeds(true);
   }
 
   $effect(() => {
@@ -124,8 +151,7 @@
     previewError = "";
     titleTouched = false;
     descriptionTouched = false;
-    previewRequest++;
-    clearTimeout(previewTimer);
+    cancelPreview();
   }
 
   function startEdit(feed: Feed) {
@@ -137,8 +163,7 @@
     previewError = "";
     titleTouched = true;
     descriptionTouched = true;
-    previewRequest++;
-    clearTimeout(previewTimer);
+    cancelPreview();
   }
 
   async function handleSubmit(e: SubmitEvent) {

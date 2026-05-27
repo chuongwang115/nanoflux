@@ -57,9 +57,8 @@ function normalizeItem(raw: RawItem): Item {
 
 export type FeedsPage = {
   data: Feed[];
+  nextCursor: string | null;
   hasMore: boolean;
-  currentPage: number;
-  nextPage: number | null;
 };
 
 type FeedsApiResult = {
@@ -68,8 +67,7 @@ type FeedsApiResult = {
   data?: {
     feeds: Feed[];
     hasMore: boolean;
-    currentPage: number;
-    nextPage: number | null;
+    nextCursor: string | null;
   };
 };
 
@@ -109,28 +107,23 @@ export async function fetchItemsPage(
   };
 }
 
-export async function fetchFeeds(options?: {
-  page?: number;
-  limit?: number;
-  keyword?: string;
-}): Promise<FeedsPage> {
-  const params = new URLSearchParams();
-  if (options?.page) params.set("page", String(options.page));
-  if (options?.limit) params.set("limit", String(options.limit));
-  if (options?.keyword) params.set("keyword", options.keyword);
-  const query = params.toString();
-  const body = await request<FeedsApiResult>(
-    `/api/feeds${query ? `?${query}` : ""}`,
-  );
+export async function fetchFeedsPage(
+  cursor?: string,
+  limit = 20,
+  keyword?: string,
+): Promise<FeedsPage> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (cursor) params.set("cursor", cursor);
+  if (keyword) params.set("keyword", keyword);
+  const body = await request<FeedsApiResult>(`/api/feeds?${params}`);
   assertApiOk(body);
   if (!body.data) {
     throw new Error(body.message || "Failed to load feeds");
   }
   return {
     data: body.data.feeds,
+    nextCursor: body.data.nextCursor,
     hasMore: body.data.hasMore,
-    currentPage: body.data.currentPage,
-    nextPage: body.data.nextPage,
   };
 }
 

@@ -55,3 +55,6 @@ export const items = sqliteTable(
 
 export type Feed = InferSelectModel<typeof feeds>;
 export type Item = InferSelectModel<typeof items>;
+
+export const DEFAULT_LIMIT = 20;
+export const MAX_LIMIT = 50;

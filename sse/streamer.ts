@@ -1,6 +1,4 @@
-import type { ItemWithFeed } from "../db/items";
-
-type ItemBatch = ItemWithFeed[];
+type ItemBatch = any[];
 type Listener = (batch: ItemBatch) => void;
 
 const HEARTBEAT_INTERVAL_MS = 15_000;
@@ -15,7 +13,7 @@ function delay(ms: number): Promise<void> {
 
 const listeners = new Set<Listener>();
 
-export function emitNewItems(items: ItemBatch): void {
+export function emitNewItems(items: any[]): void {
   if (items.length === 0) return;
   for (const listener of listeners) listener(items);
 }

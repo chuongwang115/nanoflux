@@ -4,7 +4,7 @@ import {
   markItemsRead,
   markItemRead,
 } from "../db/items";
-import { DEFAULT_LIMIT, MAX_LIMIT } from "../db/items";
+import { DEFAULT_LIMIT, MAX_LIMIT } from "../db/schema";
 import { encodeCursor, parseTimeUnit } from "../db/utils";
 
 function getItemsHandler({ query }: {
@@ -20,7 +20,7 @@ function getItemsHandler({ query }: {
 
   try {
 
-    const limit = Math.min(
+    const adjustedLimit = Math.min(
       Math.max(query?.limit ?? DEFAULT_LIMIT, 1),
       MAX_LIMIT,
     );
@@ -32,15 +32,17 @@ function getItemsHandler({ query }: {
 
     const selected = getItems({
       cursor: query?.cursor,
-      limit,
+      limit:adjustedLimit,
       since: query?.since,
       until: query?.until,
       unit: unit ? unit.toString() : undefined,
       count: query?.count,
     });
 
-    const hasMore = selected.length > limit;
-    const lastItem = selected.at(-1);
+    const hasMore = selected.length > adjustedLimit;
+    const returned = selected.slice(0, adjustedLimit);
+
+    const lastItem = returned.at(-1);
     const nextCursor =
       hasMore && lastItem ? encodeCursor(lastItem.published_at, lastItem.id) : null;
   
@@ -48,7 +50,7 @@ function getItemsHandler({ query }: {
       code: 0, 
       message: "ok", 
       data: {
-        items: selected.slice(0, limit),
+        items: returned,
         nextCursor: nextCursor,
         hasMore: hasMore,
       } 

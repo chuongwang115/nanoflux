@@ -12,11 +12,11 @@ export function newItemId(): string {
     return Bun.randomUUIDv7();
 }
 
-export function encodeCursor(publishedAt: string, id: string): string {
-    return `${publishedAt}|${id}`;
+export function encodeCursor(sortTime: string, id: string): string {
+    return `${sortTime}|${id}`;
 }
 
-export function decodeCursor(cursor: string): { publishedAt: string; id: string } | null {
+export function decodeCursor(cursor: string): { sortTime: string; id: string } | null {
     
     const sep = cursor.lastIndexOf("|");
     
@@ -24,15 +24,15 @@ export function decodeCursor(cursor: string): { publishedAt: string; id: string 
         return null;
     }
     
-    const publishedAt = cursor.slice(0, sep);
+    const sortTime = cursor.slice(0, sep);
     
     const id = cursor.slice(sep + 1);
     
-    if (!publishedAt || !id) {
+    if (!sortTime || !id) {
         return null;
     }
     
-    return { publishedAt, id };
+    return { sortTime, id };
 }
 
 export function parseTimeUnit(unit: string): TimeUnit | null {
