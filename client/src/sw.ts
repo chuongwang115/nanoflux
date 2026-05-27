@@ -1,9 +1,18 @@
 /// <reference lib="webworker" />
 
 declare const BUILD_PRECACHE: string[];
+declare const BUILD_BASE_PATH: string;
+
+function withBase(path: string): string {
+  const base = BUILD_BASE_PATH;
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  if (!base) return normalized;
+  if (normalized === "/") return `${base}/`;
+  return `${base}${normalized}`;
+}
 
 const CACHE_NAME = "nanoflux-v1";
-const SHELL_URLS = ["/", "/feeds"];
+const SHELL_URLS = [withBase("/"), withBase("/feeds")];
 const PRECACHE_URLS: string[] = [
   ...SHELL_URLS,
   ...BUILD_PRECACHE,
@@ -36,12 +45,12 @@ sw.addEventListener("activate", (event) => {
 });
 
 function isSseRequest(request: Request, url: URL) {
-  if (url.pathname === "/sse") return true;
+  if (url.pathname === withBase("/sse")) return true;
   return request.headers.get("Accept")?.includes("text/event-stream") ?? false;
 }
 
 function isApiRequest(url: URL) {
-  return url.pathname.startsWith("/api/");
+  return url.pathname.startsWith(withBase("/api/"));
 }
 
 function isNavigation(request: Request) {
@@ -63,11 +72,15 @@ sw.addEventListener("fetch", (event) => {
       fetch(request)
         .then((response) => {
           const copy = response.clone();
-          void caches.open(CACHE_NAME).then((cache) => cache.put("/", copy));
+          void caches
+            .open(CACHE_NAME)
+            .then((cache) => cache.put(withBase("/"), copy));
           return response;
         })
         .catch(() =>
-          caches.match(request).then((cached) => cached ?? caches.match("/")),
+          caches
+            .match(request)
+            .then((cached) => cached ?? caches.match(withBase("/"))),
         ),
     );
     return;

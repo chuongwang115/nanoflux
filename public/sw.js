@@ -1,7 +1,16 @@
 (() => {
   // client/src/sw.ts
+  function withBase(path) {
+    const base = "";
+    const normalized = path.startsWith("/") ? path : `/${path}`;
+    if (!base)
+      return normalized;
+    if (normalized === "/")
+      return `${base}/`;
+    return `${base}${normalized}`;
+  }
   var CACHE_NAME = "nanoflux-v1";
-  var SHELL_URLS = ["/", "/feeds"];
+  var SHELL_URLS = [withBase("/"), withBase("/feeds")];
   var PRECACHE_URLS = [
     ...SHELL_URLS,
     ...["/assets/main.js", "/assets/app.css"]
@@ -14,12 +23,12 @@
     event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))).then(() => sw.clients.claim()));
   });
   function isSseRequest(request, url) {
-    if (url.pathname === "/sse")
+    if (url.pathname === withBase("/sse"))
       return true;
     return request.headers.get("Accept")?.includes("text/event-stream") ?? false;
   }
   function isApiRequest(url) {
-    return url.pathname.startsWith("/api/");
+    return url.pathname.startsWith(withBase("/api/"));
   }
   function isNavigation(request) {
     return request.mode === "navigate";
@@ -36,9 +45,9 @@
     if (isNavigation(request)) {
       event.respondWith(fetch(request).then((response) => {
         const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put("/", copy));
+        caches.open(CACHE_NAME).then((cache) => cache.put(withBase("/"), copy));
         return response;
-      }).catch(() => caches.match(request).then((cached) => cached ?? caches.match("/"))));
+      }).catch(() => caches.match(request).then((cached) => cached ?? caches.match(withBase("/")))));
       return;
     }
     event.respondWith(caches.match(request).then((cached) => {

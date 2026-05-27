@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { Elysia } from "elysia";
+import { resolveBasePath, withBase } from "./shared/base-path";
 import { resolveHost, resolvePort } from "./shared/env";
 import {
   isLocalhostRestricted,
@@ -29,6 +30,7 @@ function manifestLocale(query: Record<string, string | undefined>): Locale {
 
 void startFetchScheduler();
 
+const basePath = resolveBasePath();
 const host = resolveHost();
 const restrictLocalhost = isLocalhostRestricted(host);
 
@@ -42,12 +44,12 @@ const protectedBackendRoutes = restrictLocalhost
   ? new Elysia().use(localhostOnly).use(backendRoutes)
   : backendRoutes;
 
-const app = new Elysia()
+const publicRoutes = new Elysia()
   .get("/", indexHtml)
   .get("/feeds", indexHtml)
   .get("/manifest.webmanifest", ({ query, set }) => {
     set.headers["content-type"] = "application/manifest+json; charset=utf-8";
-    return JSON.stringify(buildWebManifest(manifestLocale(query)));
+    return JSON.stringify(buildWebManifest(manifestLocale(query), basePath));
   })
   .get("/sw.js", serviceWorker)
   .get("/icons/*", ({ params }) =>
@@ -58,6 +60,14 @@ const app = new Elysia()
   )
   .use(protectedBackendRoutes);
 
+const app = new Elysia();
+if (basePath) {
+  app.get(basePath, ({ redirect }) => redirect(withBase("/"), 302));
+}
+app.use(
+  basePath ? new Elysia({ prefix: basePath }).use(publicRoutes) : publicRoutes,
+);
+
 const port = resolvePort();
 app.listen({ port, hostname: host });
 
@@ -66,7 +76,8 @@ if (restrictLocalhost) {
     `Listening on http://localhost:${app.server?.port} (API/SSE/MCP: localhost only)`,
   );
 } else {
-  console.log(`Listening on http://${host}:${app.server?.port}`);
+  const root = basePath ? withBase("/") : "/";
+  console.log(`Listening on http://${host}:${app.server?.port}${root}`);
 }
 
 let shuttingDown = false;

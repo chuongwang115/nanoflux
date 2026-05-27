@@ -6817,13 +6817,30 @@ function toggleFontSize() {
   setFontSize(fontSizeState.mode === "small" ? "large" : "small");
 }
 
+// shared/base-path.ts
+function resolveBasePath(env = process.env) {
+  const raw = env.BASE_PATH?.trim();
+  if (!raw)
+    return "";
+  const withLeading = raw.startsWith("/") ? raw : `/${raw}`;
+  return withLeading.replace(/\/+$/, "") || "";
+}
+function withBase(path, base = resolveBasePath()) {
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  if (!base)
+    return normalized;
+  if (normalized === "/")
+    return `${base}/`;
+  return `${base}${normalized}`;
+}
+
 // shared/manifest.ts
 var PWA_META_DESCRIPTION = {
   zh: "轻量 RSS 阅读器",
   en: "Lightweight RSS reader"
 };
-function manifestHref(locale) {
-  return `/manifest.webmanifest?locale=${locale}`;
+function manifestHref(locale, base = "") {
+  return `${withBase("/manifest.webmanifest", base)}?locale=${locale}`;
 }
 
 // client/src/lib/i18n/messages.ts
@@ -6914,6 +6931,20 @@ var messages = {
   }
 };
 
+// client/src/lib/base-path.ts
+function basePath() {
+  return "";
+}
+function withBase2(path) {
+  const base = basePath();
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  if (!base)
+    return normalized;
+  if (normalized === "/")
+    return `${base}/`;
+  return `${base}${normalized}`;
+}
+
 // client/src/lib/locale.ts
 function applyDocumentLocale(locale) {
   if (typeof document === "undefined")
@@ -6922,7 +6953,7 @@ function applyDocumentLocale(locale) {
   document.querySelector('meta[name="description"]')?.setAttribute("content", description);
   const manifest = document.querySelector('link[rel="manifest"]');
   if (manifest)
-    manifest.href = manifestHref(locale);
+    manifest.href = manifestHref(locale, basePath());
 }
 
 // client/src/lib/locale.svelte.ts
@@ -7574,7 +7605,7 @@ function normalizeItem(raw) {
   };
 }
 async function request(url, options = {}) {
-  const res = await fetch(url, {
+  const res = await fetch(withBase2(url), {
     ...options,
     headers: { "Content-Type": "application/json", ...options.headers }
   });
@@ -8202,7 +8233,7 @@ function subscribeItemStream(listener) {
 function connectItemStream() {
   if (es)
     return () => {};
-  es = new EventSource("/sse");
+  es = new EventSource(withBase2("/sse"));
   es.addEventListener("items", (ev) => {
     try {
       dispatch(JSON.parse(ev.data));
@@ -8568,16 +8599,38 @@ var App_default = App;
 function registerPwa() {
   if (!("serviceWorker" in navigator))
     return;
+  const swUrl = withBase2("/sw.js");
+  const scope = withBase2("/");
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch((err) => console.warn("[pwa] service worker registration failed", err));
+    navigator.serviceWorker.register(swUrl, { scope }).catch((err) => console.warn("[pwa] service worker registration failed", err));
   });
 }
 
 // client/src/main.ts
-var { pathname, hash: hash2, search } = window.location;
-if (pathname !== "/" && !hash2.startsWith("#/")) {
-  window.location.replace(`/#${pathname}${search}`);
+function normalizePathForRouter() {
+  const { pathname, hash: hash2, search } = window.location;
+  if (hash2.startsWith("#/"))
+    return;
+  const base = basePath();
+  if (!base) {
+    if (pathname !== "/") {
+      window.location.replace(`/#${pathname}${search}`);
+    }
+    return;
+  }
+  const baseSlash = `${base}/`;
+  if (pathname === base || pathname === baseSlash) {
+    window.location.replace(`${baseSlash}#/${search}`);
+    return;
+  }
+  if (pathname.startsWith(base)) {
+    const sub = pathname.slice(base.length) || "/";
+    window.location.replace(`${baseSlash}#${sub}${search}`);
+    return;
+  }
+  window.location.replace(`${baseSlash}#/${search}`);
 }
+normalizePathForRouter();
 initTheme();
 initFontSize();
 initLocale();

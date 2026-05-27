@@ -1,3 +1,5 @@
+import { withBase } from "./base-path";
+
 export type Feed = {
   id: string;
   title: string;
@@ -75,7 +77,7 @@ async function request<T>(
   url: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const res = await fetch(url, {
+  const res = await fetch(withBase(url), {
     ...options,
     headers: { "Content-Type": "application/json", ...options.headers },
   });
