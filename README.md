@@ -49,7 +49,7 @@ Built on [Bun](https://bun.sh), [Elysia](https://elysiajs.com), and [Svelte 5](h
 | Runtime | Bun |
 | Backend | Elysia, Drizzle ORM |
 | Database | SQLite (WAL mode) |
-| Frontend | Svelte 5, Tailwind CSS 4, svelte-spa-router |
+| Frontend | Svelte 5, Tailwind CSS 4 |
 | Feed parsing | rss-parser |
 | AI bridge | Model Context Protocol (MCP) via elysia-mcp |
 

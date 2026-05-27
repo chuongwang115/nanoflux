@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getContext, onMount } from "svelte";
-  import { router, link } from "svelte-spa-router";
+  import { withBase } from "../lib/base-path";
+  import { navClick, route } from "../lib/router";
   import FontSizeToggle from "./buttons/FontSizeToggle.svelte";
   import MarkAllReadButton from "./buttons/MarkAllReadButton.svelte";
   import LanguageToggle from "./buttons/LanguageToggle.svelte";
@@ -26,7 +27,7 @@
 
   let compact = $state(initialCompact());
 
-  const isFeeds = $derived(router.location === "/feeds");
+  const isFeeds = $derived($route === "/feeds");
 
   const rowClass = $derived(
     `transition-[gap] duration-300 ${compact ? "flex min-w-0 items-center justify-between gap-4" : ""}`,
@@ -59,15 +60,15 @@
 
     syncCompact();
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("hashchange", update);
+    window.addEventListener("popstate", update);
     return () => {
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("hashchange", update);
+      window.removeEventListener("popstate", update);
     };
   });
 
   $effect(() => {
-    router.location;
+    $route;
     requestAnimationFrame(() => syncCompact());
   });
 </script>
@@ -81,7 +82,7 @@
   <div class="min-w-0 flex-1">
     <div class={rowClass}>
       {#if isFeeds}
-        <a href="/" use:link class="{titleClass} hover:opacity-70">NanoFlux</a>
+        <a href={withBase("/")} onclick={navClick("/")} class="{titleClass} hover:opacity-70">NanoFlux</a>
       {:else}
         <h1 class={titleClass}>NanoFlux</h1>
       {/if}
@@ -89,8 +90,8 @@
       {#if isFeeds}
         <div class="{subClass} gap-3">
           <a
-            href="/"
-            use:link
+            href={withBase("/")}
+            onclick={navClick("/")}
             class="inline-flex shrink-0 rounded-md p-1 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
             aria-label={t("feeds.back")}
             title={t("feeds.back")}
@@ -118,8 +119,8 @@
           <span>{t("items.latest")}</span>
           <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
           <a
-            href="/feeds"
-            use:link
+            href={withBase("/feeds")}
+            onclick={navClick("/feeds")}
             class="hover:text-neutral-900 dark:hover:text-neutral-100"
           >
             {t("items.feeds")}

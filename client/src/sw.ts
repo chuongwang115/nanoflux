@@ -11,7 +11,7 @@ function withBase(path: string): string {
   return `${base}${normalized}`;
 }
 
-const CACHE_NAME = "nanoflux-v1";
+const CACHE_NAME = "nanoflux-v2";
 const SHELL_URLS = [withBase("/"), withBase("/feeds")];
 const PRECACHE_URLS: string[] = [
   ...SHELL_URLS,

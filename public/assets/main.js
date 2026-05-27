@@ -819,10 +819,119 @@ function defer_effect(effect, dirty_effects, maybe_dirty_effects) {
   set_signal_status(effect, CLEAN);
 }
 
+// node_modules/svelte/src/store/utils.js
+function subscribe_to_store(store, run2, invalidate) {
+  if (store == null) {
+    run2(undefined);
+    if (invalidate)
+      invalidate(undefined);
+    return noop;
+  }
+  const unsub = untrack(() => store.subscribe(run2, invalidate));
+  return unsub.unsubscribe ? () => unsub.unsubscribe() : unsub;
+}
+
+// node_modules/svelte/src/store/shared/index.js
+var subscriber_queue = [];
+function writable(value, start = noop) {
+  let stop = null;
+  const subscribers = new Set;
+  function set(new_value) {
+    if (safe_not_equal(value, new_value)) {
+      value = new_value;
+      if (stop) {
+        const run_queue = !subscriber_queue.length;
+        for (const subscriber of subscribers) {
+          subscriber[1]();
+          subscriber_queue.push(subscriber, value);
+        }
+        if (run_queue) {
+          for (let i = 0;i < subscriber_queue.length; i += 2) {
+            subscriber_queue[i][0](subscriber_queue[i + 1]);
+          }
+          subscriber_queue.length = 0;
+        }
+      }
+    }
+  }
+  function update(fn) {
+    set(fn(value));
+  }
+  function subscribe(run2, invalidate = noop) {
+    const subscriber = [run2, invalidate];
+    subscribers.add(subscriber);
+    if (subscribers.size === 1) {
+      stop = start(set, update) || noop;
+    }
+    run2(value);
+    return () => {
+      subscribers.delete(subscriber);
+      if (subscribers.size === 0 && stop) {
+        stop();
+        stop = null;
+      }
+    };
+  }
+  return { set, update, subscribe };
+}
+function get(store) {
+  let value;
+  subscribe_to_store(store, (_) => value = _)();
+  return value;
+}
+
 // node_modules/svelte/src/internal/client/reactivity/store.js
 var legacy_is_updating_store = false;
 var is_store_binding = false;
 var IS_UNMOUNTED = Symbol("unmounted");
+function store_get(store, store_name, stores) {
+  const entry = stores[store_name] ??= {
+    store: null,
+    source: mutable_source(undefined),
+    unsubscribe: noop
+  };
+  if (true_default) {
+    entry.source.label = store_name;
+  }
+  if (entry.store !== store && !(IS_UNMOUNTED in stores)) {
+    entry.unsubscribe();
+    entry.store = store ?? null;
+    if (store == null) {
+      entry.source.v = undefined;
+      entry.unsubscribe = noop;
+    } else {
+      var is_synchronous_callback = true;
+      entry.unsubscribe = subscribe_to_store(store, (v) => {
+        if (is_synchronous_callback) {
+          entry.source.v = v;
+        } else {
+          set(entry.source, v);
+        }
+      });
+      is_synchronous_callback = false;
+    }
+  }
+  if (store && IS_UNMOUNTED in stores) {
+    return get(store);
+  }
+  return get2(entry.source);
+}
+function setup_stores() {
+  const stores = {};
+  function cleanup() {
+    teardown(() => {
+      for (var store_name in stores) {
+        const ref = stores[store_name];
+        ref.unsubscribe();
+      }
+      define_property(stores, IS_UNMOUNTED, {
+        enumerable: false,
+        value: true
+      });
+    });
+  }
+  return [stores, cleanup];
+}
 function capture_store_binding(fn) {
   var previous_is_store_binding = is_store_binding;
   try {
@@ -4760,33 +4869,6 @@ function snippet(node, get_snippet, ...args) {
     branches.ensure(snippet2, snippet2 && ((anchor) => snippet2(anchor, ...args)));
   }, EFFECT_TRANSPARENT);
 }
-// node_modules/svelte/src/internal/client/dom/blocks/svelte-component.js
-function component(node, get_component, render_fn) {
-  var hydration_start_node;
-  if (hydrating) {
-    hydration_start_node = hydrate_node;
-    hydrate_next();
-  }
-  var branches = new BranchManager(node);
-  block(() => {
-    var component2 = get_component() ?? null;
-    if (hydrating) {
-      var data = read_hydration_instruction(hydration_start_node);
-      var server_had_component = data === HYDRATION_START;
-      var client_has_component = component2 !== null;
-      if (server_had_component !== client_has_component) {
-        var anchor = skip_nodes();
-        set_hydrate_node(anchor);
-        branches.anchor = anchor;
-        set_hydrating(false);
-        branches.ensure(component2, component2 && ((target) => render_fn(target, component2)));
-        set_hydrating(true);
-        return;
-      }
-    }
-    branches.ensure(component2, component2 && ((target) => render_fn(target, component2)));
-  }, EFFECT_TRANSPARENT);
-}
 // node_modules/svelte/src/internal/client/timing.js
 var now = true_default ? () => performance.now() : () => Date.now();
 var raf = {
@@ -4875,28 +4957,6 @@ function element(node, get_tag, is_svg, render_fn, get_namespace, location) {
     set_hydrating(true);
     set_hydrate_node(anchor);
   }
-}
-// node_modules/svelte/src/internal/client/dom/elements/actions.js
-function action(dom, action2, get_value) {
-  effect(() => {
-    var payload = untrack(() => action2(dom, get_value?.()) || {});
-    if (get_value && payload?.update) {
-      var inited = false;
-      var prev = {};
-      render_effect(() => {
-        var value = get_value();
-        deep_read_state(value);
-        if (inited && safe_not_equal(prev, value)) {
-          prev = value;
-          payload.update(value);
-        }
-      });
-      inited = true;
-    }
-    if (payload?.destroy) {
-      return () => payload.destroy();
-    }
-  });
 }
 // node_modules/svelte/src/internal/client/dom/elements/attachments.js
 function attach(node, get_fn) {
@@ -6176,433 +6236,82 @@ if (typeof window !== "undefined") {
 // node_modules/svelte/src/internal/flags/legacy.js
 enable_legacy_mode_flag();
 
-// node_modules/regexparam/dist/index.mjs
-function parse(str, loose) {
-  if (str instanceof RegExp)
-    return { keys: false, pattern: str };
-  var c, o, tmp, ext, keys = [], pattern = "", arr = str.split("/");
-  arr[0] || arr.shift();
-  while (tmp = arr.shift()) {
-    c = tmp[0];
-    if (c === "*") {
-      keys.push("wild");
-      pattern += "/(.*)";
-    } else if (c === ":") {
-      o = tmp.indexOf("?", 1);
-      ext = tmp.indexOf(".", 1);
-      keys.push(tmp.substring(1, ~o ? o : ~ext ? ext : tmp.length));
-      pattern += !!~o && !~ext ? "(?:/([^/]+?))?" : "/([^/]+?)";
-      if (!!~ext)
-        pattern += (~o ? "?" : "") + "\\" + tmp.substring(ext);
+// client/src/lib/base-path.ts
+function basePath() {
+  return "";
+}
+function withBase(path) {
+  const base = basePath();
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  if (!base)
+    return normalized;
+  if (normalized === "/")
+    return `${base}/`;
+  return `${base}${normalized}`;
+}
+// client/src/lib/router.ts
+var scrollByRoute = new Map;
+var route = writable("/");
+function pathnameToRoute(pathname) {
+  const base = basePath();
+  let path = pathname;
+  if (base) {
+    if (pathname === base || pathname === `${base}/`) {
+      path = "/";
+    } else if (pathname.startsWith(`${base}/`)) {
+      path = pathname.slice(base.length);
     } else {
-      pattern += "/" + tmp;
+      path = "/";
     }
   }
-  return {
-    keys,
-    pattern: new RegExp("^" + pattern + (loose ? "(?=$|/)" : "/?$"), "i")
-  };
+  return path === "/feeds" ? "/feeds" : "/";
 }
-
-// node_modules/svelte-spa-router/dist/Router.svelte
-class RouterStateImpl {
-  #_loc = state(getLocation());
-  get _loc() {
-    return get2(this.#_loc);
-  }
-  set _loc(value) {
-    set(this.#_loc, value);
-  }
-  #_location = user_derived(() => this._loc.location);
-  get _location() {
-    return get2(this.#_location);
-  }
-  set _location(value) {
-    set(this.#_location, value);
-  }
-  #_querystring = user_derived(() => this._loc.querystring);
-  get _querystring() {
-    return get2(this.#_querystring);
-  }
-  set _querystring(value) {
-    set(this.#_querystring, value);
-  }
-  #_params = state(undefined);
-  get _params() {
-    return get2(this.#_params);
-  }
-  set _params(value) {
-    set(this.#_params, value);
-  }
-  get loc() {
-    return this._loc;
-  }
-  get location() {
-    return this._location;
-  }
-  get querystring() {
-    return this._querystring;
-  }
-  get params() {
-    return this._params;
-  }
-  constructor() {
-    window.addEventListener("hashchange", () => {
-      this._loc = getLocation();
-    });
-  }
+function saveScroll(current) {
+  scrollByRoute.set(current, window.scrollY);
 }
-var router = new RouterStateImpl;
-function getLocation() {
-  const hashPosition = window.location.href.indexOf("#/");
-  let location = hashPosition > -1 ? window.location.href.substr(hashPosition + 1) : "/";
-  const qsPosition = location.indexOf("?");
-  let querystring = "";
-  if (qsPosition > -1) {
-    querystring = location.substr(qsPosition + 1);
-    location = location.substr(0, qsPosition);
-  }
-  return { location, querystring };
-}
-function link2(node, opts) {
-  let currentOpts = linkOpts(opts);
-  if (!node || !node.tagName || node.tagName.toLowerCase() != "a") {
-    throw Error('Action "link" can only be used with <a> tags');
-  }
-  updateLinkHref(node, currentOpts);
-  const clickHandler = (event2) => {
-    event2.preventDefault();
-    if (!currentOpts.disabled) {
-      const target = event2.currentTarget;
-      const href = target ? target.getAttribute("href") : null;
-      if (href) {
-        scrollstateHistoryHandler(href);
-      }
-    }
-  };
-  node.addEventListener("click", clickHandler);
-  return {
-    update(updated) {
-      currentOpts = linkOpts(updated);
-      updateLinkHref(node, currentOpts);
-    },
-    destroy() {
-      node.removeEventListener("click", clickHandler);
-    }
-  };
-}
-function restoreScroll(state2) {
-  if (state2) {
-    window.scrollTo(state2.__svelte_spa_router_scrollX || 0, state2.__svelte_spa_router_scrollY || 0);
-  } else {
-    window.scrollTo(0, 0);
-  }
-}
-function updateLinkHref(node, opts) {
-  let href = opts.href || node.getAttribute("href");
-  if (href && href.charAt(0) == "/") {
-    href = "#" + href;
-  } else if (!href || href.length < 2 || href.slice(0, 2) != "#/") {
-    throw Error('Invalid value for "href" attribute: ' + href);
-  }
-  node.setAttribute("href", href);
-}
-function linkOpts(val) {
-  if (typeof val == "string") {
-    return { href: val };
-  }
-  return val || {};
-}
-function scrollstateHistoryHandler(href) {
-  history.replaceState({
-    ...history.state,
-    __svelte_spa_router_scrollX: window.scrollX,
-    __svelte_spa_router_scrollY: window.scrollY
-  }, "");
-  window.location.hash = href;
-}
-var root_2 = from_html(`
-        <!>
-    `, 1);
-var root_3 = from_html(`
-        <!>
-    `, 1);
-var root_1 = from_html(`
-    
-    <!>
-`, 1);
-var root = from_html(`
-
-
-
-<!>`, 1);
-function Router($$anchor, $$props) {
-  push($$props, true);
-  const routes = prop($$props, "routes", 19, () => ({})), prefix = prop($$props, "prefix", 3, ""), restoreScrollState = prop($$props, "restoreScrollState", 3, false), onConditionsFailed = prop($$props, "onConditionsFailed", 3, () => {}), onRouteLoaded = prop($$props, "onRouteLoaded", 3, () => {}), onRouteLoading = prop($$props, "onRouteLoading", 3, () => {}), onRouteEvent = prop($$props, "onRouteEvent", 3, () => {});
-
-  class RouteItem {
-    path;
-    component;
-    conditions;
-    userData;
-    props;
-    _pattern;
-    _keys;
-    constructor(path, component3) {
-      const isWrapped = (c) => typeof c == "object" && c !== null && c._sveltesparouter === true;
-      if (!component3 || typeof component3 != "function" && !isWrapped(component3)) {
-        throw Error("Invalid component object");
-      }
-      if (!path || typeof path == "string" && (path.length < 1 || path.charAt(0) != "/" && path.charAt(0) != "*") || typeof path == "object" && !(path instanceof RegExp)) {
-        throw Error('Invalid value for "path" argument - strings must start with / or *');
-      }
-      const parsed = typeof path == "string" ? parse(path) : parse(path);
-      this.path = path;
-      if (isWrapped(component3)) {
-        const wrapped = component3;
-        this.component = wrapped.component;
-        this.conditions = wrapped.conditions || [];
-        this.userData = wrapped.userData;
-        this.props = wrapped.props || {};
-      } else {
-        const sync = component3;
-        this.component = () => Promise.resolve(sync);
-        this.conditions = [];
-        this.props = {};
-      }
-      this._pattern = parsed.pattern;
-      this._keys = parsed.keys;
-    }
-    match(path) {
-      if (prefix()) {
-        if (typeof prefix() == "string") {
-          if (path.startsWith(prefix())) {
-            path = path.substr(prefix().length) || "/";
-          } else {
-            return null;
-          }
-        } else if (prefix() instanceof RegExp) {
-          const m = path.match(prefix());
-          if (m && m[0]) {
-            path = path.substr(m[0].length) || "/";
-          } else {
-            return null;
-          }
-        }
-      }
-      const matches = this._pattern.exec(path);
-      if (matches === null) {
-        return null;
-      }
-      if (this._keys === false) {
-        return matches;
-      }
-      const out = {};
-      let i = 0;
-      while (i < this._keys.length) {
-        try {
-          out[this._keys[i]] = decodeURIComponent(matches[i + 1] || "") || null;
-        } catch {
-          out[this._keys[i]] = null;
-        }
-        i++;
-      }
-      return out;
-    }
-    async checkConditions(detail) {
-      for (let i = 0;i < this.conditions.length; i++) {
-        if (!await this.conditions[i](detail)) {
-          return false;
-        }
-      }
-      return true;
-    }
-  }
-  const routesList = [];
-  if (routes() instanceof Map) {
-    routes().forEach((route, path) => {
-      routesList.push(new RouteItem(path, route));
-    });
-  } else {
-    Object.keys(routes()).forEach((path) => {
-      const map = routes();
-      routesList.push(new RouteItem(path, map[path]));
-    });
-  }
-  let component2 = state(null);
-  let componentParams = state(null);
-  let routeProps = state({});
-  let previousScrollState = null;
-  let componentObj = null;
-  user_effect(() => {
-    history.scrollRestoration = restoreScrollState() ? "manual" : "auto";
+function restoreScroll(next2) {
+  requestAnimationFrame(() => {
+    window.scrollTo(0, scrollByRoute.get(next2) ?? 0);
   });
-  user_effect(() => {
-    if (!restoreScrollState()) {
+}
+function syncRouteFromLocation() {
+  route.set(pathnameToRoute(window.location.pathname));
+}
+function navigate(next2) {
+  const target = new URL(withBase(next2), window.location.origin);
+  const current = get(route);
+  if (window.location.pathname === target.pathname && current === next2)
+    return;
+  saveScroll(current);
+  history.pushState(null, "", target.pathname + window.location.search);
+  route.set(next2);
+  restoreScroll(next2);
+}
+function migrateHashRoute() {
+  const { hash: hash2, search } = window.location;
+  if (!hash2.startsWith("#/"))
+    return;
+  const path = hash2.slice(1).split("?")[0] || "/";
+  const appPath = path === "/feeds" ? "/feeds" : "/";
+  history.replaceState(null, "", withBase(appPath) + search);
+}
+function initRouter() {
+  migrateHashRoute();
+  syncRouteFromLocation();
+  window.addEventListener("popstate", () => {
+    syncRouteFromLocation();
+    restoreScroll(get(route));
+  });
+}
+function navClick(next2) {
+  return (event2) => {
+    if (event2.defaultPrevented || event2.button !== 0 || event2.metaKey || event2.ctrlKey || event2.shiftKey || event2.altKey) {
       return;
     }
-    const popStateChanged = (event2) => {
-      if (event2.state && (event2.state.__svelte_spa_router_scrollY || event2.state.__svelte_spa_router_scrollX)) {
-        previousScrollState = event2.state;
-      } else {
-        previousScrollState = null;
-      }
-    };
-    window.addEventListener("popstate", popStateChanged);
-    return () => window.removeEventListener("popstate", popStateChanged);
-  });
-  async function dispatchNextTick(event2, detail) {
-    await tick();
-    event2(detail);
-  }
-  user_effect(() => {
-    const newLoc = router.loc;
-    let cancelled = false;
-    untrack(async () => {
-      let i = 0;
-      while (i < routesList.length) {
-        const match = routesList[i].match(newLoc.location);
-        if (!match) {
-          i++;
-          continue;
-        }
-        const matchParams = matchToParams(match);
-        const detail = {
-          route: routesList[i].path,
-          location: newLoc.location,
-          querystring: newLoc.querystring || "",
-          userData: routesList[i].userData,
-          params: matchParams
-        };
-        if (!await routesList[i].checkConditions(detail)) {
-          if (cancelled) {
-            return;
-          }
-          set(component2, null);
-          componentObj = null;
-          dispatchNextTick(onConditionsFailed(), detail);
-          return;
-        }
-        if (cancelled) {
-          return;
-        }
-        dispatchNextTick(onRouteLoading(), { ...detail });
-        const obj = routesList[i].component;
-        if (componentObj != obj) {
-          if (obj.loading) {
-            set(component2, obj.loading);
-            componentObj = obj;
-            set(componentParams, obj.loadingParams || null);
-            set(routeProps, {});
-            const comp2 = obj.loading;
-            dispatchNextTick(onRouteLoaded(), {
-              ...detail,
-              component: comp2,
-              name: comp2.name,
-              params: obj.loadingParams || null
-            });
-          } else {
-            set(component2, null);
-            componentObj = null;
-          }
-          const loaded = await obj();
-          if (cancelled) {
-            return;
-          }
-          set(component2, loaded && typeof loaded == "object" && "default" in loaded ? loaded.default : loaded);
-          componentObj = obj;
-        }
-        set(componentParams, matchParams);
-        set(routeProps, routesList[i].props);
-        const comp = get2(component2);
-        if (comp) {
-          dispatchNextTick(onRouteLoaded(), {
-            ...detail,
-            component: comp,
-            name: comp.name,
-            params: matchParams
-          });
-        }
-        router._params = matchParams;
-        if (restoreScrollState()) {
-          restoreScroll(previousScrollState);
-          previousScrollState = null;
-        }
-        return;
-      }
-      set(component2, null);
-      componentObj = null;
-      router._params = undefined;
-      if (restoreScrollState()) {
-        restoreScroll(previousScrollState);
-        previousScrollState = null;
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  });
-  function matchToParams(match) {
-    return match && typeof match == "object" && Object.keys(match).length ? match : null;
-  }
-  next();
-  var fragment = root();
-  var node_1 = sibling(first_child(fragment));
-  {
-    var consequent_1 = ($$anchor2) => {
-      const Component = user_derived(() => get2(component2));
-      var fragment_1 = root_1();
-      var node_2 = sibling(first_child(fragment_1));
-      {
-        var consequent = ($$anchor3) => {
-          var fragment_2 = root_2();
-          var node_3 = sibling(first_child(fragment_2));
-          component(node_3, () => get2(Component), ($$anchor4, Component_1) => {
-            Component_1($$anchor4, spread_props({
-              get params() {
-                return get2(componentParams);
-              },
-              get onRouteEvent() {
-                return onRouteEvent();
-              }
-            }, () => get2(routeProps)));
-          });
-          next();
-          append($$anchor3, fragment_2);
-        };
-        var alternate = ($$anchor3) => {
-          var fragment_3 = root_3();
-          var node_4 = sibling(first_child(fragment_3));
-          component(node_4, () => get2(Component), ($$anchor4, Component_2) => {
-            Component_2($$anchor4, spread_props({
-              get onRouteEvent() {
-                return onRouteEvent();
-              }
-            }, () => get2(routeProps)));
-          });
-          next();
-          append($$anchor3, fragment_3);
-        };
-        if_block(node_2, ($$render) => {
-          if (get2(componentParams))
-            $$render(consequent);
-          else
-            $$render(alternate, -1);
-        });
-      }
-      next();
-      append($$anchor2, fragment_1);
-    };
-    if_block(node_1, ($$render) => {
-      if (get2(component2))
-        $$render(consequent_1);
-    });
-  }
-  append($$anchor, fragment);
-  pop();
+    event2.preventDefault();
+    navigate(next2);
+  };
 }
-if (undefined) {}
-var Router_default = Router;
 
 // node_modules/@lucide/svelte/dist/defaultAttributes.js
 var defaultAttributes = {
@@ -6633,10 +6342,10 @@ var LucideContext = Symbol("lucide-context");
 var getLucideContext = () => getContext(LucideContext);
 
 // node_modules/@lucide/svelte/dist/Icon.svelte
-var root_12 = from_svg(`
+var root_1 = from_svg(`
     <!>
   `, 1);
-var root2 = from_svg(`
+var root = from_svg(`
 
 <svg>
   <!>
@@ -6659,7 +6368,7 @@ function Icon($$anchor, $$props) {
   ]);
   const calculatedStrokeWidth = user_derived(() => absoluteStrokeWidth() ? Number(strokeWidth()) * 24 / Number(size()) : strokeWidth());
   next();
-  var fragment = root2();
+  var fragment = root();
   var svg = sibling(first_child(fragment));
   attribute_effect(svg, ($0) => ({
     ...defaultAttributes_default,
@@ -6684,7 +6393,7 @@ function Icon($$anchor, $$props) {
     let tag2 = () => get2($$array)[0];
     let attrs = () => get2($$array)[1];
     next();
-    var fragment_1 = root_12();
+    var fragment_1 = root_1();
     var node_1 = sibling(first_child(fragment_1));
     element(node_1, tag2, true, ($$element, $$anchor3) => {
       attribute_effect($$element, () => ({ ...attrs() }));
@@ -6703,7 +6412,7 @@ if (undefined) {}
 var Icon_default = Icon;
 
 // node_modules/@lucide/svelte/dist/icons/a-arrow-down.svelte
-var root3 = from_html(`<!--
+var root2 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -6731,7 +6440,7 @@ function A_arrow_down($$anchor, $$props) {
     ["path", { d: "m2 16 4.039-9.69a.5.5 0 0 1 .923 0L11 16" }],
     ["path", { d: "M3.304 13h6.392" }]
   ];
-  var fragment = root3();
+  var fragment = root2();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -6745,7 +6454,7 @@ function A_arrow_down($$anchor, $$props) {
 if (undefined) {}
 var a_arrow_down_default = A_arrow_down;
 // node_modules/@lucide/svelte/dist/icons/a-arrow-up.svelte
-var root4 = from_html(`<!--
+var root3 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -6773,7 +6482,7 @@ function A_arrow_up($$anchor, $$props) {
     ["path", { d: "m2 16 4.039-9.69a.5.5 0 0 1 .923 0L11 16" }],
     ["path", { d: "M3.304 13h6.392" }]
   ];
-  var fragment = root4();
+  var fragment = root3();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -6825,7 +6534,7 @@ function resolveBasePath(env = process.env) {
   const withLeading = raw.startsWith("/") ? raw : `/${raw}`;
   return withLeading.replace(/\/+$/, "") || "";
 }
-function withBase(path, base = resolveBasePath()) {
+function withBase2(path, base = resolveBasePath()) {
   const normalized = path.startsWith("/") ? path : `/${path}`;
   if (!base)
     return normalized;
@@ -6840,7 +6549,7 @@ var PWA_META_DESCRIPTION = {
   en: "Lightweight RSS reader"
 };
 function manifestHref(locale, base = "") {
-  return `${withBase("/manifest.webmanifest", base)}?locale=${locale}`;
+  return `${withBase2("/manifest.webmanifest", base)}?locale=${locale}`;
 }
 
 // client/src/lib/i18n/messages.ts
@@ -6931,20 +6640,6 @@ var messages = {
   }
 };
 
-// client/src/lib/base-path.ts
-function basePath() {
-  return "";
-}
-function withBase2(path) {
-  const base = basePath();
-  const normalized = path.startsWith("/") ? path : `/${path}`;
-  if (!base)
-    return normalized;
-  if (normalized === "/")
-    return `${base}/`;
-  return `${base}${normalized}`;
-}
-
 // client/src/lib/locale.ts
 function applyDocumentLocale(locale) {
   if (typeof document === "undefined")
@@ -7001,13 +6696,13 @@ function tf(key2, vars) {
 }
 
 // client/src/components/buttons/FontSizeToggle.svelte
-var root_13 = from_html(`
+var root_12 = from_html(`
     <!>
   `, 1);
-var root_22 = from_html(`
+var root_2 = from_html(`
     <!>
   `, 1);
-var root5 = from_html(`
+var root4 = from_html(`
 
 <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
   <!>
@@ -7017,19 +6712,19 @@ function FontSizeToggle($$anchor, $$props) {
   const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
   init();
   next();
-  var fragment = root5();
+  var fragment = root4();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root_13();
+      var fragment_1 = root_12();
       var node_1 = sibling(first_child(fragment_1));
       a_arrow_down_default(node_1, spread_props(() => iconProps));
       next();
       append($$anchor2, fragment_1);
     };
     var alternate = ($$anchor2) => {
-      var fragment_2 = root_22();
+      var fragment_2 = root_2();
       var node_2 = sibling(first_child(fragment_2));
       a_arrow_up_default(node_2, spread_props(() => iconProps));
       next();
@@ -7062,7 +6757,7 @@ var FontSizeToggle_default = FontSizeToggle;
 delegate(["click"]);
 
 // node_modules/@lucide/svelte/dist/icons/check-check.svelte
-var root6 = from_html(`<!--
+var root5 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -7088,7 +6783,7 @@ function Check_check($$anchor, $$props) {
     ["path", { d: "M18 6 7 17l-5-5" }],
     ["path", { d: "m22 10-7.5 7.5L13 16" }]
   ];
-  var fragment = root6();
+  var fragment = root5();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -7102,7 +6797,7 @@ function Check_check($$anchor, $$props) {
 if (undefined) {}
 var check_check_default = Check_check;
 // client/src/components/buttons/MarkAllReadButton.svelte
-var root7 = from_html(`
+var root6 = from_html(`
 
 <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
   <!>
@@ -7112,7 +6807,7 @@ function MarkAllReadButton($$anchor, $$props) {
   const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
   const label = user_derived(() => t("items.markAllRead"));
   next();
-  var fragment = root7();
+  var fragment = root6();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   check_check_default(node, spread_props(() => iconProps));
@@ -7131,7 +6826,7 @@ var MarkAllReadButton_default = MarkAllReadButton;
 delegate(["click"]);
 
 // client/src/components/buttons/LanguageToggle.svelte
-var root8 = from_html(`
+var root7 = from_html(`
 
 <button type="button" class="inline-flex min-w-[2rem] cursor-pointer items-center justify-center rounded-md p-1.5 text-xs font-medium text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"> </button>`, 1);
 function LanguageToggle($$anchor, $$props) {
@@ -7139,7 +6834,7 @@ function LanguageToggle($$anchor, $$props) {
   const label = user_derived(() => localeState.locale === "zh" ? "EN" : "中");
   const aria = user_derived(() => localeState.locale === "zh" ? t("lang.switchToEn") : t("lang.switchToZh"));
   next();
-  var fragment = root8();
+  var fragment = root7();
   var button = sibling(first_child(fragment));
   var text2 = child(button);
   reset(button);
@@ -7161,7 +6856,7 @@ var LanguageToggle_default = LanguageToggle;
 delegate(["click"]);
 
 // node_modules/@lucide/svelte/dist/icons/moon.svelte
-var root9 = from_html(`<!--
+var root8 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -7191,7 +6886,7 @@ function Moon($$anchor, $$props) {
       }
     ]
   ];
-  var fragment = root9();
+  var fragment = root8();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -7205,7 +6900,7 @@ function Moon($$anchor, $$props) {
 if (undefined) {}
 var moon_default = Moon;
 // node_modules/@lucide/svelte/dist/icons/sun.svelte
-var root10 = from_html(`<!--
+var root9 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -7238,7 +6933,7 @@ function Sun($$anchor, $$props) {
     ["path", { d: "m6.34 17.66-1.41 1.41" }],
     ["path", { d: "m19.07 4.93-1.41 1.41" }]
   ];
-  var fragment = root10();
+  var fragment = root9();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -7286,13 +6981,13 @@ function toggleTheme() {
 }
 
 // client/src/components/buttons/ThemeToggle.svelte
-var root_14 = from_html(`
+var root_13 = from_html(`
     <!>
   `, 1);
-var root_23 = from_html(`
+var root_22 = from_html(`
     <!>
   `, 1);
-var root11 = from_html(`
+var root10 = from_html(`
 
 <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
   <!>
@@ -7302,19 +6997,19 @@ function ThemeToggle($$anchor, $$props) {
   const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
   init();
   next();
-  var fragment = root11();
+  var fragment = root10();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root_14();
+      var fragment_1 = root_13();
       var node_1 = sibling(first_child(fragment_1));
       sun_default(node_1, spread_props(() => iconProps));
       next();
       append($$anchor2, fragment_1);
     };
     var alternate = ($$anchor2) => {
-      var fragment_2 = root_23();
+      var fragment_2 = root_22();
       var node_2 = sibling(first_child(fragment_2));
       moon_default(node_2, spread_props(() => iconProps));
       next();
@@ -7361,15 +7056,15 @@ function createMarkAllReadHost() {
 }
 
 // client/src/components/Header.svelte
-var root_15 = from_html(`
-        <a href="/">NanoFlux</a>
+var root_14 = from_html(`
+        <a>NanoFlux</a>
       `, 1);
-var root_24 = from_html(`
+var root_23 = from_html(`
         <h1>NanoFlux</h1>
       `, 1);
-var root_32 = from_html(`
+var root_3 = from_html(`
         <div>
-          <a href="/" class="inline-flex shrink-0 rounded-md p-1 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100">
+          <a class="inline-flex shrink-0 rounded-md p-1 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="m12 19-7-7 7-7"></path>
               <path d="M19 12H5"></path>
@@ -7382,7 +7077,7 @@ var root_4 = from_html(`
         <nav>
           <span> </span>
           <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
-          <a href="/feeds" class="hover:text-neutral-900 dark:hover:text-neutral-100"> </a>
+          <a class="hover:text-neutral-900 dark:hover:text-neutral-100"> </a>
         </nav>
       `, 1);
 var root_5 = from_html(`
@@ -7393,7 +7088,7 @@ var root_5 = from_html(`
 var root_6 = from_html(`
       <!>
     `, 1);
-var root12 = from_html(`
+var root11 = from_html(`
 
 <header>
   <div class="min-w-0 flex-1">
@@ -7412,6 +7107,8 @@ var root12 = from_html(`
 </header>`, 1);
 function Header($$anchor, $$props) {
   push($$props, true);
+  const $route = () => store_get(route, "$route", $$stores);
+  const [$$stores, $$cleanup] = setup_stores();
   const COMPACT_ENTER = 72;
   const COMPACT_EXIT = 8;
   const markAllReadHost = getContext(MARK_ALL_READ_KEY);
@@ -7426,7 +7123,7 @@ function Header($$anchor, $$props) {
     return typeof window !== "undefined" && window.scrollY > COMPACT_ENTER;
   }
   let compact = state(proxy(initialCompact()));
-  const isFeeds = user_derived(() => router.location === "/feeds");
+  const isFeeds = user_derived(() => $route() === "/feeds");
   const rowClass = user_derived(() => `transition-[gap] duration-300 ${get2(compact) ? "flex min-w-0 items-center justify-between gap-4" : ""}`);
   const subClass = user_derived(() => `flex min-h-[30px] min-w-0 items-center gap-2 text-sm text-neutral-400 dark:text-neutral-500 ${get2(compact) ? "shrink-0" : "mt-1"}`);
   const titleClass = "shrink-0 text-lg font-medium tracking-tight";
@@ -7447,33 +7144,37 @@ function Header($$anchor, $$props) {
     };
     syncCompact();
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("hashchange", update2);
+    window.addEventListener("popstate", update2);
     return () => {
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("hashchange", update2);
+      window.removeEventListener("popstate", update2);
     };
   });
   user_effect(() => {
-    router.location;
+    $route();
     requestAnimationFrame(() => syncCompact());
   });
   next();
-  var fragment = root12();
+  var fragment = root11();
   var header = sibling(first_child(fragment));
   var div = sibling(child(header));
   var div_1 = sibling(child(div));
   var node = sibling(child(div_1));
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root_15();
+      var fragment_1 = root_14();
       var a = sibling(first_child(fragment_1));
+      var event_handler = user_derived(() => navClick("/"));
       set_class(a, 1, "shrink-0 text-lg font-medium tracking-tight hover:opacity-70");
-      action(a, ($$node) => link2?.($$node));
       next();
+      template_effect(($0) => set_attribute2(a, "href", $0), [() => withBase("/")]);
+      delegated("click", a, function(...$$args) {
+        get2(event_handler)?.apply(this, $$args);
+      });
       append($$anchor2, fragment_1);
     };
     var alternate = ($$anchor2) => {
-      var fragment_2 = root_24();
+      var fragment_2 = root_23();
       var h1 = sibling(first_child(fragment_2));
       set_class(h1, 1, clsx2(titleClass));
       next();
@@ -7489,26 +7190,31 @@ function Header($$anchor, $$props) {
   var node_1 = sibling(node, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var fragment_3 = root_32();
+      var fragment_3 = root_3();
       var div_2 = sibling(first_child(fragment_3));
       var a_1 = sibling(child(div_2));
-      action(a_1, ($$node) => link2?.($$node));
+      var event_handler_1 = user_derived(() => navClick("/"));
       var p = sibling(a_1, 2);
       var text2 = child(p, true);
       reset(p);
       next();
       reset(div_2);
       next();
-      template_effect(($0, $1, $2) => {
+      template_effect(($0, $1, $2, $3) => {
         set_class(div_2, 1, `${get2(subClass) ?? ""} gap-3`);
-        set_attribute2(a_1, "aria-label", $0);
-        set_attribute2(a_1, "title", $1);
-        set_text(text2, $2);
+        set_attribute2(a_1, "href", $0);
+        set_attribute2(a_1, "aria-label", $1);
+        set_attribute2(a_1, "title", $2);
+        set_text(text2, $3);
       }, [
+        () => withBase("/"),
         () => t("feeds.back"),
         () => t("feeds.back"),
         () => t("feeds.title")
       ]);
+      delegated("click", a_1, function(...$$args) {
+        get2(event_handler_1)?.apply(this, $$args);
+      });
       append($$anchor2, fragment_3);
     };
     var alternate_1 = ($$anchor2) => {
@@ -7518,24 +7224,29 @@ function Header($$anchor, $$props) {
       var text_1 = child(span, true);
       reset(span);
       var a_2 = sibling(span, 4);
+      var event_handler_2 = user_derived(() => navClick("/feeds"));
       var text_2 = child(a_2);
       reset(a_2);
-      action(a_2, ($$node) => link2?.($$node));
       next();
       reset(nav);
       next();
-      template_effect(($0, $1, $2) => {
+      template_effect(($0, $1, $2, $3) => {
         set_class(nav, 1, clsx2(get2(subClass)));
         set_attribute2(nav, "aria-label", $0);
         set_text(text_1, $1);
+        set_attribute2(a_2, "href", $2);
         set_text(text_2, `
-            ${$2 ?? ""}
+            ${$3 ?? ""}
           `);
       }, [
         () => t("items.latest"),
         () => t("items.latest"),
+        () => withBase("/feeds"),
         () => t("items.feeds")
       ]);
+      delegated("click", a_2, function(...$$args) {
+        get2(event_handler_2)?.apply(this, $$args);
+      });
       append($$anchor2, fragment_4);
     };
     if_block(node_1, ($$render) => {
@@ -7588,9 +7299,11 @@ function Header($$anchor, $$props) {
   });
   append($$anchor, fragment);
   pop();
+  $$cleanup();
 }
 if (undefined) {}
 var Header_default = Header;
+delegate(["click"]);
 
 // client/src/lib/api.ts
 function assertApiOk(body) {
@@ -7605,7 +7318,7 @@ function normalizeItem(raw) {
   };
 }
 async function request(url, options = {}) {
-  const res = await fetch(withBase2(url), {
+  const res = await fetch(withBase(url), {
     ...options,
     headers: { "Content-Type": "application/json", ...options.headers }
   });
@@ -7690,13 +7403,13 @@ async function markItemRead(id) {
 }
 
 // client/src/components/FeedsManager.svelte
-var root_16 = from_html(`
+var root_15 = from_html(`
         <button type="button" class="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"> </button>
       `, 1);
-var root_25 = from_html(`
+var root_24 = from_html(`
     <p class="mt-3 text-sm text-neutral-400 dark:text-neutral-500"> </p>
   `, 1);
-var root_33 = from_html(`
+var root_32 = from_html(`
     <p class="mt-3 text-sm text-amber-600 dark:text-amber-500"> </p>
   `, 1);
 var root_42 = from_html(`
@@ -7742,7 +7455,7 @@ var root_8 = from_html(`
     <!>
     <div class="h-1" aria-hidden="true"></div>
   `, 1);
-var root13 = from_html(`
+var root12 = from_html(`
 
 <section class="mb-10">
   <form class="space-y-3">
@@ -7945,7 +7658,7 @@ function FeedsManager($$anchor, $$props) {
     loadFeeds();
   });
   next();
-  var fragment = root13();
+  var fragment = root12();
   var section = sibling(first_child(fragment));
   var form = sibling(child(section));
   var input = sibling(child(form));
@@ -7962,7 +7675,7 @@ function FeedsManager($$anchor, $$props) {
   var node = sibling(button, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root_16();
+      var fragment_1 = root_15();
       var button_1 = sibling(first_child(fragment_1));
       var text_1 = child(button_1);
       reset(button_1);
@@ -7985,7 +7698,7 @@ function FeedsManager($$anchor, $$props) {
   var node_1 = sibling(form, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var fragment_2 = root_25();
+      var fragment_2 = root_24();
       var p = sibling(first_child(fragment_2));
       var text_2 = child(p);
       reset(p);
@@ -7996,7 +7709,7 @@ function FeedsManager($$anchor, $$props) {
       append($$anchor2, fragment_2);
     };
     var consequent_2 = ($$anchor2) => {
-      var fragment_3 = root_33();
+      var fragment_3 = root_32();
       var p_1 = sibling(first_child(fragment_3));
       var text_3 = child(p_1);
       reset(p_1);
@@ -8233,7 +7946,7 @@ function subscribeItemStream(listener) {
 function connectItemStream() {
   if (es)
     return () => {};
-  es = new EventSource(withBase2("/sse"));
+  es = new EventSource(withBase("/sse"));
   es.addEventListener("items", (ev) => {
     try {
       dispatch(JSON.parse(ev.data));
@@ -8274,10 +7987,10 @@ function formatTime(iso, nowMs = Date.now()) {
 }
 
 // client/src/components/ItemList.svelte
-var root_17 = from_html(`
+var root_16 = from_html(`
   <p class="py-6 text-sm text-red-500"> </p>
 `, 1);
-var root_26 = from_html(`
+var root_25 = from_html(`
   <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
 var root_53 = from_html(`
@@ -8296,7 +8009,7 @@ var root_43 = from_html(`
         </article>
       </li>
     `, 1);
-var root_34 = from_html(`
+var root_33 = from_html(`
   <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
     <!>
   </ul>
@@ -8307,7 +8020,7 @@ var root_63 = from_html(`
 var root_72 = from_html(`
   <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root14 = from_html(`
+var root13 = from_html(`
 
 <!>
 
@@ -8428,11 +8141,11 @@ function ItemList($$anchor, $$props) {
   });
   var $$exports = { markAllRead };
   next();
-  var fragment = root14();
+  var fragment = root13();
   var node = sibling(first_child(fragment));
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root_17();
+      var fragment_1 = root_16();
       var p = sibling(first_child(fragment_1));
       var text2 = child(p, true);
       reset(p);
@@ -8441,7 +8154,7 @@ function ItemList($$anchor, $$props) {
       append($$anchor2, fragment_1);
     };
     var consequent_1 = ($$anchor2) => {
-      var fragment_2 = root_26();
+      var fragment_2 = root_25();
       var p_1 = sibling(first_child(fragment_2));
       var text_1 = child(p_1, true);
       reset(p_1);
@@ -8450,7 +8163,7 @@ function ItemList($$anchor, $$props) {
       append($$anchor2, fragment_2);
     };
     var alternate = ($$anchor2) => {
-      var fragment_3 = root_34();
+      var fragment_3 = root_33();
       var ul = sibling(first_child(fragment_3));
       var node_1 = sibling(child(ul));
       each(node_1, 17, () => get2(items), (item) => item.id, ($$anchor3, item) => {
@@ -8563,7 +8276,13 @@ var ItemList_default = ItemList;
 delegate(["click"]);
 
 // client/src/App.svelte
-var root15 = from_html(`
+var root_17 = from_html(`
+    <!>
+  `, 1);
+var root_26 = from_html(`
+    <!>
+  `, 1);
+var root14 = from_html(`
 
 <main class="mx-auto max-w-page px-6 py-16 font-sans">
   <!>
@@ -8571,26 +8290,44 @@ var root15 = from_html(`
 </main>`, 1);
 function App($$anchor, $$props) {
   push($$props, false);
-  const routes = { "/": ItemList_default, "/feeds": FeedsManager_default };
+  const $route = () => store_get(route, "$route", $$stores);
+  const [$$stores, $$cleanup] = setup_stores();
   const markAllReadHost = createMarkAllReadHost();
   setContext(MARK_ALL_READ_KEY, markAllReadHost);
   init();
   next();
-  var fragment = root15();
+  var fragment = root14();
   var main = sibling(first_child(fragment));
   var node = sibling(child(main));
   Header_default(node, {});
   var node_1 = sibling(node, 2);
-  Router_default(node_1, {
-    get routes() {
-      return routes;
-    },
-    restoreScrollState: true
-  });
+  {
+    var consequent = ($$anchor2) => {
+      var fragment_1 = root_17();
+      var node_2 = sibling(first_child(fragment_1));
+      FeedsManager_default(node_2, {});
+      next();
+      append($$anchor2, fragment_1);
+    };
+    var alternate = ($$anchor2) => {
+      var fragment_2 = root_26();
+      var node_3 = sibling(first_child(fragment_2));
+      ItemList_default(node_3, {});
+      next();
+      append($$anchor2, fragment_2);
+    };
+    if_block(node_1, ($$render) => {
+      if ($route() === "/feeds")
+        $$render(consequent);
+      else
+        $$render(alternate, -1);
+    });
+  }
   next();
   reset(main);
   append($$anchor, fragment);
   pop();
+  $$cleanup();
 }
 if (undefined) {}
 var App_default = App;
@@ -8599,38 +8336,15 @@ var App_default = App;
 function registerPwa() {
   if (!("serviceWorker" in navigator))
     return;
-  const swUrl = withBase2("/sw.js");
-  const scope = withBase2("/");
+  const swUrl = withBase("/sw.js");
+  const scope = withBase("/");
   window.addEventListener("load", () => {
     navigator.serviceWorker.register(swUrl, { scope }).catch((err) => console.warn("[pwa] service worker registration failed", err));
   });
 }
 
 // client/src/main.ts
-function normalizePathForRouter() {
-  const { pathname, hash: hash2, search } = window.location;
-  if (hash2.startsWith("#/"))
-    return;
-  const base = basePath();
-  if (!base) {
-    if (pathname !== "/") {
-      window.location.replace(`/#${pathname}${search}`);
-    }
-    return;
-  }
-  const baseSlash = `${base}/`;
-  if (pathname === base || pathname === baseSlash) {
-    window.location.replace(`${baseSlash}#/${search}`);
-    return;
-  }
-  if (pathname.startsWith(base)) {
-    const sub = pathname.slice(base.length) || "/";
-    window.location.replace(`${baseSlash}#${sub}${search}`);
-    return;
-  }
-  window.location.replace(`${baseSlash}#/${search}`);
-}
-normalizePathForRouter();
+initRouter();
 initTheme();
 initFontSize();
 initLocale();

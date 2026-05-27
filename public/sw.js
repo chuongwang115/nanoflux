@@ -9,7 +9,7 @@
       return `${base}/`;
     return `${base}${normalized}`;
   }
-  var CACHE_NAME = "nanoflux-v1";
+  var CACHE_NAME = "nanoflux-v2";
   var SHELL_URLS = [withBase("/"), withBase("/feeds")];
   var PRECACHE_URLS = [
     ...SHELL_URLS,
