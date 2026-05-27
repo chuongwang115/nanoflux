@@ -6239,7 +6239,10 @@ enable_legacy_mode_flag();
 var scrollByRoute = new Map;
 var route = writable("/");
 function pathnameToRoute(pathname) {
-  return pathname === "/feeds" ? "/feeds" : "/";
+  return pathname.endsWith("/feeds") ? "/feeds" : "/";
+}
+function routeHref(next2) {
+  return next2 === "/" ? ".." : "feeds";
 }
 function saveScroll(current) {
   scrollByRoute.set(current, window.scrollY);
@@ -6253,7 +6256,7 @@ function syncRouteFromLocation() {
   route.set(pathnameToRoute(window.location.pathname));
 }
 function navigate(next2) {
-  const target = new URL(next2, window.location.origin);
+  const target = new URL(routeHref(next2), window.location.href);
   const current = get(route);
   if (window.location.pathname === target.pathname && current === next2)
     return;
@@ -7006,14 +7009,14 @@ function createMarkAllReadHost() {
 
 // client/src/components/Header.svelte
 var root_14 = from_html(`
-        <a href="/">NanoFlux</a>
+        <a>NanoFlux</a>
       `, 1);
 var root_23 = from_html(`
         <h1>NanoFlux</h1>
       `, 1);
 var root_3 = from_html(`
         <div>
-          <a href="/" class="inline-flex shrink-0 rounded-md p-1 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100">
+          <a class="inline-flex shrink-0 rounded-md p-1 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="m12 19-7-7 7-7"></path>
               <path d="M19 12H5"></path>
@@ -7116,6 +7119,7 @@ function Header($$anchor, $$props) {
       var event_handler = user_derived(() => navClick("/"));
       set_class(a, 1, "shrink-0 text-lg font-medium tracking-tight hover:opacity-70");
       next();
+      template_effect(($0) => set_attribute2(a, "href", $0), [() => routeHref("/")]);
       delegated("click", a, function(...$$args) {
         get2(event_handler)?.apply(this, $$args);
       });
@@ -7148,12 +7152,14 @@ function Header($$anchor, $$props) {
       next();
       reset(div_2);
       next();
-      template_effect(($0, $1, $2) => {
+      template_effect(($0, $1, $2, $3) => {
         set_class(div_2, 1, `${get2(subClass) ?? ""} gap-3`);
-        set_attribute2(a_1, "aria-label", $0);
-        set_attribute2(a_1, "title", $1);
-        set_text(text2, $2);
+        set_attribute2(a_1, "href", $0);
+        set_attribute2(a_1, "aria-label", $1);
+        set_attribute2(a_1, "title", $2);
+        set_text(text2, $3);
       }, [
+        () => routeHref("/"),
         () => t("feeds.back"),
         () => t("feeds.back"),
         () => t("feeds.title")

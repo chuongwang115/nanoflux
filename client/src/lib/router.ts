@@ -7,7 +7,12 @@ const scrollByRoute = new Map<string, number>();
 export const route = writable<AppRoute>("/");
 
 function pathnameToRoute(pathname: string): AppRoute {
-  return pathname === "/feeds" ? "/feeds" : "/";
+  return pathname.endsWith("/feeds") ? "/feeds" : "/";
+}
+
+/** Relative href for in-app links (works under a URL prefix). */
+export function routeHref(next: AppRoute): string {
+  return next === "/" ? ".." : "feeds";
 }
 
 function saveScroll(current: AppRoute) {
@@ -25,7 +30,7 @@ export function syncRouteFromLocation() {
 }
 
 export function navigate(next: AppRoute) {
-  const target = new URL(next, window.location.origin);
+  const target = new URL(routeHref(next), window.location.href);
   const current = get(route);
   if (window.location.pathname === target.pathname && current === next) return;
 
