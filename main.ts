@@ -13,8 +13,8 @@ import { routes as feedsRoutes } from "./routes/feeds";
 import { routes as mcpRoutes } from "./mcp/route";
 import { routes as sseRoutes } from "./sse/route";
 import {
-  startFetchScheduler,
-  stopFetchScheduler,
+  startScheduler,
+  stopScheduler,
 } from "./services/scheduler";
 
 const PUBLIC_DIR = join(import.meta.dir, "public");
@@ -27,7 +27,7 @@ function manifestLocale(query: Record<string, string | undefined>): Locale {
   return "zh";
 }
 
-void startFetchScheduler();
+void startScheduler();
 
 const host = resolveHost();
 const restrictLocalhost = isLocalhostRestricted(host);
@@ -81,7 +81,7 @@ async function shutdown(signal: string) {
   shuttingDown = true;
   console.log(`\n${signal} received, shutting down...`);
 
-  await stopFetchScheduler();
+  await stopScheduler();
   await app.stop();
   closeDatabase();
 

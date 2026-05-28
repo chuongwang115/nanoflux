@@ -17,6 +17,13 @@ function stripHtml(html: string): string {
     .trim();
 }
 
+function parsePublishedAt(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  const time = Date.parse(trimmed);
+  return Number.isNaN(time) ? null : new Date(time).toISOString();
+}
+
 function toStoredItem(entry: Parser.Item) {
   const link = entry.link?.trim();
   if (!link) return null;
@@ -28,7 +35,10 @@ function toStoredItem(entry: Parser.Item) {
     entry.summary?.trim() ||
     (entry.content ? stripHtml(entry.content).slice(0, 2000) : "") ||
     null;
-  const published_at = entry.isoDate || entry.pubDate || new Date().toISOString();
+  const published_at =
+    parsePublishedAt(entry.isoDate) ||
+    parsePublishedAt(entry.pubDate) ||
+    new Date().toISOString();
 
   return { guid, title, link, description, published_at };
 }

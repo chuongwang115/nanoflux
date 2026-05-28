@@ -10,7 +10,7 @@ import {
 import { db } from "./database";
 import { getFeed } from "./feeds";
 import { feeds, items, DEFAULT_LIMIT, MAX_LIMIT } from "./schema";
-import { newItemId, decodeCursor, parseTimeRange } from "./utils";
+import { newItemId, decodeCursor, parseTimeRange, TimeUnit } from "./utils";
 
 export function getItems(options?: {
   since?: string;
@@ -158,5 +158,15 @@ export function markItemRead(id: string): void {
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to mark item ${id} as read: ${detail}`);
+  }
+}
+
+export function clearItems(): void {
+  try {
+    const cutoff = new Date(Date.now() - 90 * TimeUnit.DAY).toISOString();
+    db.delete(items).where(lt(items.published_at, cutoff)).run();
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to clear items: ${detail}`);
   }
 }
