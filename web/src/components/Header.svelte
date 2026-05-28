@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getContext, onMount } from "svelte";
-  import { navClick, navClickParent, parentHref, route } from "../lib/router";
+  import { feedsHref, homeHref, navClick, navClickParent, route } from "../lib/router";
   import FontSizeToggle from "./buttons/FontSizeToggle.svelte";
   import MarkAllReadButton from "./buttons/MarkAllReadButton.svelte";
   import LanguageToggle from "./buttons/LanguageToggle.svelte";
@@ -81,7 +81,7 @@
   <div class="min-w-0 flex-1">
     <div class={rowClass}>
       {#if isFeeds}
-        <a href={parentHref()} onclick={navClickParent()} class="{titleClass} hover:opacity-70">NanoFlux</a>
+        <a href={homeHref()} onclick={navClickParent()} class="{titleClass} hover:opacity-70">NanoFlux</a>
       {:else}
         <h1 class={titleClass}>NanoFlux</h1>
       {/if}
@@ -89,7 +89,7 @@
       {#if isFeeds}
         <div class="{subClass} gap-3">
           <a
-            href={parentHref()}
+            href={homeHref()}
             onclick={navClickParent()}
             class="inline-flex shrink-0 rounded-md p-1 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
             aria-label={t("feeds.back")}
@@ -118,7 +118,7 @@
           <span>{t("items.latest")}</span>
           <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
           <a
-            href="/feeds"
+            href={feedsHref()}
             onclick={navClick("/feeds")}
             class="hover:text-neutral-900 dark:hover:text-neutral-100"
           >

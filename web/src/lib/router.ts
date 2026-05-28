@@ -1,5 +1,6 @@
 import { get, writable } from "svelte/store";
 
+/** Logical routes (not URL pathnames). */
 export type AppRoute = "/" | "/feeds";
 
 const scrollByRoute = new Map<string, number>();
@@ -10,28 +11,22 @@ function pathnameToRoute(pathname: string): AppRoute {
   return pathname.endsWith("/feeds") ? "/feeds" : "/";
 }
 
-/** Pathname one segment above the current URL (e.g. /app/feeds → /app/). */
-export function parentPathname(): string {
-  const parts = window.location.pathname.replace(/\/$/, "").split("/").filter(Boolean);
-  parts.pop();
-  return parts.length ? `/${parts.join("/")}/` : "/";
+function routeToRelativeHref(next: AppRoute): string {
+  return next === "/feeds" ? "feeds" : "..";
 }
 
-/** Relative link to the parent of the current URL. */
-export function parentHref(): string {
+/** Relative link to the app home (parent of /feeds). */
+export function homeHref(): string {
   return "..";
 }
 
-export function navigateToParent() {
-  const targetPath = parentPathname();
-  const current = get(route);
-  const next = pathnameToRoute(targetPath);
-  if (window.location.pathname === targetPath && current === next) return;
+/** Relative link to the feeds page. */
+export function feedsHref(): string {
+  return "feeds";
+}
 
-  saveScroll(current);
-  history.pushState(null, "", targetPath + window.location.search);
-  route.set(next);
-  restoreScroll(next);
+export function navigateToParent() {
+  navigate("/");
 }
 
 function saveScroll(current: AppRoute) {
@@ -49,12 +44,15 @@ export function syncRouteFromLocation() {
 }
 
 export function navigate(next: AppRoute) {
-  const target = new URL(next === "/feeds" ? "feeds" : next, window.location.href);
   const current = get(route);
-  if (window.location.pathname === target.pathname && current === next) return;
+  if (current === next) return;
+
+  const href = routeToRelativeHref(next);
+  const target = new URL(href, window.location.href);
+  if (window.location.pathname === target.pathname) return;
 
   saveScroll(current);
-  history.pushState(null, "", target.pathname + window.location.search);
+  history.pushState(null, "", href + window.location.search);
   route.set(next);
   restoreScroll(next);
 }

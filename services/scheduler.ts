@@ -32,10 +32,10 @@ export async function startScheduler() {
   });
 
   console.log(
-    `Fetch scheduler: Bun.cron (cron ${TICK_CRON} UTC, per-feed 5–30 min)`,
+    `Fetch feeds scheduler: Bun.cron (cron ${TICK_CRON} UTC, per-feed 5–30 min)`,
   );
   console.log(
-    `Cleanup scheduler: Bun.cron (cron ${CLEANUP_CRON} UTC, items older than 90 days)`,
+    `Cleanup items scheduler: Bun.cron (cron ${CLEANUP_CRON} UTC, items older than 90 days)`,
   );
 }
 

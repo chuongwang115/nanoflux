@@ -6257,24 +6257,17 @@ var route = writable("/");
 function pathnameToRoute(pathname) {
   return pathname.endsWith("/feeds") ? "/feeds" : "/";
 }
-function parentPathname() {
-  const parts = window.location.pathname.replace(/\/$/, "").split("/").filter(Boolean);
-  parts.pop();
-  return parts.length ? `/${parts.join("/")}/` : "/";
+function routeToRelativeHref(next2) {
+  return next2 === "/feeds" ? "feeds" : "..";
 }
-function parentHref() {
+function homeHref() {
   return "..";
 }
+function feedsHref() {
+  return "feeds";
+}
 function navigateToParent() {
-  const targetPath = parentPathname();
-  const current = get(route);
-  const next2 = pathnameToRoute(targetPath);
-  if (window.location.pathname === targetPath && current === next2)
-    return;
-  saveScroll(current);
-  history.pushState(null, "", targetPath + window.location.search);
-  route.set(next2);
-  restoreScroll(next2);
+  navigate("/");
 }
 function saveScroll(current) {
   scrollByRoute.set(current, window.scrollY);
@@ -6288,12 +6281,15 @@ function syncRouteFromLocation() {
   route.set(pathnameToRoute(window.location.pathname));
 }
 function navigate(next2) {
-  const target = new URL(next2 === "/feeds" ? "feeds" : next2, window.location.href);
   const current = get(route);
-  if (window.location.pathname === target.pathname && current === next2)
+  if (current === next2)
+    return;
+  const href = routeToRelativeHref(next2);
+  const target = new URL(href, window.location.href);
+  if (window.location.pathname === target.pathname)
     return;
   saveScroll(current);
-  history.pushState(null, "", target.pathname + window.location.search);
+  history.pushState(null, "", href + window.location.search);
   route.set(next2);
   restoreScroll(next2);
 }
@@ -7086,7 +7082,7 @@ var root_4 = from_html(`
         <nav>
           <span> </span>
           <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
-          <a href="/feeds" class="hover:text-neutral-900 dark:hover:text-neutral-100"> </a>
+          <a class="hover:text-neutral-900 dark:hover:text-neutral-100"> </a>
         </nav>
       `, 1);
 var root_5 = from_html(`
@@ -7176,7 +7172,7 @@ function Header($$anchor, $$props) {
       var event_handler = user_derived(navClickParent);
       set_class(a, 1, "shrink-0 text-lg font-medium tracking-tight hover:opacity-70");
       next();
-      template_effect(($0) => set_attribute2(a, "href", $0), [() => parentHref()]);
+      template_effect(($0) => set_attribute2(a, "href", $0), [() => homeHref()]);
       delegated("click", a, function(...$$args) {
         get2(event_handler)?.apply(this, $$args);
       });
@@ -7216,7 +7212,7 @@ function Header($$anchor, $$props) {
         set_attribute2(a_1, "title", $2);
         set_text(text2, $3);
       }, [
-        () => parentHref(),
+        () => homeHref(),
         () => t("feeds.back"),
         () => t("feeds.back"),
         () => t("feeds.title")
@@ -7239,16 +7235,18 @@ function Header($$anchor, $$props) {
       next();
       reset(nav);
       next();
-      template_effect(($0, $1, $2) => {
+      template_effect(($0, $1, $2, $3) => {
         set_class(nav, 1, clsx2(get2(subClass)));
         set_attribute2(nav, "aria-label", $0);
         set_text(text_1, $1);
+        set_attribute2(a_2, "href", $2);
         set_text(text_2, `
-            ${$2 ?? ""}
+            ${$3 ?? ""}
           `);
       }, [
         () => t("items.latest"),
         () => t("items.latest"),
+        () => feedsHref(),
         () => t("items.feeds")
       ]);
       delegated("click", a_2, function(...$$args) {

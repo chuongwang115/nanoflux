@@ -30,18 +30,19 @@ function toStoredItem(entry: Parser.Item) {
 
   const guid = entry.guid?.trim() || link;
   const title = entry.title?.trim() || link;
-  const summary = entry.summary?.trim();
+  
   const description =
     entry.contentSnippet?.trim() ||
-    (summary && summary !== title ? summary : null) ||
+    entry.summary?.trim() ||
     (entry.content ? stripHtml(entry.content).slice(0, 2000) : "") ||
     null;
+
   const published_at =
     parsePublishedAt(entry.isoDate) ||
     parsePublishedAt(entry.pubDate) ||
     new Date().toISOString();
 
-  return { guid, title, link, description, published_at };
+  return { guid, title, link, description: (description && description != title ? description : null), published_at };
 } 
 
 function maxPublishedAt(
