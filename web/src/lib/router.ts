@@ -12,12 +12,16 @@ function pathnameToRoute(pathname: string): AppRoute {
 }
 
 function routeToRelativeHref(next: AppRoute): string {
-  return next === "/feeds" ? "feeds" : "..";
+  if (next === "/feeds") return "feeds";
+  // /app/feeds has no trailing slash: ".." resolves to site root (/), not /app/.
+  const path = window.location.pathname;
+  return path.endsWith("/feeds/") ? ".." : "./";
 }
 
-/** Relative link to the app home (parent of /feeds). */
+/** Relative link to the app home (sibling of the feeds segment). */
 export function homeHref(): string {
-  return "..";
+  const path = window.location.pathname;
+  return path.endsWith("/feeds/") ? ".." : "./";
 }
 
 /** Relative link to the feeds page. */

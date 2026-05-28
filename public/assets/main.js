@@ -6258,10 +6258,14 @@ function pathnameToRoute(pathname) {
   return pathname.endsWith("/feeds") ? "/feeds" : "/";
 }
 function routeToRelativeHref(next2) {
-  return next2 === "/feeds" ? "feeds" : "..";
+  if (next2 === "/feeds")
+    return "feeds";
+  const path = window.location.pathname;
+  return path.endsWith("/feeds/") ? ".." : "./";
 }
 function homeHref() {
-  return "..";
+  const path = window.location.pathname;
+  return path.endsWith("/feeds/") ? ".." : "./";
 }
 function feedsHref() {
   return "feeds";
