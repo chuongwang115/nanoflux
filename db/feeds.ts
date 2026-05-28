@@ -1,6 +1,8 @@
 import {
+  asc,
   desc,
   eq,
+  gt,
   isNull,
   like,
   lt,
@@ -12,27 +14,72 @@ import { db } from "./database";
 import { feeds, type Feed, DEFAULT_LIMIT, MAX_LIMIT } from "./schema";
 import { decodeCursor, feedIdFromUrl } from "./utils";
 
-export function getFeeds( 
+export type FeedSort = "updated_desc" | "published_desc" | "published_asc";
+
+const PUBLISHED_NULL_DESC = "1970-01-01T00:00:00.000Z";
+const PUBLISHED_NULL_ASC = "9999-12-31T23:59:59.999Z";
+
+const publishedSortKeyDesc = sql`COALESCE(${feeds.last_published_at}, ${PUBLISHED_NULL_DESC})`;
+const publishedSortKeyAsc = sql`COALESCE(${feeds.last_published_at}, ${PUBLISHED_NULL_ASC})`;
+
+export function feedCursorSortTime(
+  feed: Feed,
+  sort: FeedSort = "updated_desc",
+): string {
+  switch (sort) {
+    case "published_desc":
+      return feed.last_published_at ?? PUBLISHED_NULL_DESC;
+    case "published_asc":
+      return feed.last_published_at ?? PUBLISHED_NULL_ASC;
+    default:
+      return feed.updated_at;
+  }
+}
+
+export function getFeeds(
   options?: {
     cursor?: string;
     limit?: number;
     keyword?: string;
-  }
+    sort?: FeedSort;
+  },
 ): Feed[] {
-
   try {
+    const sort = options?.sort ?? "updated_desc";
 
     const decoded = options?.cursor ? decodeCursor(options.cursor) : null;
     if (options?.cursor && !decoded) {
       throw new Error(`Invalid cursor: ${options.cursor}`);
     }
 
-    const cursorFilter = decoded
-      ? or(
+    let cursorFilter;
+    if (decoded) {
+      if (sort === "published_asc") {
+        cursorFilter = or(
+          gt(publishedSortKeyAsc, decoded.sortTime),
+          and(
+            eq(publishedSortKeyAsc, decoded.sortTime),
+            gt(feeds.id, decoded.id),
+          ),
+        );
+      } else if (sort === "published_desc") {
+        cursorFilter = or(
+          lt(publishedSortKeyDesc, decoded.sortTime),
+          and(
+            eq(publishedSortKeyDesc, decoded.sortTime),
+            lt(feeds.id, decoded.id),
+          ),
+        );
+      } else {
+        cursorFilter = or(
           lt(feeds.updated_at, decoded.sortTime),
-          and(eq(feeds.updated_at, decoded.sortTime), lt(feeds.id, decoded.id)),
-        )
-      : undefined;
+          and(
+            eq(feeds.updated_at, decoded.sortTime),
+            lt(feeds.id, decoded.id),
+          ),
+        );
+      }
+    }
 
     const adjustedLimit = Math.min(
       Math.max(options?.limit ?? DEFAULT_LIMIT, 1),
@@ -45,16 +92,22 @@ export function getFeeds(
       ? like(feeds.title, `%${keyword}%`)
       : undefined;
 
+    const orderBy =
+      sort === "published_asc"
+        ? [asc(publishedSortKeyAsc), asc(feeds.id)]
+        : sort === "published_desc"
+          ? [desc(publishedSortKeyDesc), desc(feeds.id)]
+          : [desc(feeds.updated_at), desc(feeds.id)];
+
     const selected = db
       .select()
       .from(feeds)
       .where(and(cursorFilter, feedFilter))
-      .orderBy(desc(feeds.updated_at), desc(feeds.id))
+      .orderBy(...orderBy)
       .limit(adjustedLimit + 1)
       .all();
 
-    return selected
-  
+    return selected;
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to get feeds: ${detail}`);
@@ -207,9 +260,10 @@ export function getDueFeeds(): Feed[] {
 
 export function updateFeedFetchState(
   id: string,
-  input: { 
+  input: {
     next_fetched_at: string;
     fetch_interval_min: number;
+    last_published_at?: string;
   },
 ): void {
 
@@ -219,6 +273,9 @@ export function updateFeedFetchState(
       .set({
         next_fetched_at: input.next_fetched_at,
         fetch_interval_min: input.fetch_interval_min,
+        ...(input.last_published_at !== undefined
+          ? { last_published_at: input.last_published_at }
+          : {}),
       })
       .where(eq(feeds.id, id))
     .run();

@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import Pencil from "@lucide/svelte/icons/pencil";
+  import Trash2 from "@lucide/svelte/icons/trash-2";
   import {
     createFeed,
     deleteFeed,
@@ -7,10 +9,13 @@
     previewFeed,
     updateFeed,
     type Feed,
+    type FeedSort,
   } from "../lib/api";
   import { t } from "../lib/locale.svelte";
+  import { formatTime } from "../lib/utils";
 
   const PAGE_SIZE = 20;
+  const iconProps = { size: 16, strokeWidth: 1.5, "aria-hidden": true as const };
 
   let feeds = $state<Feed[]>([]);
   let cursor = $state<string | null>(null);
@@ -30,6 +35,9 @@
   let previewTimer: ReturnType<typeof setTimeout> | undefined;
   let previewRequest = 0;
   let sentinel = $state<HTMLDivElement | null>(null);
+  let sort = $state<FeedSort>("updated_desc");
+  /** Bumps every minute so relative timestamps stay current. */
+  let now = $state(Date.now());
 
   const isEditing = $derived(editId !== null);
 
@@ -112,6 +120,8 @@
       const page = await fetchFeedsPage(
         append ? (cursor ?? undefined) : undefined,
         PAGE_SIZE,
+        undefined,
+        sort,
       );
       feeds = append ? [...feeds, ...page.data] : page.data;
       cursor = page.nextCursor;
@@ -205,8 +215,19 @@
     }
   }
 
+  async function setSort(next: FeedSort) {
+    if (next === sort) return;
+    sort = next;
+    loading = true;
+    await loadFeeds();
+  }
+
   onMount(() => {
     void loadFeeds();
+    const timer = setInterval(() => {
+      now = Date.now();
+    }, 60_000);
+    return () => clearInterval(timer);
   });
 </script>
 
@@ -273,11 +294,39 @@
 </section>
 
 <section>
-  <h2
-    class="mb-4 text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"
-  >
-    {t("feeds.feedList")}
-  </h2>
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h2
+      class="text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"
+    >
+      {t("feeds.feedList")}
+    </h2>
+    <div
+      class="flex gap-3 text-xs"
+      role="group"
+      aria-label={t("feeds.sortBy")}
+    >
+      <button
+        type="button"
+        class="transition-colors {sort === 'updated_desc'
+          ? 'text-neutral-900 dark:text-neutral-100'
+          : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}"
+        aria-pressed={sort === "updated_desc"}
+        onclick={() => setSort("updated_desc")}
+      >
+        {t("feeds.sortDefault")}
+      </button>
+      <button
+        type="button"
+        class="transition-colors {sort === 'published_desc'
+          ? 'text-neutral-900 dark:text-neutral-100'
+          : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}"
+        aria-pressed={sort === "published_desc"}
+        onclick={() => setSort("published_desc")}
+      >
+        {t("feeds.sortByPublished")}
+      </button>
+    </div>
+  </div>
   {#if listError}
     <p class="text-sm text-red-500">{listError}</p>
   {:else if loading}
@@ -287,43 +336,58 @@
   {:else}
     <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
       {#each feeds as feed (feed.id)}
-        <li class="py-5">
-          <div class="flex items-start justify-between gap-4">
-            <div class="min-w-0 flex-1">
-              <p class="text-sm font-medium">{feed.title}</p>
-              <a
-                href={feed.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="mt-0.5 block truncate text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+        <li class="group grid w-full grid-cols-[1fr_auto] gap-x-4 gap-y-2 py-5">
+            <p class="min-w-0 text-sm font-medium">{feed.title}</p>
+            <div class="relative flex shrink-0 items-center">
+              <div
+                class="absolute right-full mr-2 flex gap-1 text-neutral-400 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 dark:text-neutral-500"
               >
-                {feed.url}
-              </a>
-              {#if feed.description}
-                <p class="mt-1 text-sm text-neutral-400 dark:text-neutral-500">
-                  {feed.description}
-                </p>
-              {/if}
+                <button
+                  type="button"
+                  class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 hover:text-neutral-900 dark:hover:text-neutral-100"
+                  aria-label={t("feeds.edit")}
+                  title={t("feeds.edit")}
+                  onclick={() => startEdit(feed)}
+                >
+                  <Pencil {...iconProps} />
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 hover:text-red-500"
+                  aria-label={t("feeds.delete")}
+                  title={t("feeds.delete")}
+                  onclick={() => handleDelete(feed.id)}
+                >
+                  <Trash2 {...iconProps} />
+                </button>
+              </div>
+              <time
+                datetime={feed.last_published_at ?? undefined}
+                class="text-xs text-neutral-400 dark:text-neutral-500"
+                title={t("feeds.lastPublished")}
+              >
+                {#if feed.last_published_at}
+                  {formatTime(feed.last_published_at, now)}
+                {:else}
+                  {t("feeds.noPublished")}
+                {/if}
+              </time>
             </div>
-            <div
-              class="flex shrink-0 gap-3 text-xs text-neutral-400 dark:text-neutral-500"
+            <a
+              href={feed.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="col-span-2 min-w-0 w-full truncate text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
             >
-              <button
-                type="button"
-                class="hover:text-neutral-900 dark:hover:text-neutral-100"
-                onclick={() => startEdit(feed)}
+              {feed.url}
+            </a>
+            {#if feed.description}
+              <p
+                class="col-span-2 text-sm text-neutral-400 dark:text-neutral-500"
               >
-                {t("feeds.edit")}
-              </button>
-              <button
-                type="button"
-                class="hover:text-red-500"
-                onclick={() => handleDelete(feed.id)}
-              >
-                {t("feeds.delete")}
-              </button>
-            </div>
-          </div>
+                {feed.description}
+              </p>
+            {/if}
         </li>
       {/each}
     </ul>

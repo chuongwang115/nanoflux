@@ -1,8 +1,11 @@
+export type FeedSort = "updated_desc" | "published_desc" | "published_asc";
+
 export type Feed = {
   id: string;
   title: string;
   url: string;
   description: string | null;
+  last_published_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -111,8 +114,9 @@ export async function fetchFeedsPage(
   cursor?: string,
   limit = 20,
   keyword?: string,
+  sort: FeedSort = "updated_desc",
 ): Promise<FeedsPage> {
-  const params = new URLSearchParams({ limit: String(limit) });
+  const params = new URLSearchParams({ limit: String(limit), sort });
   if (cursor) params.set("cursor", cursor);
   if (keyword) params.set("keyword", keyword);
   const body = await request<FeedsApiResult>(`/api/feeds?${params}`);

@@ -17,6 +17,7 @@ export const feeds = sqliteTable(
     description: text("description"),
     fetch_interval_min: integer("fetch_interval_min").notNull().default(15),
     next_fetched_at: text("next_fetched_at"),
+    last_published_at: text("last_published_at"),
     created_at: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -27,6 +28,7 @@ export const feeds = sqliteTable(
   (table) => [
     index("idx_feeds_updated_at").on(table.updated_at),
     index("idx_feeds_next_fetched_at").on(table.next_fetched_at),
+    index("idx_feeds_last_published_at").on(table.last_published_at),
   ],
 );
 

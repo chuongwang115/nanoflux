@@ -216,7 +216,7 @@ Connect with `EventSource` to receive `items` events when new articles arrive, p
 ## Project Structure
 
 ```
-├── web/           Svelte frontend source
+├── web/              Svelte frontend source
 ├── public/           Built static assets (generated)
 ├── routes/           REST API routes (feeds, items)
 ├── mcp/              MCP server and tools
@@ -224,7 +224,6 @@ Connect with `EventSource` to receive `items` events when new articles arrive, p
 ├── services/         Feed fetcher, scheduler, HTTP client
 ├── db/               Drizzle schema and data access
 ├── shared/           Shared types and utilities
-├── utils/            Server-side helpers
 ├── drizzle/          SQL migrations
 ├── main.ts           Application entry point
 └── build.ts          Frontend build script

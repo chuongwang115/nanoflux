@@ -5,14 +5,38 @@ import {
   deleteFeed,
   getFeed,
   getFeeds,
+  feedCursorSortTime,
+  type FeedSort,
 } from "../db/feeds";
 import { encodeCursor } from "../db/utils";
 import { DEFAULT_LIMIT, MAX_LIMIT } from "../db/schema";
 import { fetchFeedMetadata } from "../services/feed-fetcher";
 
-function getFeedsHandler({ query }: { query: { keyword?: string; cursor?: string; limit?: number; }}) {
+const FEED_SORTS = new Set<FeedSort>([
+  "updated_desc",
+  "published_desc",
+  "published_asc",
+]);
 
+function parseFeedSort(value?: string): FeedSort {
+  if (value && FEED_SORTS.has(value as FeedSort)) {
+    return value as FeedSort;
+  }
+  return "updated_desc";
+}
+
+function getFeedsHandler({
+  query,
+}: {
+  query: {
+    keyword?: string;
+    cursor?: string;
+    limit?: number;
+    sort?: string;
+  };
+}) {
   try {
+    const sort = parseFeedSort(query.sort);
 
     const adjustedLimit = Math.min(
       Math.max(query.limit ?? DEFAULT_LIMIT, 1),
@@ -23,13 +47,17 @@ function getFeedsHandler({ query }: { query: { keyword?: string; cursor?: string
       cursor: query.cursor,
       limit: adjustedLimit,
       keyword: query.keyword,
-    })
+      sort,
+    });
 
     const hasMore = selected.length > adjustedLimit;
     const returned = selected.slice(0, adjustedLimit);
 
     const lastFeed = returned.at(-1);
-    const nextCursor = hasMore && lastFeed ? encodeCursor(lastFeed.updated_at, lastFeed.id) : null;
+    const nextCursor =
+      hasMore && lastFeed
+        ? encodeCursor(feedCursorSortTime(lastFeed, sort), lastFeed.id)
+        : null;
 
     return {
       code: 0,

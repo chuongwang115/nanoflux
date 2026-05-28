@@ -33,6 +33,25 @@ function toStoredItem(entry: Parser.Item) {
   return { guid, title, link, description, published_at };
 }
 
+function maxPublishedAt(
+  entries: { published_at: string }[],
+): string | null {
+  if (entries.length === 0) return null;
+
+  let best = entries[0]!.published_at;
+  let bestTime = Date.parse(best);
+  for (let i = 1; i < entries.length; i++) {
+    const published_at = entries[i]!.published_at;
+    const time = Date.parse(published_at);
+    if (Number.isNaN(time)) continue;
+    if (Number.isNaN(bestTime) || time > bestTime) {
+      best = published_at;
+      bestTime = time;
+    }
+  }
+  return Number.isNaN(bestTime) ? null : best;
+}
+
 const MIN_INTERVAL_MIN = 5;
 const MAX_INTERVAL_MIN = 30;
 const DEFAULT_INTERVAL_MIN = 15;
@@ -157,9 +176,18 @@ export async function fetchFeed(feed: Feed): Promise<{
       inserted.length,
       rawItems,
     );
+    let lastPublishedAt = maxPublishedAt(entries);
+    if (lastPublishedAt && feed.last_published_at) {
+      const next = Date.parse(lastPublishedAt);
+      const prev = Date.parse(feed.last_published_at);
+      if (!Number.isNaN(prev) && (Number.isNaN(next) || prev > next)) {
+        lastPublishedAt = feed.last_published_at;
+      }
+    }
     updateFeedFetchState(feed.id, {
       next_fetched_at: nextFetchedAtIso(nextInterval),
       fetch_interval_min: nextInterval,
+      ...(lastPublishedAt ? { last_published_at: lastPublishedAt } : {}),
     });
 
     return { newItems: inserted };

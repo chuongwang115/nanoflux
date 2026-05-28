@@ -4096,6 +4096,22 @@ function from_namespace(content, flags2, ns = "svg") {
 function from_svg(content, flags2) {
   return from_namespace(content, flags2, "svg");
 }
+function text(value = "") {
+  if (!hydrating) {
+    var t = create_text(value + "");
+    assign_nodes(t, t);
+    return t;
+  }
+  var node = hydrate_node;
+  if (node.nodeType !== TEXT_NODE) {
+    node.before(node = create_text());
+    set_hydrate_node(node);
+  } else {
+    merge_text_nodes(node);
+  }
+  assign_nodes(node, node);
+  return node;
+}
 function append(anchor, dom) {
   if (hydrating) {
     var effect2 = active_effect;
@@ -4116,11 +4132,11 @@ var should_intro = true;
 function set_should_intro(value) {
   should_intro = value;
 }
-function set_text(text, value) {
+function set_text(text2, value) {
   var str = value == null ? "" : typeof value === "object" ? `${value}` : value;
-  if (str !== (text[TEXT_CACHE] ??= text.nodeValue)) {
-    text[TEXT_CACHE] = str;
-    text.nodeValue = `${str}`;
+  if (str !== (text2[TEXT_CACHE] ??= text2.nodeValue)) {
+    text2[TEXT_CACHE] = str;
+    text2.nodeValue = `${str}`;
   }
 }
 function mount(component, options) {
@@ -6552,8 +6568,14 @@ var messages = {
     "feeds.cancel": "取消",
     "feeds.parsing": "正在从 Feed 解析名称与摘要…",
     "feeds.feedList": "Feed 列表",
+    "feeds.sortBy": "排序",
+    "feeds.sortDefault": "默认",
+    "feeds.sortByPublished": "最后发布",
+    "feeds.loading": "加载中…",
     "feeds.noFeeds": "暂无 Feeds",
     "feeds.noMore": "没有更多了",
+    "feeds.lastPublished": "最后发布",
+    "feeds.noPublished": "暂无发布",
     "feeds.edit": "编辑",
     "feeds.delete": "删除",
     "feeds.confirmDelete": "确定删除该 Feed？",
@@ -6594,8 +6616,14 @@ var messages = {
     "feeds.cancel": "Cancel",
     "feeds.parsing": "Fetching title and summary from feed…",
     "feeds.feedList": "Feeds",
+    "feeds.sortBy": "Sort",
+    "feeds.sortDefault": "Default",
+    "feeds.sortByPublished": "Last published",
+    "feeds.loading": "Loading…",
     "feeds.noFeeds": "No feeds yet",
     "feeds.noMore": "No more feeds",
+    "feeds.lastPublished": "Last published",
+    "feeds.noPublished": "Never published",
     "feeds.edit": "Edit",
     "feeds.delete": "Delete",
     "feeds.confirmDelete": "Delete this feed?",
@@ -7284,6 +7312,94 @@ if (undefined) {}
 var Header_default = Header;
 delegate(["click"]);
 
+// node_modules/@lucide/svelte/dist/icons/pencil.svelte
+var root12 = from_html(`<!--
+@lucide/svelte v1.16.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMjEuMTc0IDYuODEyYTEgMSAwIDAgMC0zLjk4Ni0zLjk4N0wzLjg0MiAxNi4xNzRhMiAyIDAgMCAwLS41LjgzbC0xLjMyMSA0LjM1MmEuNS41IDAgMCAwIC42MjMuNjIybDQuMzUzLTEuMzJhMiAyIDAgMCAwIC44My0uNDk3eiIgLz4KICA8cGF0aCBkPSJtMTUgNSA0IDQiIC8+Cjwvc3ZnPgo=) - https://lucide.dev/icons/pencil
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Pencil($$anchor, $$props) {
+  let props = rest_props($$props, ["$$slots", "$$events", "$$legacy"]);
+  const iconNode = [
+    [
+      "path",
+      {
+        d: "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"
+      }
+    ],
+    ["path", { d: "m15 5 4 4" }]
+  ];
+  var fragment = root12();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "pencil" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var pencil_default = Pencil;
+// node_modules/@lucide/svelte/dist/icons/trash-2.svelte
+var root13 = from_html(`<!--
+@lucide/svelte v1.16.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMTAgMTF2NiIgLz4KICA8cGF0aCBkPSJNMTQgMTF2NiIgLz4KICA8cGF0aCBkPSJNMTkgNnYxNGEyIDIgMCAwIDEtMiAySDdhMiAyIDAgMCAxLTItMlY2IiAvPgogIDxwYXRoIGQ9Ik0zIDZoMTgiIC8+CiAgPHBhdGggZD0iTTggNlY0YTIgMiAwIDAgMSAyLTJoNGEyIDIgMCAwIDEgMiAydjIiIC8+Cjwvc3ZnPgo=) - https://lucide.dev/icons/trash-2
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Trash_2($$anchor, $$props) {
+  let props = rest_props($$props, ["$$slots", "$$events", "$$legacy"]);
+  const iconNode = [
+    ["path", { d: "M10 11v6" }],
+    ["path", { d: "M14 11v6" }],
+    ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" }],
+    ["path", { d: "M3 6h18" }],
+    ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" }]
+  ];
+  var fragment = root13();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "trash-2" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var trash_2_default = Trash_2;
 // web/src/lib/api.ts
 function assertApiOk(body) {
   if (body.code !== 0) {
@@ -7323,8 +7439,8 @@ async function fetchItemsPage(cursor, limit = 20) {
     hasMore: body.data.hasMore
   };
 }
-async function fetchFeedsPage(cursor, limit = 20, keyword) {
-  const params = new URLSearchParams({ limit: String(limit) });
+async function fetchFeedsPage(cursor, limit = 20, keyword, sort = "updated_desc") {
+  const params = new URLSearchParams({ limit: String(limit), sort });
   if (cursor)
     params.set("cursor", cursor);
   if (keyword)
@@ -7381,6 +7497,34 @@ async function markItemRead(id) {
   assertApiOk(body);
 }
 
+// web/src/lib/utils.ts
+function formatTime(iso, nowMs = Date.now()) {
+  if (!iso)
+    return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime()))
+    return iso;
+  const now2 = new Date(nowMs);
+  const diff = now2.getTime() - date.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1)
+    return t("time.justNow");
+  if (mins < 60)
+    return tf("time.minutesAgo", { n: mins });
+  const hours = Math.floor(mins / 60);
+  if (hours < 24)
+    return tf("time.hoursAgo", { n: hours });
+  const days = Math.floor(hours / 24);
+  if (days < 7)
+    return tf("time.daysAgo", { n: days });
+  const tag2 = localeState.locale === "zh" ? "zh-CN" : "en-US";
+  return date.toLocaleDateString(tag2, {
+    month: "short",
+    day: "numeric",
+    year: date.getFullYear() !== now2.getFullYear() ? "numeric" : undefined
+  });
+}
+
 // web/src/components/FeedsManager.svelte
 var root_15 = from_html(`
         <button type="button" class="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"> </button>
@@ -7403,28 +7547,33 @@ var root_62 = from_html(`
 var root_7 = from_html(`
     <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
   `, 1);
-var root_10 = from_html(`
-                <p class="mt-1 text-sm text-neutral-400 dark:text-neutral-500"> </p>
-              `, 1);
+var root_122 = from_html(`
+              <p class="col-span-2 text-sm text-neutral-400 dark:text-neutral-500"> </p>
+            `, 1);
 var root_9 = from_html(`
-        <li class="py-5">
-          <div class="flex items-start justify-between gap-4">
-            <div class="min-w-0 flex-1">
-              <p class="text-sm font-medium"> </p>
-              <a target="_blank" rel="noopener noreferrer" class="mt-0.5 block truncate text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"> </a>
-              <!>
+        <li class="group grid w-full grid-cols-[1fr_auto] gap-x-4 gap-y-2 py-5">
+            <p class="min-w-0 text-sm font-medium"> </p>
+            <div class="relative flex shrink-0 items-center">
+              <div class="absolute right-full mr-2 flex gap-1 text-neutral-400 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 dark:text-neutral-500">
+                <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 hover:text-neutral-900 dark:hover:text-neutral-100">
+                  <!>
+                </button>
+                <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 hover:text-red-500">
+                  <!>
+                </button>
+              </div>
+              <time class="text-xs text-neutral-400 dark:text-neutral-500">
+                <!>
+              </time>
             </div>
-            <div class="flex shrink-0 gap-3 text-xs text-neutral-400 dark:text-neutral-500">
-              <button type="button" class="hover:text-neutral-900 dark:hover:text-neutral-100"> </button>
-              <button type="button" class="hover:text-red-500"> </button>
-            </div>
-          </div>
+            <a target="_blank" rel="noopener noreferrer" class="col-span-2 min-w-0 w-full truncate text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"> </a>
+            <!>
         </li>
       `, 1);
-var root_11 = from_html(`
+var root_132 = from_html(`
       <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
     `, 1);
-var root_122 = from_html(`
+var root_142 = from_html(`
       <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
     `, 1);
 var root_8 = from_html(`
@@ -7434,7 +7583,7 @@ var root_8 = from_html(`
     <!>
     <div class="h-1" aria-hidden="true"></div>
   `, 1);
-var root12 = from_html(`
+var root14 = from_html(`
 
 <section class="mb-10">
   <form class="space-y-3">
@@ -7451,12 +7600,19 @@ var root12 = from_html(`
 </section>
 
 <section>
-  <h2 class="mb-4 text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </h2>
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </h2>
+    <div class="flex gap-3 text-xs" role="group">
+      <button type="button"> </button>
+      <button type="button"> </button>
+    </div>
+  </div>
   <!>
 </section>`, 1);
 function FeedsManager($$anchor, $$props) {
   push($$props, true);
   const PAGE_SIZE = 20;
+  const iconProps = { size: 16, strokeWidth: 1.5, "aria-hidden": true };
   let feeds = state(proxy([]));
   let cursor = state(null);
   let hasMore = state(true);
@@ -7475,6 +7631,8 @@ function FeedsManager($$anchor, $$props) {
   let previewTimer;
   let previewRequest = 0;
   let sentinel = state(null);
+  let sort = state("updated_desc");
+  let now2 = state(proxy(Date.now()));
   const isEditing = user_derived(() => get2(editId) !== null);
   function isValidFeedUrl(value) {
     try {
@@ -7549,7 +7707,7 @@ function FeedsManager($$anchor, $$props) {
       set(hasMore, true);
     }
     try {
-      const page = await fetchFeedsPage(append2 ? get2(cursor) ?? undefined : undefined, PAGE_SIZE);
+      const page = await fetchFeedsPage(append2 ? get2(cursor) ?? undefined : undefined, PAGE_SIZE, undefined, get2(sort));
       set(feeds, append2 ? [...get2(feeds), ...page.data] : page.data, true);
       set(cursor, page.nextCursor, true);
       set(hasMore, page.hasMore, true);
@@ -7633,11 +7791,22 @@ function FeedsManager($$anchor, $$props) {
       set(listError, e instanceof Error ? e.message : t("feeds.deleteFailed"), true);
     }
   }
+  async function setSort(next2) {
+    if (next2 === get2(sort))
+      return;
+    set(sort, next2, true);
+    set(loading, true);
+    await loadFeeds();
+  }
   onMount(() => {
     loadFeeds();
+    const timer = setInterval(() => {
+      set(now2, Date.now(), true);
+    }, 60000);
+    return () => clearInterval(timer);
   });
   next();
-  var fragment = root12();
+  var fragment = root14();
   var section = sibling(first_child(fragment));
   var form = sibling(child(section));
   var input = sibling(child(form));
@@ -7724,39 +7893,51 @@ function FeedsManager($$anchor, $$props) {
   next();
   reset(section);
   var section_1 = sibling(section, 2);
-  var h2 = sibling(child(section_1));
+  var div_1 = sibling(child(section_1));
+  var h2 = sibling(child(div_1));
   var text_5 = child(h2);
   reset(h2);
-  var node_3 = sibling(h2, 2);
+  var div_2 = sibling(h2, 2);
+  var button_2 = sibling(child(div_2));
+  var text_6 = child(button_2);
+  reset(button_2);
+  var button_3 = sibling(button_2, 2);
+  var text_7 = child(button_3);
+  reset(button_3);
+  next();
+  reset(div_2);
+  next();
+  reset(div_1);
+  var node_3 = sibling(div_1, 2);
   {
     var consequent_4 = ($$anchor2) => {
       var fragment_5 = root_52();
       var p_3 = sibling(first_child(fragment_5));
-      var text_6 = child(p_3, true);
+      var text_8 = child(p_3, true);
       reset(p_3);
       next();
-      template_effect(() => set_text(text_6, get2(listError)));
+      template_effect(() => set_text(text_8, get2(listError)));
       append($$anchor2, fragment_5);
     };
     var consequent_5 = ($$anchor2) => {
       var fragment_6 = root_62();
       var p_4 = sibling(first_child(fragment_6));
-      var text_7 = child(p_4, true);
+      var text_9 = child(p_4, true);
       reset(p_4);
       next();
-      template_effect(($0) => set_text(text_7, $0), [() => t("items.loading")]);
+      template_effect(($0) => set_text(text_9, $0), [() => t("items.loading")]);
       append($$anchor2, fragment_6);
     };
     var consequent_6 = ($$anchor2) => {
       var fragment_7 = root_7();
       var p_5 = sibling(first_child(fragment_7));
-      var text_8 = child(p_5, true);
+      var text_10 = child(p_5, true);
       reset(p_5);
       next();
-      template_effect(($0) => set_text(text_8, $0), [() => t("feeds.noFeeds")]);
+      template_effect(($0) => set_text(text_10, $0), [() => t("feeds.noFeeds")]);
       append($$anchor2, fragment_7);
     };
-    var alternate = ($$anchor2) => {
+    var alternate_1 = ($$anchor2) => {
       var fragment_8 = root_8();
       var ul = sibling(first_child(fragment_8));
       var node_4 = sibling(child(ul));
@@ -7764,100 +7945,133 @@ function FeedsManager($$anchor, $$props) {
         next();
         var fragment_9 = root_9();
         var li = sibling(first_child(fragment_9));
-        var div_1 = sibling(child(li));
-        var div_2 = sibling(child(div_1));
-        var p_6 = sibling(child(div_2));
-        var text_9 = child(p_6, true);
+        var p_6 = sibling(child(li));
+        var text_11 = child(p_6, true);
         reset(p_6);
-        var a = sibling(p_6, 2);
-        var text_10 = child(a);
-        reset(a);
-        var node_5 = sibling(a, 2);
+        var div_3 = sibling(p_6, 2);
+        var div_4 = sibling(child(div_3));
+        var button_4 = sibling(child(div_4));
+        var node_5 = sibling(child(button_4));
+        pencil_default(node_5, spread_props(() => iconProps));
+        next();
+        reset(button_4);
+        var button_5 = sibling(button_4, 2);
+        var node_6 = sibling(child(button_5));
+        trash_2_default(node_6, spread_props(() => iconProps));
+        next();
+        reset(button_5);
+        next();
+        reset(div_4);
+        var time = sibling(div_4, 2);
+        var node_7 = sibling(child(time));
         {
           var consequent_7 = ($$anchor4) => {
-            var fragment_10 = root_10();
-            var p_7 = sibling(first_child(fragment_10));
-            var text_11 = child(p_7);
-            reset(p_7);
-            next();
-            template_effect(() => set_text(text_11, `
-                  ${get2(feed).description ?? ""}
-                `));
-            append($$anchor4, fragment_10);
+            var text_12 = text();
+            template_effect(($0) => set_text(text_12, `
+                  ${$0 ?? ""}
+                `), [() => formatTime(get2(feed).last_published_at, get2(now2))]);
+            append($$anchor4, text_12);
           };
-          if_block(node_5, ($$render) => {
-            if (get2(feed).description)
+          var alternate = ($$anchor4) => {
+            var text_13 = text();
+            template_effect(($0) => set_text(text_13, `
+                  ${$0 ?? ""}
+                `), [() => t("feeds.noPublished")]);
+            append($$anchor4, text_13);
+          };
+          if_block(node_7, ($$render) => {
+            if (get2(feed).last_published_at)
               $$render(consequent_7);
+            else
+              $$render(alternate, -1);
           });
         }
         next();
-        reset(div_2);
-        var div_3 = sibling(div_2, 2);
-        var button_2 = sibling(child(div_3));
-        var text_12 = child(button_2);
-        reset(button_2);
-        var button_3 = sibling(button_2, 2);
-        var text_13 = child(button_3);
-        reset(button_3);
+        reset(time);
         next();
         reset(div_3);
-        next();
-        reset(div_1);
+        var a = sibling(div_3, 2);
+        var text_14 = child(a);
+        reset(a);
+        var node_8 = sibling(a, 2);
+        {
+          var consequent_8 = ($$anchor4) => {
+            var fragment_12 = root_122();
+            var p_7 = sibling(first_child(fragment_12));
+            var text_15 = child(p_7);
+            reset(p_7);
+            next();
+            template_effect(() => set_text(text_15, `
+                ${get2(feed).description ?? ""}
+              `));
+            append($$anchor4, fragment_12);
+          };
+          if_block(node_8, ($$render) => {
+            if (get2(feed).description)
+              $$render(consequent_8);
+          });
+        }
         next();
         reset(li);
         next();
-        template_effect(($0, $1) => {
-          set_text(text_9, get2(feed).title);
+        template_effect(($0, $1, $2, $3, $4) => {
+          set_text(text_11, get2(feed).title);
+          set_attribute2(button_4, "aria-label", $0);
+          set_attribute2(button_4, "title", $1);
+          set_attribute2(button_5, "aria-label", $2);
+          set_attribute2(button_5, "title", $3);
+          set_attribute2(time, "datetime", get2(feed).last_published_at ?? undefined);
+          set_attribute2(time, "title", $4);
           set_attribute2(a, "href", get2(feed).url);
-          set_text(text_10, `
-                ${get2(feed).url ?? ""}
-              `);
-          set_text(text_12, `
-                ${$0 ?? ""}
-              `);
-          set_text(text_13, `
-                ${$1 ?? ""}
-              `);
-        }, [() => t("feeds.edit"), () => t("feeds.delete")]);
-        delegated("click", button_2, () => startEdit(get2(feed)));
-        delegated("click", button_3, () => handleDelete(get2(feed).id));
+          set_text(text_14, `
+              ${get2(feed).url ?? ""}
+            `);
+        }, [
+          () => t("feeds.edit"),
+          () => t("feeds.edit"),
+          () => t("feeds.delete"),
+          () => t("feeds.delete"),
+          () => t("feeds.lastPublished")
+        ]);
+        delegated("click", button_4, () => startEdit(get2(feed)));
+        delegated("click", button_5, () => handleDelete(get2(feed).id));
         append($$anchor3, fragment_9);
       });
       next();
       reset(ul);
-      var node_6 = sibling(ul, 2);
+      var node_9 = sibling(ul, 2);
       {
-        var consequent_8 = ($$anchor3) => {
-          var fragment_11 = root_11();
-          var p_8 = sibling(first_child(fragment_11));
-          var text_14 = child(p_8);
+        var consequent_9 = ($$anchor3) => {
+          var fragment_13 = root_132();
+          var p_8 = sibling(first_child(fragment_13));
+          var text_16 = child(p_8);
           reset(p_8);
           next();
-          template_effect(($0) => set_text(text_14, `
+          template_effect(($0) => set_text(text_16, `
         ${$0 ?? ""}
       `), [() => t("feeds.loading")]);
-          append($$anchor3, fragment_11);
+          append($$anchor3, fragment_13);
         };
-        var consequent_9 = ($$anchor3) => {
-          var fragment_12 = root_122();
-          var p_9 = sibling(first_child(fragment_12));
-          var text_15 = child(p_9);
+        var consequent_10 = ($$anchor3) => {
+          var fragment_14 = root_142();
+          var p_9 = sibling(first_child(fragment_14));
+          var text_17 = child(p_9);
           reset(p_9);
           next();
-          template_effect(($0) => set_text(text_15, `
+          template_effect(($0) => set_text(text_17, `
         ${$0 ?? ""}
       `), [() => t("feeds.noMore")]);
-          append($$anchor3, fragment_12);
+          append($$anchor3, fragment_14);
         };
-        if_block(node_6, ($$render) => {
+        if_block(node_9, ($$render) => {
           if (get2(loadingMore))
-            $$render(consequent_8);
+            $$render(consequent_9);
           else if (!get2(hasMore) && get2(feeds).length > 0)
-            $$render(consequent_9, 1);
+            $$render(consequent_10, 1);
         });
       }
-      var div_4 = sibling(node_6, 2);
-      bind_this(div_4, ($$value) => set(sentinel, $$value), () => get2(sentinel));
+      var div_5 = sibling(node_9, 2);
+      bind_this(div_5, ($$value) => set(sentinel, $$value), () => get2(sentinel));
       next();
       append($$anchor2, fragment_8);
     };
@@ -7869,12 +8083,12 @@ function FeedsManager($$anchor, $$props) {
       else if (get2(feeds).length === 0)
         $$render(consequent_6, 2);
       else
-        $$render(alternate, -1);
+        $$render(alternate_1, -1);
     });
   }
   next();
   reset(section_1);
-  template_effect(($0, $1, $2, $3) => {
+  template_effect(($0, $1, $2, $3, $4, $5, $6) => {
     set_attribute2(input, "placeholder", $0);
     input_1.readOnly = get2(isEditing);
     classes = set_class(input_1, 1, "w-full border-0 border-b border-neutral-200 bg-transparent py-2 text-sm outline-none placeholder:text-neutral-300 focus:border-neutral-900 dark:border-neutral-700 dark:placeholder:text-neutral-600 dark:focus:border-neutral-100", null, classes, {
@@ -7887,13 +8101,27 @@ function FeedsManager($$anchor, $$props) {
         ${$2 ?? ""}
       `);
     set_text(text_5, `
-    ${$3 ?? ""}
-  `);
+      ${$3 ?? ""}
+    `);
+    set_attribute2(div_2, "aria-label", $4);
+    set_class(button_2, 1, `transition-colors ${get2(sort) === "updated_desc" ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"}`);
+    set_attribute2(button_2, "aria-pressed", get2(sort) === "updated_desc");
+    set_text(text_6, `
+        ${$5 ?? ""}
+      `);
+    set_class(button_3, 1, `transition-colors ${get2(sort) === "published_desc" ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"}`);
+    set_attribute2(button_3, "aria-pressed", get2(sort) === "published_desc");
+    set_text(text_7, `
+        ${$6 ?? ""}
+      `);
   }, [
     () => t("feeds.name"),
     () => t("feeds.descriptionOptional"),
     () => get2(isEditing) ? t("feeds.save") : t("feeds.addFeed"),
-    () => t("feeds.feedList")
+    () => t("feeds.feedList"),
+    () => t("feeds.sortBy"),
+    () => t("feeds.sortDefault"),
+    () => t("feeds.sortByPublished")
   ]);
   event("submit", form, handleSubmit);
   delegated("input", input, () => set(titleTouched, true));
@@ -7903,6 +8131,8 @@ function FeedsManager($$anchor, $$props) {
   bind_value(input_1, () => get2(url), ($$value) => set(url, $$value));
   delegated("input", input_2, () => set(descriptionTouched, true));
   bind_value(input_2, () => get2(description), ($$value) => set(description, $$value));
+  delegated("click", button_2, () => setSort("updated_desc"));
+  delegated("click", button_3, () => setSort("published_desc"));
   append($$anchor, fragment);
   pop();
 }
@@ -7935,34 +8165,6 @@ function connectItemStream() {
     es?.close();
     es = null;
   };
-}
-
-// web/src/lib/utils.ts
-function formatTime(iso, nowMs = Date.now()) {
-  if (!iso)
-    return "";
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime()))
-    return iso;
-  const now2 = new Date(nowMs);
-  const diff = now2.getTime() - date.getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1)
-    return t("time.justNow");
-  if (mins < 60)
-    return tf("time.minutesAgo", { n: mins });
-  const hours = Math.floor(mins / 60);
-  if (hours < 24)
-    return tf("time.hoursAgo", { n: hours });
-  const days = Math.floor(hours / 24);
-  if (days < 7)
-    return tf("time.daysAgo", { n: days });
-  const tag2 = localeState.locale === "zh" ? "zh-CN" : "en-US";
-  return date.toLocaleDateString(tag2, {
-    month: "short",
-    day: "numeric",
-    year: date.getFullYear() !== now2.getFullYear() ? "numeric" : undefined
-  });
 }
 
 // web/src/components/ItemList.svelte
@@ -7999,7 +8201,7 @@ var root_63 = from_html(`
 var root_72 = from_html(`
   <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root13 = from_html(`
+var root15 = from_html(`
 
 <!>
 
@@ -8010,6 +8212,7 @@ function ItemList($$anchor, $$props) {
   push($$props, true);
   const markAllReadHost = getContext(MARK_ALL_READ_KEY);
   const PAGE_SIZE = 20;
+  const MAX_LIST_ITEMS = 100;
   let items = state(proxy([]));
   let cursor = state(null);
   let hasMore = state(true);
@@ -8078,7 +8281,7 @@ function ItemList($$anchor, $$props) {
       merged.push(fresh[i++]);
     while (j < get2(items).length)
       merged.push(get2(items)[j++]);
-    set(items, merged, true);
+    set(items, merged.length > MAX_LIST_ITEMS ? merged.slice(0, MAX_LIST_ITEMS) : merged, true);
   }
   function handleOpenItem(item) {
     if (item.is_read)
@@ -8120,7 +8323,7 @@ function ItemList($$anchor, $$props) {
   });
   var $$exports = { markAllRead };
   next();
-  var fragment = root13();
+  var fragment = root15();
   var node = sibling(first_child(fragment));
   {
     var consequent = ($$anchor2) => {
@@ -8261,7 +8464,7 @@ var root_17 = from_html(`
 var root_26 = from_html(`
     <!>
   `, 1);
-var root14 = from_html(`
+var root16 = from_html(`
 
 <main class="mx-auto max-w-page px-5 py-16 font-sans">
   <!>
@@ -8275,7 +8478,7 @@ function App($$anchor, $$props) {
   setContext(MARK_ALL_READ_KEY, markAllReadHost);
   init();
   next();
-  var fragment = root14();
+  var fragment = root16();
   var main = sibling(first_child(fragment));
   var node = sibling(child(main));
   Header_default(node, {});

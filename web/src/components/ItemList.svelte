@@ -17,6 +17,8 @@
   const markAllReadHost = getContext<MarkAllReadHost>(MARK_ALL_READ_KEY);
 
   const PAGE_SIZE = 20;
+  /** Cap in-memory list after SSE inserts to avoid DOM bloat. */
+  const MAX_LIST_ITEMS = 100;
 
   let items = $state<Item[]>([]);
   let cursor = $state<string | null>(null);
@@ -92,7 +94,10 @@
     }
     while (i < fresh.length) merged.push(fresh[i++]);
     while (j < items.length) merged.push(items[j++]);
-    items = merged;
+    items =
+      merged.length > MAX_LIST_ITEMS
+        ? merged.slice(0, MAX_LIST_ITEMS)
+        : merged;
   }
 
   function handleOpenItem(item: Item) {
