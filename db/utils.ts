@@ -64,12 +64,28 @@ export function parseTimeRange(unit: string, count: number): { since: string; un
 
 /** SQLite datetime('now') is UTC without timezone; normalize to ISO 8601 UTC. */
 export function toUtcIso(value: string): string {
-    const trimmed = value.trim();
-    if (!trimmed) return trimmed;
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
 
-    const isoCandidate = trimmed.includes("T")
-        ? trimmed
-        : `${trimmed.replace(" ", "T")}Z`;
-    const time = Date.parse(isoCandidate);
-    return Number.isNaN(time) ? trimmed : new Date(time).toISOString();
+  const isoCandidate = trimmed.includes("T")
+    ? trimmed
+    : `${trimmed.replace(" ", "T")}Z`;
+  const time = Date.parse(isoCandidate);
+  return Number.isNaN(time) ? trimmed : new Date(time).toISOString();
+}
+
+export function parseFeedGuids(value: string | null | undefined): Set<string> {
+  if (!value) return new Set();
+
+  try {
+    const parsed = JSON.parse(value);
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(parsed.filter((guid): guid is string => typeof guid === "string"));
+  } catch {
+    return new Set();
+  }
+}
+
+export function serializeFeedGuids(guids: string[]): string {
+  return JSON.stringify(guids);
 }

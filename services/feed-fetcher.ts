@@ -2,6 +2,7 @@ import Parser from "rss-parser";
 import { addItems } from "../db/items";
 import { getDueFeeds, updateFeedFetchState } from "../db/feeds";
 import type { Feed } from "../db/schema";
+import { parseFeedGuids, serializeFeedGuids } from "../db/utils";
 import { emitNewItems } from "../sse/streamer";
 import { enrichItemsContent } from "./article-extractor";
 import { httpGet } from "./http-fetcher";
@@ -44,7 +45,13 @@ function toStoredItem(entry: Parser.Item) {
     new Date().toISOString();
 
   return { guid, title, link, content: (description && description != title ? description : null), published_at };
-} 
+}
+
+function feedPubDate(parsed: Record<string, unknown>): string | null {
+  const pubDate =
+    typeof parsed.pubDate === "string" ? parsed.pubDate.trim() : "";
+  return pubDate || null;
+}
 
 function maxPublishedAt(
   entries: { published_at: string }[],
@@ -181,7 +188,9 @@ export async function fetchFeed(feed: Feed): Promise<{
       .map(toStoredItem)
       .filter((item): item is NonNullable<typeof item> => item !== null);
 
-    const enriched = await enrichItemsContent(entries);
+    const knownGuids = parseFeedGuids(feed.guids);
+    const candidates = entries.filter((entry) => !knownGuids.has(entry.guid));
+    const enriched = await enrichItemsContent(candidates);
     const inserted = addItems(feed.id, enriched);
     if (inserted.length > 0) emitNewItems(inserted);
 
@@ -202,6 +211,8 @@ export async function fetchFeed(feed: Feed): Promise<{
       next_fetched_at: nextFetchedAtIso(nextInterval),
       fetch_interval_min: nextInterval,
       ...(lastPublishedAt ? { last_published_at: lastPublishedAt } : {}),
+      last_pub_date: feedPubDate(parsed),
+      guids: serializeFeedGuids(entries.map((entry) => entry.guid)),
     });
 
     return { newItems: inserted };

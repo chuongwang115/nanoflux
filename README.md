@@ -27,6 +27,7 @@ Built on [Bun](https://bun.sh), [Elysia](https://elysiajs.com), and [Svelte 5](h
 
 - RSS/Atom feed management with auto-fetched metadata
 - Adaptive polling (5–30 min per feed) based on publish frequency
+- Full-text article extraction — when an RSS entry's summary is too short, the article page is fetched and parsed for richer content (improves whitelist matching and list previews)
 - Keyword whitelist filter — keep items whose title or content matches any configured keyword; matched terms are highlighted in the list
 - Infinite scroll with cursor-based pagination
 - Read tracking for individual items or all visible items
@@ -54,6 +55,7 @@ Built on [Bun](https://bun.sh), [Elysia](https://elysiajs.com), and [Svelte 5](h
 | Database | SQLite (WAL mode) |
 | Frontend | Svelte 5, Tailwind CSS 4 |
 | Feed parsing | rss-parser |
+| Article extraction | @extractus/article-extractor |
 | AI bridge | Model Context Protocol (MCP) via elysia-mcp |
 
 ## Requirements
@@ -113,7 +115,7 @@ Create a `.env` file (see `.env.example`):
 
 ### Proxy (optional)
 
-Outbound HTTP requests (RSS fetches, Google News) honor standard proxy environment variables:
+Outbound HTTP requests (RSS fetches, article page scraping, Google News) honor standard proxy environment variables:
 
 | Variable | Description |
 | --- | --- |
@@ -226,7 +228,7 @@ All endpoints return JSON. When `HOST=127.0.0.1`, these routes are localhost-onl
 | `POST` | `/api/items/:id/read` | Mark one item as read |
 | `POST` | `/api/items/read-all` | Mark all items up to a timestamp as read |
 
-Only items that pass the whitelist filter (`filter_passed = 1`) are returned. Each item includes `content` (summary text), `filter_passed`, and `pass_reason` (matched keywords, comma-separated).
+Only items that pass the whitelist filter (`filter_passed = 1`) are returned. Each item includes `content` (RSS summary or scraped full text), `filter_passed`, and `pass_reason` (matched keywords, comma-separated).
 
 Query parameters for `GET /api/items`:
 
@@ -252,10 +254,11 @@ Connect with `EventSource` to receive `items` events when new articles arrive, p
 
 1. On startup and every minute (UTC cron), the scheduler loads feeds whose `next_fetched_at` is due.
 2. Each feed is fetched over HTTP with a 15 s timeout and parsed as RSS/Atom.
-3. New items are deduplicated by `(feed_id, guid)`, evaluated against the keyword whitelist, and inserted into SQLite with `filter_passed` and `pass_reason`.
-4. Items that pass the filter are broadcast to connected SSE clients; filtered-out items remain in the database but are hidden from the UI and API.
-5. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear.
-6. Daily at 01:00 UTC, items older than 90 days are deleted.
+3. For each new entry whose RSS summary is shorter than ~80 word tokens, the article page is fetched (Googlebot user agent, 15 s timeout, up to 3 concurrent requests) and parsed with `@extractus/article-extractor` to fill in `content`.
+4. New items are deduplicated by `(feed_id, guid)`, evaluated against the keyword whitelist (title + content), and inserted into SQLite with `filter_passed` and `pass_reason`.
+5. Items that pass the filter are broadcast to connected SSE clients; filtered-out items remain in the database but are hidden from the UI and API.
+6. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear.
+7. Daily at 01:00 UTC, items older than 90 days are deleted.
 
 ## Project Structure
 
@@ -265,7 +268,7 @@ Connect with `EventSource` to receive `items` events when new articles arrive, p
 ├── routes/           REST API routes (feeds, items, settings)
 ├── mcp/              MCP server and tools
 ├── sse/              Server-Sent Events streaming
-├── services/         Feed fetcher, scheduler, HTTP client, whitelist filter
+├── services/         Feed fetcher, article extractor, scheduler, HTTP client, whitelist filter
 ├── db/               Drizzle schema and data access
 ├── shared/           Shared types and utilities
 ├── drizzle/          SQL migrations

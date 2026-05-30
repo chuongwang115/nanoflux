@@ -264,6 +264,8 @@ export function updateFeedFetchState(
     next_fetched_at: string;
     fetch_interval_min: number;
     last_published_at?: string;
+    last_pub_date?: string | null;
+    guids?: string;
   },
 ): void {
 
@@ -276,6 +278,10 @@ export function updateFeedFetchState(
         ...(input.last_published_at !== undefined
           ? { last_published_at: input.last_published_at }
           : {}),
+        ...(input.last_pub_date !== undefined
+          ? { last_pub_date: input.last_pub_date }
+          : {}),
+        ...(input.guids !== undefined ? { guids: input.guids } : {}),
       })
       .where(eq(feeds.id, id))
     .run();
