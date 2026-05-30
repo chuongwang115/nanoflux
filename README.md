@@ -254,7 +254,7 @@ Connect with `EventSource` to receive `items` events when new articles arrive, p
 
 1. On startup and every minute (UTC cron), the scheduler loads feeds whose `next_fetched_at` is due.
 2. Each feed is fetched over HTTP with a 15 s timeout and parsed as RSS/Atom.
-3. For each new entry whose RSS summary is shorter than ~80 word tokens, the article page is fetched (Googlebot user agent, 15 s timeout, up to 3 concurrent requests) and parsed with `@extractus/article-extractor` to fill in `content`.
+3. For each new entry whose RSS summary is shorter than ~80 word tokens, the article page is fetched (desktop browser user agent, 15 s timeout, up to 3 concurrent requests) and parsed with `@extractus/article-extractor` to fill in `content`.
 4. New items are deduplicated by `(feed_id, guid)`, evaluated against the keyword whitelist (title + content), and inserted into SQLite with `filter_passed` and `pass_reason`.
 5. Items that pass the filter are broadcast to connected SSE clients; filtered-out items remain in the database but are hidden from the UI and API.
 6. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear.

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import Parser from "rss-parser";
 import { addItems } from "../db/items";
 import { getDueFeeds, updateFeedFetchState } from "../db/feeds";
@@ -11,6 +12,16 @@ const RSS_USER_AGENT = "NanoFlux/1.0 (+https://github.com/nanoflux)";
 const RSS_TIMEOUT_MS = 15_000;
 
 const rssParser = new Parser();
+
+const MD5_HEX_RE = /^[a-f0-9]{32}$/i;
+
+function isMd5Format(value: string): boolean {
+  return MD5_HEX_RE.test(value);
+}
+
+function md5Hex(input: string): string {
+  return createHash("md5").update(input).digest("hex");
+}
 
 function stripHtml(html: string): string {
   return html
@@ -30,7 +41,8 @@ function toStoredItem(entry: Parser.Item) {
   const link = entry.link?.trim();
   if (!link) return null;
 
-  const guid = entry.guid?.trim() || link;
+  const rawGuid = entry.guid?.trim() || link;
+  const guid = isMd5Format(rawGuid) ? rawGuid : md5Hex(link);
   const title = entry.title?.trim() || link;
   
   const description =

@@ -4,10 +4,9 @@ import { httpGet } from "./http-fetcher";
 /** Unified token threshold; roughly ~200 Chinese chars / 80 English words. */
 export const FULL_CONTENT_MIN_TOKENS = 80;
 
-/** Mimics Google crawler; many paywalled sites serve full HTML to this UA. */
-const GOOGLEBOT_USER_AGENT =
-  "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
-const ARTICLE_REFERER = "https://www.google.com/";
+/** Desktop Chrome on Windows — normal browser fetch, not a crawler UA. */
+const BROWSER_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
 const ARTICLE_TIMEOUT_MS = 15_000;
 const SCRAPE_CONCURRENCY = 3;
@@ -42,8 +41,10 @@ export async function fetchArticleContent(url: string): Promise<string | null> {
   try {
     const response = await httpGet(url, {
       headers: {
-        "User-Agent": GOOGLEBOT_USER_AGENT,
-        Referer: ARTICLE_REFERER,
+        "User-Agent": BROWSER_USER_AGENT,
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
       },
       signal: AbortSignal.timeout(ARTICLE_TIMEOUT_MS),
     });
