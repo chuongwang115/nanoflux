@@ -16,7 +16,7 @@ export type Item = {
   guid: string;
   title: string;
   link: string;
-  description: string | null;
+  content: string | null;
   published_at: string;
   is_read: boolean;
   filter_passed: boolean | null;

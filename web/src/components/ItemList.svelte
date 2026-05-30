@@ -8,7 +8,9 @@
     markItemRead,
     type Item,
   } from "../lib/api";
+  import { parseMatchedKeywords } from "../lib/highlight";
   import { formatTime } from "../lib/utils";
+  import HighlightedText from "./HighlightedText.svelte";
   import {
     MARK_ALL_READ_KEY,
     type MarkAllReadHost,
@@ -151,6 +153,7 @@
 {:else}
   <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
     {#each items as item (item.id)}
+      {@const keywords = parseMatchedKeywords(item.pass_reason)}
       <li class="py-5">
         <article>
           <div
@@ -173,13 +176,13 @@
               ? 'font-normal text-neutral-500 dark:text-neutral-500'
               : 'font-medium text-neutral-900 dark:text-neutral-100'}"
           >
-            {item.title}
+            <HighlightedText text={item.title} {keywords} />
           </a>
-          {#if item.description}
+          {#if item.content}
             <p
               class="mt-2 line-clamp-2 text-sm text-neutral-400 dark:text-neutral-500"
             >
-              {item.description}
+              <HighlightedText text={item.content} {keywords} />
             </p>
           {/if}
           {#if item.pass_reason}

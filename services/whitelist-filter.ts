@@ -10,7 +10,7 @@ export function parseWhitelistKeywords(whitelist: string): string[] {
 
 export function applyWhitelistFilter(
   title: string,
-  description: string | null,
+  content: string | null,
 ): { filter_passed: number; pass_reason: string | null } {
 
   const keywords = parseWhitelistKeywords(getSettings().whitelist);
@@ -19,7 +19,7 @@ export function applyWhitelistFilter(
     return { filter_passed: 1, pass_reason: null };
   }
 
-  const haystack = `${title}\n${description ?? ""}`.toLowerCase();
+  const haystack = `${title}\n${content ?? ""}`.toLowerCase();
   const matched = keywords.filter((keyword) =>
     haystack.includes(keyword.toLowerCase()),
   );

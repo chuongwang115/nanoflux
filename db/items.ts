@@ -59,7 +59,7 @@ export function getItems(options?: {
         guid: items.guid,
         title: items.title,
         link: items.link,
-        description: items.description,
+        content: items.content,
         published_at: items.published_at,
         is_read: items.is_read,
         filter_passed: items.filter_passed,
@@ -107,7 +107,7 @@ export function addItems(
       const id = newItemId();
       const { filter_passed, pass_reason } = applyWhitelistFilter(
         newItem.title,
-        newItem.description,
+        newItem.content,
       );
 
       const inserted = db.insert(items)
@@ -117,7 +117,7 @@ export function addItems(
           guid: newItem.guid,
           title: newItem.title,
           link: newItem.link,
-          description: newItem.description,
+          content: newItem.content,
           published_at: newItem.published_at,
           is_read: 0,
           filter_passed,

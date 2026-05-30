@@ -42,7 +42,7 @@ export const items = sqliteTable(
     guid: text("guid").notNull(),
     title: text("title").notNull(),
     link: text("link").notNull(),
-    description: text("description"),
+    content: text("content"),
     published_at: text("published_at").notNull(),
     is_read: integer("is_read").notNull().default(0),
     filter_passed: integer("filter_passed"),

@@ -44,7 +44,7 @@ export function registerGetUnreadItems(server: McpServer): void {
                   id: item.id,
                   title: item.title,
                   link: item.link,
-                  description: item.description ?? null,
+                  content: item.content ?? null,
                   published_at: item.published_at,
                   feed_title: item.feed_title,
                 })),

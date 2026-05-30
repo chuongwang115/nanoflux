@@ -8370,20 +8370,107 @@ function connectItemStream() {
   };
 }
 
-// web/src/components/ItemList.svelte
+// web/src/lib/highlight.ts
+function parseMatchedKeywords(passReason) {
+  if (!passReason)
+    return [];
+  return normalizeCommas(passReason).split(",").map((keyword) => keyword.trim()).filter(Boolean);
+}
+function splitByKeywords(text2, keywords) {
+  if (!text2 || keywords.length === 0) {
+    return [{ text: text2, highlight: false }];
+  }
+  const escaped = [...keywords].sort((a, b) => b.length - a.length).map((keyword) => keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  if (escaped.length === 0) {
+    return [{ text: text2, highlight: false }];
+  }
+  const re = new RegExp(`(${escaped.join("|")})`, "gi");
+  const parts = [];
+  let lastIndex = 0;
+  for (const match of text2.matchAll(re)) {
+    const index2 = match.index ?? 0;
+    if (index2 > lastIndex) {
+      parts.push({ text: text2.slice(lastIndex, index2), highlight: false });
+    }
+    parts.push({ text: match[0], highlight: true });
+    lastIndex = index2 + match[0].length;
+  }
+  if (lastIndex < text2.length) {
+    parts.push({ text: text2.slice(lastIndex), highlight: false });
+  }
+  return parts.length > 0 ? parts : [{ text: text2, highlight: false }];
+}
+
+// web/src/components/HighlightedText.svelte
+var root_25 = from_html(`
+    <mark class="rounded-sm bg-amber-200/80 px-0.5 font-[inherit] text-inherit dark:bg-amber-500/35"> </mark>
+  `, 1);
 var root_16 = from_html(`
+  <!>
+`, 1);
+var root16 = from_html(`
+
+<!>`, 1);
+function HighlightedText($$anchor, $$props) {
+  push($$props, true);
+  const segments = user_derived(() => splitByKeywords($$props.text, $$props.keywords));
+  next();
+  var fragment = root16();
+  var node = sibling(first_child(fragment));
+  each(node, 17, () => get2(segments), index, ($$anchor2, segment) => {
+    next();
+    var fragment_1 = root_16();
+    var node_1 = sibling(first_child(fragment_1));
+    {
+      var consequent = ($$anchor3) => {
+        var fragment_2 = root_25();
+        var mark = sibling(first_child(fragment_2));
+        var text_1 = child(mark, true);
+        reset(mark);
+        next();
+        template_effect(() => set_text(text_1, get2(segment).text));
+        append($$anchor3, fragment_2);
+      };
+      var alternate = ($$anchor3) => {
+        var text_2 = text();
+        template_effect(() => set_text(text_2, `
+    ${get2(segment).text ?? ""}
+  `));
+        append($$anchor3, text_2);
+      };
+      if_block(node_1, ($$render) => {
+        if (get2(segment).highlight)
+          $$render(consequent);
+        else
+          $$render(alternate, -1);
+      });
+    }
+    next();
+    append($$anchor2, fragment_1);
+  });
+  append($$anchor, fragment);
+  pop();
+}
+if (undefined) {}
+var HighlightedText_default = HighlightedText;
+
+// web/src/components/ItemList.svelte
+var root_17 = from_html(`
   <p class="py-6 text-sm text-red-500"> </p>
 `, 1);
-var root_25 = from_html(`
+var root_26 = from_html(`
   <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
 var root_53 = from_html(`
-            <p class="mt-2 line-clamp-2 text-sm text-neutral-400 dark:text-neutral-500"> </p>
+            <p class="mt-2 line-clamp-2 text-sm text-neutral-400 dark:text-neutral-500">
+              <!>
+            </p>
           `, 1);
 var root_63 = from_html(`
             <p class="mt-1.5 text-xs text-neutral-400 dark:text-neutral-500"> </p>
           `, 1);
 var root_43 = from_html(`
+      
       <li class="py-5">
         <article>
           <div class="flex items-baseline gap-1.5 text-xs text-neutral-400 dark:text-neutral-500">
@@ -8391,7 +8478,9 @@ var root_43 = from_html(`
             <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
             <span> </span>
           </div>
-          <a target="_blank" rel="noopener noreferrer"> </a>
+          <a target="_blank" rel="noopener noreferrer">
+            <!>
+          </a>
           <!>
           <!>
         </article>
@@ -8408,7 +8497,7 @@ var root_73 = from_html(`
 var root_82 = from_html(`
   <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root16 = from_html(`
+var root17 = from_html(`
 
 <!>
 
@@ -8530,11 +8619,11 @@ function ItemList($$anchor, $$props) {
   });
   var $$exports = { markAllRead };
   next();
-  var fragment = root16();
+  var fragment = root17();
   var node = sibling(first_child(fragment));
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root_16();
+      var fragment_1 = root_17();
       var p = sibling(first_child(fragment_1));
       var text2 = child(p, true);
       reset(p);
@@ -8543,7 +8632,7 @@ function ItemList($$anchor, $$props) {
       append($$anchor2, fragment_1);
     };
     var consequent_1 = ($$anchor2) => {
-      var fragment_2 = root_25();
+      var fragment_2 = root_26();
       var p_1 = sibling(first_child(fragment_2));
       var text_1 = child(p_1, true);
       reset(p_1);
@@ -8556,6 +8645,7 @@ function ItemList($$anchor, $$props) {
       var ul = sibling(first_child(fragment_3));
       var node_1 = sibling(child(ul));
       each(node_1, 17, () => get2(items), (item) => item.id, ($$anchor3, item) => {
+        const keywords = user_derived(() => parseMatchedKeywords(get2(item).pass_reason));
         next();
         var fragment_4 = root_43();
         var li = sibling(first_child(fragment_4));
@@ -8570,42 +8660,57 @@ function ItemList($$anchor, $$props) {
         next();
         reset(div);
         var a_1 = sibling(div, 2);
-        var text_4 = child(a_1);
+        var node_2 = sibling(child(a_1));
+        HighlightedText_default(node_2, {
+          get text() {
+            return get2(item).title;
+          },
+          get keywords() {
+            return get2(keywords);
+          }
+        });
+        next();
         reset(a_1);
-        var node_2 = sibling(a_1, 2);
+        var node_3 = sibling(a_1, 2);
         {
           var consequent_2 = ($$anchor4) => {
             var fragment_5 = root_53();
             var p_2 = sibling(first_child(fragment_5));
-            var text_5 = child(p_2);
+            var node_4 = sibling(child(p_2));
+            HighlightedText_default(node_4, {
+              get text() {
+                return get2(item).content;
+              },
+              get keywords() {
+                return get2(keywords);
+              }
+            });
+            next();
             reset(p_2);
             next();
-            template_effect(() => set_text(text_5, `
-              ${get2(item).description ?? ""}
-            `));
             append($$anchor4, fragment_5);
           };
-          if_block(node_2, ($$render) => {
-            if (get2(item).description)
+          if_block(node_3, ($$render) => {
+            if (get2(item).content)
               $$render(consequent_2);
           });
         }
-        var node_3 = sibling(node_2, 2);
+        var node_5 = sibling(node_3, 2);
         {
           var consequent_3 = ($$anchor4) => {
             var fragment_6 = root_63();
             var p_3 = sibling(first_child(fragment_6));
-            var text_6 = child(p_3);
+            var text_4 = child(p_3);
             reset(p_3);
             next();
-            template_effect(($0) => set_text(text_6, `
+            template_effect(($0) => set_text(text_4, `
               ${$0 ?? ""}
             `), [
               () => tf("items.passReason", { reason: get2(item).pass_reason })
             ]);
             append($$anchor4, fragment_6);
           };
-          if_block(node_3, ($$render) => {
+          if_block(node_5, ($$render) => {
             if (get2(item).pass_reason)
               $$render(consequent_3);
           });
@@ -8623,9 +8728,6 @@ function ItemList($$anchor, $$props) {
           set_text(text_3, get2(item).feed_title);
           set_attribute2(a_1, "href", get2(item).link);
           set_class(a_1, 1, `mt-1 block text-sm leading-snug hover:text-neutral-600 dark:hover:text-neutral-300 ${get2(item).is_read ? "font-normal text-neutral-500 dark:text-neutral-500" : "font-medium text-neutral-900 dark:text-neutral-100"}`);
-          set_text(text_4, `
-            ${get2(item).title ?? ""}
-          `);
         }, [() => formatTime(get2(item).published_at, get2(now2))]);
         delegated("click", a_1, () => handleOpenItem(get2(item)));
         append($$anchor3, fragment_4);
@@ -8644,15 +8746,15 @@ function ItemList($$anchor, $$props) {
         $$render(alternate, -1);
     });
   }
-  var node_4 = sibling(node, 2);
+  var node_6 = sibling(node, 2);
   {
     var consequent_4 = ($$anchor2) => {
       var fragment_7 = root_73();
       var p_4 = sibling(first_child(fragment_7));
-      var text_7 = child(p_4);
+      var text_5 = child(p_4);
       reset(p_4);
       next();
-      template_effect(($0) => set_text(text_7, `
+      template_effect(($0) => set_text(text_5, `
     ${$0 ?? ""}
   `), [() => t("items.loading")]);
       append($$anchor2, fragment_7);
@@ -8660,22 +8762,22 @@ function ItemList($$anchor, $$props) {
     var consequent_5 = ($$anchor2) => {
       var fragment_8 = root_82();
       var p_5 = sibling(first_child(fragment_8));
-      var text_8 = child(p_5);
+      var text_6 = child(p_5);
       reset(p_5);
       next();
-      template_effect(($0) => set_text(text_8, `
+      template_effect(($0) => set_text(text_6, `
     ${$0 ?? ""}
   `), [() => t("items.noMore")]);
       append($$anchor2, fragment_8);
     };
-    if_block(node_4, ($$render) => {
+    if_block(node_6, ($$render) => {
       if (get2(loading))
         $$render(consequent_4);
       else if (!get2(hasMore) && get2(items).length > 0)
         $$render(consequent_5, 1);
     });
   }
-  var div_1 = sibling(node_4, 2);
+  var div_1 = sibling(node_6, 2);
   bind_this(div_1, ($$value) => set(sentinel, $$value), () => get2(sentinel));
   append($$anchor, fragment);
   return pop($$exports);
@@ -8685,10 +8787,10 @@ var ItemList_default = ItemList;
 delegate(["click"]);
 
 // web/src/components/Settings.svelte
-var root_17 = from_html(`
+var root_18 = from_html(`
     <p class="text-sm text-neutral-400 dark:text-neutral-500"> </p>
   `, 1);
-var root_26 = from_html(`
+var root_27 = from_html(`
     <p class="text-sm text-red-500"> </p>
   `, 1);
 var root_44 = from_html(`
@@ -8704,7 +8806,7 @@ var root_34 = from_html(`
     </div>
     <!>
   `, 1);
-var root17 = from_html(`
+var root18 = from_html(`
 
 <section>
   <h2 class="mb-6 text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </h2>
@@ -8752,7 +8854,7 @@ function Settings($$anchor, $$props) {
     return () => settingsSaveHost.register(undefined);
   });
   next();
-  var fragment = root17();
+  var fragment = root18();
   var section = sibling(first_child(fragment));
   var h2 = sibling(child(section));
   var text2 = child(h2);
@@ -8760,7 +8862,7 @@ function Settings($$anchor, $$props) {
   var node = sibling(h2, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root_17();
+      var fragment_1 = root_18();
       var p = sibling(first_child(fragment_1));
       var text_1 = child(p);
       reset(p);
@@ -8771,7 +8873,7 @@ function Settings($$anchor, $$props) {
       append($$anchor2, fragment_1);
     };
     var consequent_1 = ($$anchor2) => {
-      var fragment_2 = root_26();
+      var fragment_2 = root_27();
       var p_1 = sibling(first_child(fragment_2));
       var text_2 = child(p_1, true);
       reset(p_1);
@@ -8850,16 +8952,16 @@ if (undefined) {}
 var Settings_default = Settings;
 
 // web/src/App.svelte
-var root_18 = from_html(`
+var root_19 = from_html(`
     <!>
   `, 1);
-var root_27 = from_html(`
+var root_28 = from_html(`
     <!>
   `, 1);
 var root_35 = from_html(`
     <!>
   `, 1);
-var root18 = from_html(`
+var root19 = from_html(`
 
 <main class="mx-auto max-w-page px-5 py-16 font-sans">
   <!>
@@ -8875,21 +8977,21 @@ function App($$anchor, $$props) {
   setContext(SETTINGS_SAVE_KEY, settingsSaveHost);
   init();
   next();
-  var fragment = root18();
+  var fragment = root19();
   var main = sibling(first_child(fragment));
   var node = sibling(child(main));
   Header_default(node, {});
   var node_1 = sibling(node, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root_18();
+      var fragment_1 = root_19();
       var node_2 = sibling(first_child(fragment_1));
       FeedsManager_default(node_2, {});
       next();
       append($$anchor2, fragment_1);
     };
     var consequent_1 = ($$anchor2) => {
-      var fragment_2 = root_27();
+      var fragment_2 = root_28();
       var node_3 = sibling(first_child(fragment_2));
       Settings_default(node_3, {});
       next();

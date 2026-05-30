@@ -42,7 +42,7 @@ function toStoredItem(entry: Parser.Item) {
     parsePublishedAt(entry.pubDate) ||
     new Date().toISOString();
 
-  return { guid, title, link, description: (description && description != title ? description : null), published_at };
+  return { guid, title, link, content: (description && description != title ? description : null), published_at };
 } 
 
 function maxPublishedAt(
