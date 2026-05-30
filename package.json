@@ -26,6 +26,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@extractus/article-extractor": "^8.1.0",
     "@lucide/svelte": "^1.16.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "drizzle-orm": "^0.45.2",

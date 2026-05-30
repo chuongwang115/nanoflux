@@ -9,10 +9,10 @@ let cleanupCronJob: Bun.CronJob | null = null;
 
 export async function startScheduler() {
 
-  // 启动时立即执行一次
+  // Run once immediately on startup
   await fetchDueFeeds("startup");
 
-  // 每分钟执行一次
+  // Run every minute
   fetchCronJob = Bun.cron(TICK_CRON, async () => {
     try {
       await fetchDueFeeds("cron");
@@ -21,7 +21,7 @@ export async function startScheduler() {
     }
   });
 
-  // 每天凌晨1点执行一次
+  // Run daily at 1:00 AM UTC
   cleanupCronJob = Bun.cron(CLEANUP_CRON, async () => {
     try {
       clearItems();

@@ -3,6 +3,7 @@ import { addItems } from "../db/items";
 import { getDueFeeds, updateFeedFetchState } from "../db/feeds";
 import type { Feed } from "../db/schema";
 import { emitNewItems } from "../sse/streamer";
+import { enrichItemsContent } from "./article-extractor";
 import { httpGet } from "./http-fetcher";
 
 const RSS_USER_AGENT = "NanoFlux/1.0 (+https://github.com/nanoflux)";
@@ -34,7 +35,7 @@ function toStoredItem(entry: Parser.Item) {
   const description =
     entry.contentSnippet?.trim() ||
     entry.summary?.trim() ||
-    (entry.content ? stripHtml(entry.content).slice(0, 2000) : "") ||
+    (entry.content ? stripHtml(entry.content) : "") ||
     null;
 
   const published_at =
@@ -180,7 +181,8 @@ export async function fetchFeed(feed: Feed): Promise<{
       .map(toStoredItem)
       .filter((item): item is NonNullable<typeof item> => item !== null);
 
-    const inserted = addItems(feed.id, entries);
+    const enriched = await enrichItemsContent(entries);
+    const inserted = addItems(feed.id, enriched);
     if (inserted.length > 0) emitNewItems(inserted);
 
     const nextInterval = nextFetchIntervalMin(
