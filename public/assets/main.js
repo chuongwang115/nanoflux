@@ -8380,11 +8380,10 @@ function splitByKeywords(text2, keywords) {
   if (!text2 || keywords.length === 0) {
     return [{ text: text2, highlight: false }];
   }
-  const escaped = [...keywords].sort((a, b) => b.length - a.length).map((keyword) => keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-  if (escaped.length === 0) {
+  const re = keywordMatchRegex(keywords, "gi");
+  if (!re) {
     return [{ text: text2, highlight: false }];
   }
-  const re = new RegExp(`(${escaped.join("|")})`, "gi");
   const parts = [];
   let lastIndex = 0;
   for (const match of text2.matchAll(re)) {
@@ -8399,6 +8398,41 @@ function splitByKeywords(text2, keywords) {
     parts.push({ text: text2.slice(lastIndex), highlight: false });
   }
   return parts.length > 0 ? parts : [{ text: text2, highlight: false }];
+}
+function keywordMatchRegex(keywords, flags2 = "i") {
+  const escaped = [...keywords].sort((a, b) => b.length - a.length).map((keyword) => keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  if (escaped.length === 0)
+    return null;
+  return new RegExp(`(${escaped.join("|")})`, flags2);
+}
+function extractMatchedSnippet(text2, keywords, options) {
+  if (!text2 || keywords.length === 0)
+    return null;
+  const re = keywordMatchRegex(keywords);
+  if (!re)
+    return null;
+  const match = re.exec(text2);
+  if (!match)
+    return null;
+  const before = options?.radiusBefore ?? 40;
+  const after = options?.radiusAfter ?? 80;
+  const index2 = match.index ?? 0;
+  const matchLen = match[0].length;
+  const start = Math.max(0, index2 - before);
+  const end = Math.min(text2.length, index2 + matchLen + after);
+  let snippet2 = text2.slice(start, end).trim();
+  if (start > 0)
+    snippet2 = `…${snippet2}`;
+  if (end < text2.length)
+    snippet2 = `${snippet2}…`;
+  return snippet2;
+}
+function getMatchedContentPreview(content, keywords) {
+  if (!content)
+    return null;
+  if (keywords.length === 0)
+    return content;
+  return extractMatchedSnippet(content, keywords);
 }
 
 // web/src/components/HighlightedText.svelte
@@ -8470,6 +8504,7 @@ var root_63 = from_html(`
             <p class="mt-1.5 text-xs text-neutral-400 dark:text-neutral-500"> </p>
           `, 1);
 var root_43 = from_html(`
+      
       
       <li class="py-5">
         <article>
@@ -8646,6 +8681,7 @@ function ItemList($$anchor, $$props) {
       var node_1 = sibling(child(ul));
       each(node_1, 17, () => get2(items), (item) => item.id, ($$anchor3, item) => {
         const keywords = user_derived(() => parseMatchedKeywords(get2(item).pass_reason));
+        const contentPreview = user_derived(() => getMatchedContentPreview(get2(item).content, get2(keywords)));
         next();
         var fragment_4 = root_43();
         var li = sibling(first_child(fragment_4));
@@ -8679,7 +8715,7 @@ function ItemList($$anchor, $$props) {
             var node_4 = sibling(child(p_2));
             HighlightedText_default(node_4, {
               get text() {
-                return get2(item).content;
+                return get2(contentPreview);
               },
               get keywords() {
                 return get2(keywords);
@@ -8691,7 +8727,7 @@ function ItemList($$anchor, $$props) {
             append($$anchor4, fragment_5);
           };
           if_block(node_3, ($$render) => {
-            if (get2(item).content)
+            if (get2(contentPreview))
               $$render(consequent_2);
           });
         }

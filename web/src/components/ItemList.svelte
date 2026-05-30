@@ -8,7 +8,7 @@
     markItemRead,
     type Item,
   } from "../lib/api";
-  import { parseMatchedKeywords } from "../lib/highlight";
+  import { parseMatchedKeywords, getMatchedContentPreview } from "../lib/highlight";
   import { formatTime } from "../lib/utils";
   import HighlightedText from "./HighlightedText.svelte";
   import {
@@ -154,6 +154,7 @@
   <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
     {#each items as item (item.id)}
       {@const keywords = parseMatchedKeywords(item.pass_reason)}
+      {@const contentPreview = getMatchedContentPreview(item.content, keywords)}
       <li class="py-5">
         <article>
           <div
@@ -178,11 +179,11 @@
           >
             <HighlightedText text={item.title} {keywords} />
           </a>
-          {#if item.content}
+          {#if contentPreview}
             <p
               class="mt-2 line-clamp-2 text-sm text-neutral-400 dark:text-neutral-500"
             >
-              <HighlightedText text={item.content} {keywords} />
+              <HighlightedText text={contentPreview} {keywords} />
             </p>
           {/if}
           {#if item.pass_reason}
