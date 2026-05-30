@@ -61,3 +61,15 @@ export function parseTimeRange(unit: string, count: number): { since: string; un
     }
     return { since: new Date(Date.now() - count * parsedUnit).toISOString(), until: new Date().toISOString() };
 }
+
+/** SQLite datetime('now') is UTC without timezone; normalize to ISO 8601 UTC. */
+export function toUtcIso(value: string): string {
+    const trimmed = value.trim();
+    if (!trimmed) return trimmed;
+
+    const isoCandidate = trimmed.includes("T")
+        ? trimmed
+        : `${trimmed.replace(" ", "T")}Z`;
+    const time = Date.parse(isoCandidate);
+    return Number.isNaN(time) ? trimmed : new Date(time).toISOString();
+}

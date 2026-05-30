@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getContext, onMount } from "svelte";
-  import { t } from "../lib/locale.svelte";
+  import { t, tf } from "../lib/locale.svelte";
   import { subscribeItemStream } from "../lib/item-stream";
   import {
     fetchItemsPage,
@@ -180,6 +180,11 @@
               class="mt-2 line-clamp-2 text-sm text-neutral-400 dark:text-neutral-500"
             >
               {item.description}
+            </p>
+          {/if}
+          {#if item.pass_reason}
+            <p class="mt-1.5 text-xs text-neutral-400 dark:text-neutral-500">
+              {tf("items.passReason", { reason: item.pass_reason })}
             </p>
           {/if}
         </article>

@@ -1,32 +1,43 @@
 import { get, writable } from "svelte/store";
+import { saveSettingsBeforeLeave } from "./settings-save";
 
 /** Logical routes (not URL pathnames). */
-export type AppRoute = "/" | "/feeds";
+export type AppRoute = "/" | "/feeds" | "/settings";
 
 const scrollByRoute = new Map<string, number>();
 
 export const route = writable<AppRoute>("/");
 
 function pathnameToRoute(pathname: string): AppRoute {
-  return pathname.endsWith("/feeds") ? "/feeds" : "/";
+  if (pathname.endsWith("/feeds")) return "/feeds";
+  if (pathname.endsWith("/settings")) return "/settings";
+  return "/";
 }
 
 function routeToRelativeHref(next: AppRoute): string {
   if (next === "/feeds") return "feeds";
+  if (next === "/settings") return "settings";
   // /app/feeds has no trailing slash: ".." resolves to site root (/), not /app/.
   const path = window.location.pathname;
-  return path.endsWith("/feeds/") ? ".." : "./";
+  if (path.endsWith("/feeds/") || path.endsWith("/settings/")) return "..";
+  return "./";
 }
 
 /** Relative link to the app home (sibling of the feeds segment). */
 export function homeHref(): string {
   const path = window.location.pathname;
-  return path.endsWith("/feeds/") ? ".." : "./";
+  if (path.endsWith("/feeds/") || path.endsWith("/settings/")) return "..";
+  return "./";
 }
 
 /** Relative link to the feeds page. */
 export function feedsHref(): string {
   return "feeds";
+}
+
+/** Relative link to the settings page. */
+export function settingsHref(): string {
+  return "settings";
 }
 
 export function navigateToParent() {
@@ -65,12 +76,21 @@ export function initRouter(): void {
   syncRouteFromLocation();
 
   window.addEventListener("popstate", () => {
-    syncRouteFromLocation();
-    restoreScroll(get(route));
+    void (async () => {
+      if (get(route) === "/settings") {
+        try {
+          await saveSettingsBeforeLeave();
+        } catch {
+          return;
+        }
+      }
+      syncRouteFromLocation();
+      restoreScroll(get(route));
+    })();
   });
 }
 
-function shouldHandleNavClick(event: MouseEvent): boolean {
+export function shouldHandleNavClick(event: MouseEvent): boolean {
   if (
     event.defaultPrevented ||
     event.button !== 0 ||

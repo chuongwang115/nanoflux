@@ -10,12 +10,14 @@ import type { Locale } from "./shared/locale";
 import { closeDatabase } from "./db/database";
 import { routes as itemsRoutes } from "./routes/items";
 import { routes as feedsRoutes } from "./routes/feeds";
+import { routes as settingsRoutes } from "./routes/settings";
 import { routes as mcpRoutes } from "./mcp/route";
 import { routes as sseRoutes } from "./sse/route";
 import {
   startScheduler,
   stopScheduler,
 } from "./services/scheduler";
+import { loadSettings } from "./settings";
 
 const PUBLIC_DIR = join(import.meta.dir, "public");
 const indexHtml = () => Bun.file(join(PUBLIC_DIR, "index.html"));
@@ -27,6 +29,7 @@ function manifestLocale(query: Record<string, string | undefined>): Locale {
   return "zh";
 }
 
+void loadSettings()
 void startScheduler();
 
 const host = resolveHost();
@@ -35,6 +38,7 @@ const restrictLocalhost = isLocalhostRestricted(host);
 const backendRoutes = new Elysia()
   .use(itemsRoutes)
   .use(feedsRoutes)
+  .use(settingsRoutes)
   .use(mcpRoutes)
   .use(sseRoutes);
 
@@ -45,6 +49,7 @@ const protectedBackendRoutes = restrictLocalhost
 const publicRoutes = new Elysia()
   .get("/", indexHtml)
   .get("/feeds", indexHtml)
+  .get("/settings", indexHtml)
   .get("/manifest.webmanifest", ({ query, set }) => {
     set.headers["content-type"] = "application/manifest+json; charset=utf-8";
     return JSON.stringify(buildWebManifest(manifestLocale(query)));

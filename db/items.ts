@@ -10,7 +10,8 @@ import {
 import { db } from "./database";
 import { getFeed } from "./feeds";
 import { feeds, items, DEFAULT_LIMIT, MAX_LIMIT } from "./schema";
-import { newItemId, decodeCursor, parseTimeRange, TimeUnit } from "./utils";
+import { applyWhitelistFilter } from "../services/whitelist-filter";
+import { newItemId, decodeCursor, parseTimeRange, TimeUnit, toUtcIso } from "./utils";
 
 export function getItems(options?: {
   since?: string;
@@ -49,6 +50,7 @@ export function getItems(options?: {
       : undefined;
 
     const readFilter = options?.isRead ? eq(items.is_read, options.isRead) : undefined;
+    const passedFilter = eq(items.filter_passed, 1);
 
     const selected = db
       .select({
@@ -60,17 +62,22 @@ export function getItems(options?: {
         description: items.description,
         published_at: items.published_at,
         is_read: items.is_read,
+        filter_passed: items.filter_passed,
+        pass_reason: items.pass_reason,
         created_at: items.created_at,
         feed_title: feeds.title,
       })
       .from(items)
       .innerJoin(feeds, eq(items.feed_id, feeds.id))
-      .where(and(cursorFilter, timeFilter, readFilter))
+      .where(and(timeFilter, cursorFilter, readFilter, passedFilter))
       .orderBy(desc(items.published_at), desc(items.id))
       .limit(adjustedLimit + 1)
       .all();
 
-    return selected;
+    return selected.map((row) => ({
+      ...row,
+      created_at: toUtcIso(row.created_at),
+    }));
   
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
@@ -98,6 +105,10 @@ export function addItems(
     for (const newItem of newItems) {
 
       const id = newItemId();
+      const { filter_passed, pass_reason } = applyWhitelistFilter(
+        newItem.title,
+        newItem.description,
+      );
 
       const inserted = db.insert(items)
         .values({
@@ -109,15 +120,18 @@ export function addItems(
           description: newItem.description,
           published_at: newItem.published_at,
           is_read: 0,
+          filter_passed,
+          pass_reason,
         })
         .onConflictDoNothing({ target: [items.feed_id, items.guid] })
         .returning()
         .get();
 
 
-      if (inserted) {
+      if (inserted && filter_passed) {
         insertedItems.push({
           ...inserted,
+          created_at: toUtcIso(inserted.created_at),
           feed_title,
         });
       }

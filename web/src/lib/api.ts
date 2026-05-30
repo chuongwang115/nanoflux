@@ -19,6 +19,8 @@ export type Item = {
   description: string | null;
   published_at: string;
   is_read: boolean;
+  filter_passed: boolean | null;
+  pass_reason: string | null;
   feed_title: string;
 };
 
@@ -28,7 +30,10 @@ export type ItemsPage = {
   hasMore: boolean;
 };
 
-type RawItem = Omit<Item, "is_read"> & { is_read: boolean | number };
+type RawItem = Omit<Item, "is_read" | "filter_passed"> & {
+  is_read: boolean | number;
+  filter_passed: boolean | number | null;
+};
 
 type ItemsApiResult = {
   code: number;
@@ -55,6 +60,10 @@ function normalizeItem(raw: RawItem): Item {
   return {
     ...raw,
     is_read: Boolean(raw.is_read),
+    filter_passed:
+      raw.filter_passed === null || raw.filter_passed === undefined
+        ? null
+        : Boolean(raw.filter_passed),
   };
 }
 
@@ -187,4 +196,39 @@ export async function markItemRead(id: string) {
     method: "POST",
   });
   assertApiOk(body);
+}
+
+export type Settings = {
+  whitelist: string;
+  prompt: string;
+};
+
+export type SettingsUpdate = Pick<Settings, "whitelist"> &
+  Partial<Pick<Settings, "prompt">>;
+
+type SettingsApiResult = {
+  code: number;
+  message: string;
+  data?: Settings;
+};
+
+export async function fetchSettings(): Promise<Settings> {
+  const body = await request<SettingsApiResult>("/api/settings");
+  assertApiOk(body);
+  if (!body.data) {
+    throw new Error(body.message || "Failed to load settings");
+  }
+  return body.data;
+}
+
+export async function saveSettings(payload: SettingsUpdate): Promise<Settings> {
+  const body = await request<SettingsApiResult>("/api/settings", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  assertApiOk(body);
+  if (!body.data) {
+    throw new Error(body.message || "Failed to save settings");
+  }
+  return body.data;
 }

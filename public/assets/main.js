@@ -6251,81 +6251,6 @@ if (typeof window !== "undefined") {
 
 // node_modules/svelte/src/internal/flags/legacy.js
 enable_legacy_mode_flag();
-// web/src/lib/router.ts
-var scrollByRoute = new Map;
-var route = writable("/");
-function pathnameToRoute(pathname) {
-  return pathname.endsWith("/feeds") ? "/feeds" : "/";
-}
-function routeToRelativeHref(next2) {
-  if (next2 === "/feeds")
-    return "feeds";
-  const path = window.location.pathname;
-  return path.endsWith("/feeds/") ? ".." : "./";
-}
-function homeHref() {
-  const path = window.location.pathname;
-  return path.endsWith("/feeds/") ? ".." : "./";
-}
-function feedsHref() {
-  return "feeds";
-}
-function navigateToParent() {
-  navigate("/");
-}
-function saveScroll(current) {
-  scrollByRoute.set(current, window.scrollY);
-}
-function restoreScroll(next2) {
-  requestAnimationFrame(() => {
-    window.scrollTo(0, scrollByRoute.get(next2) ?? 0);
-  });
-}
-function syncRouteFromLocation() {
-  route.set(pathnameToRoute(window.location.pathname));
-}
-function navigate(next2) {
-  const current = get(route);
-  if (current === next2)
-    return;
-  const href = routeToRelativeHref(next2);
-  const target = new URL(href, window.location.href);
-  if (window.location.pathname === target.pathname)
-    return;
-  saveScroll(current);
-  history.pushState(null, "", href + window.location.search);
-  route.set(next2);
-  restoreScroll(next2);
-}
-function initRouter() {
-  syncRouteFromLocation();
-  window.addEventListener("popstate", () => {
-    syncRouteFromLocation();
-    restoreScroll(get(route));
-  });
-}
-function shouldHandleNavClick(event2) {
-  if (event2.defaultPrevented || event2.button !== 0 || event2.metaKey || event2.ctrlKey || event2.shiftKey || event2.altKey) {
-    return false;
-  }
-  return true;
-}
-function navClick(next2) {
-  return (event2) => {
-    if (!shouldHandleNavClick(event2))
-      return;
-    event2.preventDefault();
-    navigate(next2);
-  };
-}
-function navClickParent() {
-  return (event2) => {
-    if (!shouldHandleNavClick(event2))
-      return;
-    event2.preventDefault();
-    navigateToParent();
-  };
-}
 
 // node_modules/@lucide/svelte/dist/defaultAttributes.js
 var defaultAttributes = {
@@ -6425,8 +6350,163 @@ function Icon($$anchor, $$props) {
 if (undefined) {}
 var Icon_default = Icon;
 
-// node_modules/@lucide/svelte/dist/icons/a-arrow-down.svelte
+// node_modules/@lucide/svelte/dist/icons/settings-2.svelte
 var root2 = from_html(`<!--
+@lucide/svelte v1.16.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMTQgMTdINSIgLz4KICA8cGF0aCBkPSJNMTkgN2gtOSIgLz4KICA8Y2lyY2xlIGN4PSIxNyIgY3k9IjE3IiByPSIzIiAvPgogIDxjaXJjbGUgY3g9IjciIGN5PSI3IiByPSIzIiAvPgo8L3N2Zz4K) - https://lucide.dev/icons/settings-2
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Settings_2($$anchor, $$props) {
+  let props = rest_props($$props, ["$$slots", "$$events", "$$legacy"]);
+  const iconNode = [
+    ["path", { d: "M14 17H5" }],
+    ["path", { d: "M19 7h-9" }],
+    ["circle", { cx: "17", cy: "17", r: "3" }],
+    ["circle", { cx: "7", cy: "7", r: "3" }]
+  ];
+  var fragment = root2();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "settings-2" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var settings_2_default = Settings_2;
+// web/src/lib/settings-save.ts
+var SETTINGS_SAVE_KEY = Symbol("settingsSave");
+var leaveHandler;
+async function saveSettingsBeforeLeave() {
+  await leaveHandler?.();
+}
+function createSettingsSaveHost() {
+  return {
+    register(next2) {
+      leaveHandler = next2;
+    },
+    saveBeforeLeave: saveSettingsBeforeLeave
+  };
+}
+
+// web/src/lib/router.ts
+var scrollByRoute = new Map;
+var route = writable("/");
+function pathnameToRoute(pathname) {
+  if (pathname.endsWith("/feeds"))
+    return "/feeds";
+  if (pathname.endsWith("/settings"))
+    return "/settings";
+  return "/";
+}
+function routeToRelativeHref(next2) {
+  if (next2 === "/feeds")
+    return "feeds";
+  if (next2 === "/settings")
+    return "settings";
+  const path = window.location.pathname;
+  if (path.endsWith("/feeds/") || path.endsWith("/settings/"))
+    return "..";
+  return "./";
+}
+function homeHref() {
+  const path = window.location.pathname;
+  if (path.endsWith("/feeds/") || path.endsWith("/settings/"))
+    return "..";
+  return "./";
+}
+function feedsHref() {
+  return "feeds";
+}
+function settingsHref() {
+  return "settings";
+}
+function navigateToParent() {
+  navigate("/");
+}
+function saveScroll(current) {
+  scrollByRoute.set(current, window.scrollY);
+}
+function restoreScroll(next2) {
+  requestAnimationFrame(() => {
+    window.scrollTo(0, scrollByRoute.get(next2) ?? 0);
+  });
+}
+function syncRouteFromLocation() {
+  route.set(pathnameToRoute(window.location.pathname));
+}
+function navigate(next2) {
+  const current = get(route);
+  if (current === next2)
+    return;
+  const href = routeToRelativeHref(next2);
+  const target = new URL(href, window.location.href);
+  if (window.location.pathname === target.pathname)
+    return;
+  saveScroll(current);
+  history.pushState(null, "", href + window.location.search);
+  route.set(next2);
+  restoreScroll(next2);
+}
+function initRouter() {
+  syncRouteFromLocation();
+  window.addEventListener("popstate", () => {
+    (async () => {
+      if (get(route) === "/settings") {
+        try {
+          await saveSettingsBeforeLeave();
+        } catch {
+          return;
+        }
+      }
+      syncRouteFromLocation();
+      restoreScroll(get(route));
+    })();
+  });
+}
+function shouldHandleNavClick(event2) {
+  if (event2.defaultPrevented || event2.button !== 0 || event2.metaKey || event2.ctrlKey || event2.shiftKey || event2.altKey) {
+    return false;
+  }
+  return true;
+}
+function navClick(next2) {
+  return (event2) => {
+    if (!shouldHandleNavClick(event2))
+      return;
+    event2.preventDefault();
+    navigate(next2);
+  };
+}
+function navClickParent() {
+  return (event2) => {
+    if (!shouldHandleNavClick(event2))
+      return;
+    event2.preventDefault();
+    navigateToParent();
+  };
+}
+
+// node_modules/@lucide/svelte/dist/icons/a-arrow-down.svelte
+var root3 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -6454,7 +6534,7 @@ function A_arrow_down($$anchor, $$props) {
     ["path", { d: "m2 16 4.039-9.69a.5.5 0 0 1 .923 0L11 16" }],
     ["path", { d: "M3.304 13h6.392" }]
   ];
-  var fragment = root2();
+  var fragment = root3();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -6468,7 +6548,7 @@ function A_arrow_down($$anchor, $$props) {
 if (undefined) {}
 var a_arrow_down_default = A_arrow_down;
 // node_modules/@lucide/svelte/dist/icons/a-arrow-up.svelte
-var root3 = from_html(`<!--
+var root4 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -6496,7 +6576,7 @@ function A_arrow_up($$anchor, $$props) {
     ["path", { d: "m2 16 4.039-9.69a.5.5 0 0 1 .923 0L11 16" }],
     ["path", { d: "M3.304 13h6.392" }]
   ];
-  var fragment = root3();
+  var fragment = root4();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -6559,7 +6639,17 @@ var messages = {
     "items.noMore": "没有更多了",
     "items.loadFailed": "加载失败",
     "items.markAllRead": "全部已读",
+    "items.passReason": "匹配：{reason}",
     "feeds.title": "Feed 管理",
+    "settings.title": "设置",
+    "settings.back": "返回",
+    "settings.whitelist": "白名单关键词",
+    "settings.whitelistHint": "逗号分隔，匹配任一关键词则保留",
+    "settings.prompt": "AI 过滤提示词",
+    "settings.promptHint": "用于 AI 判断资讯是否相关的说明",
+    "settings.loading": "加载中…",
+    "settings.loadFailed": "加载失败",
+    "settings.saveFailed": "保存失败",
     "feeds.back": "返回",
     "feeds.name": "名称",
     "feeds.descriptionOptional": "描述（可选）",
@@ -6607,7 +6697,18 @@ var messages = {
     "items.noMore": "No more news",
     "items.loadFailed": "Failed to load",
     "items.markAllRead": "Mark all as read",
+    "items.passReason": "Matched: {reason}",
     "feeds.title": "Feed management",
+    "settings.title": "Settings",
+    "settings.back": "Back",
+    "settings.filter": "Content filter",
+    "settings.whitelist": "Whitelist keywords",
+    "settings.whitelistHint": "Comma-separated; keep items matching any keyword",
+    "settings.prompt": "AI filter prompt",
+    "settings.promptHint": "Instructions for AI relevance filtering",
+    "settings.loading": "Loading…",
+    "settings.loadFailed": "Failed to load",
+    "settings.saveFailed": "Failed to save",
     "feeds.back": "Back",
     "feeds.name": "Name",
     "feeds.descriptionOptional": "Description (optional)",
@@ -6711,7 +6812,7 @@ var root_12 = from_html(`
 var root_2 = from_html(`
     <!>
   `, 1);
-var root4 = from_html(`
+var root5 = from_html(`
 
 <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
   <!>
@@ -6721,7 +6822,7 @@ function FontSizeToggle($$anchor, $$props) {
   const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
   init();
   next();
-  var fragment = root4();
+  var fragment = root5();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   {
@@ -6766,7 +6867,7 @@ var FontSizeToggle_default = FontSizeToggle;
 delegate(["click"]);
 
 // node_modules/@lucide/svelte/dist/icons/check-check.svelte
-var root5 = from_html(`<!--
+var root6 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -6792,7 +6893,7 @@ function Check_check($$anchor, $$props) {
     ["path", { d: "M18 6 7 17l-5-5" }],
     ["path", { d: "m22 10-7.5 7.5L13 16" }]
   ];
-  var fragment = root5();
+  var fragment = root6();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -6806,7 +6907,7 @@ function Check_check($$anchor, $$props) {
 if (undefined) {}
 var check_check_default = Check_check;
 // web/src/components/buttons/MarkAllReadButton.svelte
-var root6 = from_html(`
+var root7 = from_html(`
 
 <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
   <!>
@@ -6816,7 +6917,7 @@ function MarkAllReadButton($$anchor, $$props) {
   const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
   const label = user_derived(() => t("items.markAllRead"));
   next();
-  var fragment = root6();
+  var fragment = root7();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   check_check_default(node, spread_props(() => iconProps));
@@ -6835,7 +6936,7 @@ var MarkAllReadButton_default = MarkAllReadButton;
 delegate(["click"]);
 
 // web/src/components/buttons/LanguageToggle.svelte
-var root7 = from_html(`
+var root8 = from_html(`
 
 <button type="button" class="inline-flex min-w-[2rem] cursor-pointer items-center justify-center rounded-md p-1.5 text-xs font-medium text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"> </button>`, 1);
 function LanguageToggle($$anchor, $$props) {
@@ -6843,7 +6944,7 @@ function LanguageToggle($$anchor, $$props) {
   const label = user_derived(() => localeState.locale === "zh" ? "EN" : "中");
   const aria = user_derived(() => localeState.locale === "zh" ? t("lang.switchToEn") : t("lang.switchToZh"));
   next();
-  var fragment = root7();
+  var fragment = root8();
   var button = sibling(first_child(fragment));
   var text2 = child(button);
   reset(button);
@@ -6865,7 +6966,7 @@ var LanguageToggle_default = LanguageToggle;
 delegate(["click"]);
 
 // node_modules/@lucide/svelte/dist/icons/moon.svelte
-var root8 = from_html(`<!--
+var root9 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -6895,7 +6996,7 @@ function Moon($$anchor, $$props) {
       }
     ]
   ];
-  var fragment = root8();
+  var fragment = root9();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -6909,7 +7010,7 @@ function Moon($$anchor, $$props) {
 if (undefined) {}
 var moon_default = Moon;
 // node_modules/@lucide/svelte/dist/icons/sun.svelte
-var root9 = from_html(`<!--
+var root10 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -6942,7 +7043,7 @@ function Sun($$anchor, $$props) {
     ["path", { d: "m6.34 17.66-1.41 1.41" }],
     ["path", { d: "m19.07 4.93-1.41 1.41" }]
   ];
-  var fragment = root9();
+  var fragment = root10();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -6996,7 +7097,7 @@ var root_13 = from_html(`
 var root_22 = from_html(`
     <!>
   `, 1);
-var root10 = from_html(`
+var root11 = from_html(`
 
 <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
   <!>
@@ -7006,7 +7107,7 @@ function ThemeToggle($$anchor, $$props) {
   const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
   init();
   next();
-  var fragment = root10();
+  var fragment = root11();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   {
@@ -7083,21 +7184,36 @@ var root_3 = from_html(`
         </div>
       `, 1);
 var root_4 = from_html(`
+        <div>
+          <a class="inline-flex shrink-0 rounded-md p-1 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m12 19-7-7 7-7"></path>
+              <path d="M19 12H5"></path>
+            </svg>
+          </a>
+          <p> </p>
+        </div>
+      `, 1);
+var root_5 = from_html(`
         <nav>
           <span> </span>
           <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
           <a class="hover:text-neutral-900 dark:hover:text-neutral-100"> </a>
+          <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
+          <a class="inline-flex shrink-0 rounded-md p-0.5 hover:text-neutral-900 dark:hover:text-neutral-100">
+            <!>
+          </a>
         </nav>
       `, 1);
-var root_5 = from_html(`
+var root_6 = from_html(`
       <span class="inline-flex items-center justify-center rounded-md p-1.5 invisible pointer-events-none" aria-hidden="true">
         <span class="size-[18px]"></span>
       </span>
     `, 1);
-var root_6 = from_html(`
+var root_7 = from_html(`
       <!>
     `, 1);
-var root11 = from_html(`
+var root12 = from_html(`
 
 <header>
   <div class="min-w-0 flex-1">
@@ -7121,6 +7237,20 @@ function Header($$anchor, $$props) {
   const COMPACT_ENTER = 72;
   const COMPACT_EXIT = 8;
   const markAllReadHost = getContext(MARK_ALL_READ_KEY);
+  const settingsSaveHost = getContext(SETTINGS_SAVE_KEY);
+  function navClickSettingsBack() {
+    return async (event2) => {
+      if (!shouldHandleNavClick(event2))
+        return;
+      event2.preventDefault();
+      try {
+        await settingsSaveHost.saveBeforeLeave();
+      } catch {
+        return;
+      }
+      navigateToParent();
+    };
+  }
   function readCompact(scrollY, current) {
     if (!current && scrollY > COMPACT_ENTER)
       return true;
@@ -7133,6 +7263,9 @@ function Header($$anchor, $$props) {
   }
   let compact = state(proxy(initialCompact()));
   const isFeeds = user_derived(() => $route() === "/feeds");
+  const isSettings = user_derived(() => $route() === "/settings");
+  const isSubPage = user_derived(() => get2(isFeeds) || get2(isSettings));
+  const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
   const rowClass = user_derived(() => `transition-[gap] duration-300 ${get2(compact) ? "flex min-w-0 items-center justify-between gap-4" : ""}`);
   const subClass = user_derived(() => `flex min-h-[30px] min-w-0 items-center gap-2 text-sm text-neutral-400 dark:text-neutral-500 ${get2(compact) ? "shrink-0" : "mt-1"}`);
   const titleClass = "shrink-0 text-lg font-medium tracking-tight";
@@ -7164,7 +7297,7 @@ function Header($$anchor, $$props) {
     requestAnimationFrame(() => syncCompact());
   });
   next();
-  var fragment = root11();
+  var fragment = root12();
   var header = sibling(first_child(fragment));
   var div = sibling(child(header));
   var div_1 = sibling(child(div));
@@ -7173,7 +7306,7 @@ function Header($$anchor, $$props) {
     var consequent = ($$anchor2) => {
       var fragment_1 = root_14();
       var a = sibling(first_child(fragment_1));
-      var event_handler = user_derived(navClickParent);
+      var event_handler = user_derived(() => get2(isSettings) ? navClickSettingsBack() : navClickParent());
       set_class(a, 1, "shrink-0 text-lg font-medium tracking-tight hover:opacity-70");
       next();
       template_effect(($0) => set_attribute2(a, "href", $0), [() => homeHref()]);
@@ -7190,7 +7323,7 @@ function Header($$anchor, $$props) {
       append($$anchor2, fragment_2);
     };
     if_block(node, ($$render) => {
-      if (get2(isFeeds))
+      if (get2(isSubPage))
         $$render(consequent);
       else
         $$render(alternate, -1);
@@ -7226,41 +7359,86 @@ function Header($$anchor, $$props) {
       });
       append($$anchor2, fragment_3);
     };
-    var alternate_1 = ($$anchor2) => {
+    var consequent_2 = ($$anchor2) => {
       var fragment_4 = root_4();
-      var nav = sibling(first_child(fragment_4));
-      var span = sibling(child(nav));
-      var text_1 = child(span, true);
-      reset(span);
-      var a_2 = sibling(span, 4);
-      var event_handler_2 = user_derived(() => navClick("/feeds"));
-      var text_2 = child(a_2);
-      reset(a_2);
+      var div_3 = sibling(first_child(fragment_4));
+      var a_2 = sibling(child(div_3));
+      var event_handler_2 = user_derived(navClickSettingsBack);
+      var p_1 = sibling(a_2, 2);
+      var text_1 = child(p_1, true);
+      reset(p_1);
       next();
-      reset(nav);
+      reset(div_3);
       next();
       template_effect(($0, $1, $2, $3) => {
-        set_class(nav, 1, clsx2(get2(subClass)));
-        set_attribute2(nav, "aria-label", $0);
-        set_text(text_1, $1);
-        set_attribute2(a_2, "href", $2);
-        set_text(text_2, `
-            ${$3 ?? ""}
-          `);
+        set_class(div_3, 1, `${get2(subClass) ?? ""} gap-3`);
+        set_attribute2(a_2, "href", $0);
+        set_attribute2(a_2, "aria-label", $1);
+        set_attribute2(a_2, "title", $2);
+        set_text(text_1, $3);
       }, [
-        () => t("items.latest"),
-        () => t("items.latest"),
-        () => feedsHref(),
-        () => t("items.feeds")
+        () => homeHref(),
+        () => t("settings.back"),
+        () => t("settings.back"),
+        () => t("settings.title")
       ]);
       delegated("click", a_2, function(...$$args) {
         get2(event_handler_2)?.apply(this, $$args);
       });
       append($$anchor2, fragment_4);
     };
+    var alternate_1 = ($$anchor2) => {
+      var fragment_5 = root_5();
+      var nav = sibling(first_child(fragment_5));
+      var span = sibling(child(nav));
+      var text_2 = child(span, true);
+      reset(span);
+      var a_3 = sibling(span, 4);
+      var event_handler_3 = user_derived(() => navClick("/feeds"));
+      var text_3 = child(a_3);
+      reset(a_3);
+      var a_4 = sibling(a_3, 4);
+      var event_handler_4 = user_derived(() => navClick("/settings"));
+      var node_2 = sibling(child(a_4));
+      settings_2_default(node_2, spread_props(() => iconProps));
+      next();
+      reset(a_4);
+      next();
+      reset(nav);
+      next();
+      template_effect(($0, $1, $2, $3, $4, $5, $6) => {
+        set_class(nav, 1, clsx2(get2(subClass)));
+        set_attribute2(nav, "aria-label", $0);
+        set_text(text_2, $1);
+        set_attribute2(a_3, "href", $2);
+        set_text(text_3, `
+            ${$3 ?? ""}
+          `);
+        set_attribute2(a_4, "href", $4);
+        set_attribute2(a_4, "aria-label", $5);
+        set_attribute2(a_4, "title", $6);
+      }, [
+        () => t("items.latest"),
+        () => t("items.latest"),
+        () => feedsHref(),
+        () => t("items.feeds"),
+        () => settingsHref(),
+        () => t("settings.title"),
+        () => t("settings.title")
+      ]);
+      delegated("click", a_3, function(...$$args) {
+        get2(event_handler_3)?.apply(this, $$args);
+      });
+      delegated("click", a_4, function(...$$args) {
+        get2(event_handler_4)?.apply(this, $$args);
+      });
+      append($$anchor2, fragment_5);
+    };
     if_block(node_1, ($$render) => {
       if (get2(isFeeds))
         $$render(consequent_1);
+      else if (get2(isSettings))
+        $$render(consequent_2, 1);
       else
         $$render(alternate_1, -1);
     });
@@ -7269,36 +7447,36 @@ function Header($$anchor, $$props) {
   reset(div_1);
   next();
   reset(div);
-  var div_3 = sibling(div, 2);
-  var node_2 = sibling(child(div_3));
+  var div_4 = sibling(div, 2);
+  var node_3 = sibling(child(div_4));
   {
-    var consequent_2 = ($$anchor2) => {
-      var fragment_5 = root_5();
-      next(2);
-      append($$anchor2, fragment_5);
-    };
-    var alternate_2 = ($$anchor2) => {
+    var consequent_3 = ($$anchor2) => {
       var fragment_6 = root_6();
-      var node_3 = sibling(first_child(fragment_6));
-      MarkAllReadButton_default(node_3, { onMarkAllRead: () => markAllReadHost.markAllRead() });
-      next();
+      next(2);
       append($$anchor2, fragment_6);
     };
-    if_block(node_2, ($$render) => {
-      if (get2(isFeeds))
-        $$render(consequent_2);
+    var alternate_2 = ($$anchor2) => {
+      var fragment_7 = root_7();
+      var node_4 = sibling(first_child(fragment_7));
+      MarkAllReadButton_default(node_4, { onMarkAllRead: () => markAllReadHost.markAllRead() });
+      next();
+      append($$anchor2, fragment_7);
+    };
+    if_block(node_3, ($$render) => {
+      if (get2(isSubPage))
+        $$render(consequent_3);
       else
         $$render(alternate_2, -1);
     });
   }
-  var node_4 = sibling(node_2, 2);
-  FontSizeToggle_default(node_4, {});
-  var node_5 = sibling(node_4, 2);
-  LanguageToggle_default(node_5, {});
+  var node_5 = sibling(node_3, 2);
+  FontSizeToggle_default(node_5, {});
   var node_6 = sibling(node_5, 2);
-  ThemeToggle_default(node_6, {});
+  LanguageToggle_default(node_6, {});
+  var node_7 = sibling(node_6, 2);
+  ThemeToggle_default(node_7, {});
   next();
-  reset(div_3);
+  reset(div_4);
   next();
   reset(header);
   template_effect(() => {
@@ -7315,7 +7493,7 @@ var Header_default = Header;
 delegate(["click"]);
 
 // node_modules/@lucide/svelte/dist/icons/pencil.svelte
-var root12 = from_html(`<!--
+var root13 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -7346,7 +7524,7 @@ function Pencil($$anchor, $$props) {
     ],
     ["path", { d: "m15 5 4 4" }]
   ];
-  var fragment = root12();
+  var fragment = root13();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -7360,7 +7538,7 @@ function Pencil($$anchor, $$props) {
 if (undefined) {}
 var pencil_default = Pencil;
 // node_modules/@lucide/svelte/dist/icons/trash-2.svelte
-var root13 = from_html(`<!--
+var root14 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -7389,7 +7567,7 @@ function Trash_2($$anchor, $$props) {
     ["path", { d: "M3 6h18" }],
     ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" }]
   ];
-  var fragment = root13();
+  var fragment = root14();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -7411,7 +7589,8 @@ function assertApiOk(body) {
 function normalizeItem(raw) {
   return {
     ...raw,
-    is_read: Boolean(raw.is_read)
+    is_read: Boolean(raw.is_read),
+    filter_passed: raw.filter_passed === null || raw.filter_passed === undefined ? null : Boolean(raw.filter_passed)
   };
 }
 async function request(url, options = {}) {
@@ -7498,8 +7677,30 @@ async function markItemRead(id) {
   });
   assertApiOk(body);
 }
+async function fetchSettings() {
+  const body = await request("/api/settings");
+  assertApiOk(body);
+  if (!body.data) {
+    throw new Error(body.message || "Failed to load settings");
+  }
+  return body.data;
+}
+async function saveSettings(payload) {
+  const body = await request("/api/settings", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+  assertApiOk(body);
+  if (!body.data) {
+    throw new Error(body.message || "Failed to save settings");
+  }
+  return body.data;
+}
 
 // web/src/lib/utils.ts
+function normalizeCommas(value) {
+  return value.replaceAll("，", ",");
+}
 function formatTime(iso, nowMs = Date.now()) {
   if (!iso)
     return "";
@@ -7546,7 +7747,7 @@ var root_52 = from_html(`
 var root_62 = from_html(`
     <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
   `, 1);
-var root_7 = from_html(`
+var root_72 = from_html(`
     <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
   `, 1);
 var root_122 = from_html(`
@@ -7585,7 +7786,7 @@ var root_8 = from_html(`
     <!>
     <div class="h-1" aria-hidden="true"></div>
   `, 1);
-var root14 = from_html(`
+var root15 = from_html(`
 
 <section class="mb-10">
   <form class="space-y-3">
@@ -7808,7 +8009,7 @@ function FeedsManager($$anchor, $$props) {
     return () => clearInterval(timer);
   });
   next();
-  var fragment = root14();
+  var fragment = root15();
   var section = sibling(first_child(fragment));
   var form = sibling(child(section));
   var input = sibling(child(form));
@@ -7931,7 +8132,7 @@ function FeedsManager($$anchor, $$props) {
       append($$anchor2, fragment_6);
     };
     var consequent_6 = ($$anchor2) => {
-      var fragment_7 = root_7();
+      var fragment_7 = root_72();
       var p_5 = sibling(first_child(fragment_7));
       var text_10 = child(p_5, true);
       reset(p_5);
@@ -8179,6 +8380,9 @@ var root_25 = from_html(`
 var root_53 = from_html(`
             <p class="mt-2 line-clamp-2 text-sm text-neutral-400 dark:text-neutral-500"> </p>
           `, 1);
+var root_63 = from_html(`
+            <p class="mt-1.5 text-xs text-neutral-400 dark:text-neutral-500"> </p>
+          `, 1);
 var root_43 = from_html(`
       <li class="py-5">
         <article>
@@ -8189,6 +8393,7 @@ var root_43 = from_html(`
           </div>
           <a target="_blank" rel="noopener noreferrer"> </a>
           <!>
+          <!>
         </article>
       </li>
     `, 1);
@@ -8197,13 +8402,13 @@ var root_33 = from_html(`
     <!>
   </ul>
 `, 1);
-var root_63 = from_html(`
+var root_73 = from_html(`
   <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root_72 = from_html(`
+var root_82 = from_html(`
   <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root15 = from_html(`
+var root16 = from_html(`
 
 <!>
 
@@ -8325,7 +8530,7 @@ function ItemList($$anchor, $$props) {
   });
   var $$exports = { markAllRead };
   next();
-  var fragment = root15();
+  var fragment = root16();
   var node = sibling(first_child(fragment));
   {
     var consequent = ($$anchor2) => {
@@ -8385,6 +8590,26 @@ function ItemList($$anchor, $$props) {
               $$render(consequent_2);
           });
         }
+        var node_3 = sibling(node_2, 2);
+        {
+          var consequent_3 = ($$anchor4) => {
+            var fragment_6 = root_63();
+            var p_3 = sibling(first_child(fragment_6));
+            var text_6 = child(p_3);
+            reset(p_3);
+            next();
+            template_effect(($0) => set_text(text_6, `
+              ${$0 ?? ""}
+            `), [
+              () => tf("items.passReason", { reason: get2(item).pass_reason })
+            ]);
+            append($$anchor4, fragment_6);
+          };
+          if_block(node_3, ($$render) => {
+            if (get2(item).pass_reason)
+              $$render(consequent_3);
+          });
+        }
         next();
         reset(article);
         next();
@@ -8419,38 +8644,38 @@ function ItemList($$anchor, $$props) {
         $$render(alternate, -1);
     });
   }
-  var node_3 = sibling(node, 2);
+  var node_4 = sibling(node, 2);
   {
-    var consequent_3 = ($$anchor2) => {
-      var fragment_6 = root_63();
-      var p_3 = sibling(first_child(fragment_6));
-      var text_6 = child(p_3);
-      reset(p_3);
-      next();
-      template_effect(($0) => set_text(text_6, `
-    ${$0 ?? ""}
-  `), [() => t("items.loading")]);
-      append($$anchor2, fragment_6);
-    };
     var consequent_4 = ($$anchor2) => {
-      var fragment_7 = root_72();
+      var fragment_7 = root_73();
       var p_4 = sibling(first_child(fragment_7));
       var text_7 = child(p_4);
       reset(p_4);
       next();
       template_effect(($0) => set_text(text_7, `
     ${$0 ?? ""}
-  `), [() => t("items.noMore")]);
+  `), [() => t("items.loading")]);
       append($$anchor2, fragment_7);
     };
-    if_block(node_3, ($$render) => {
+    var consequent_5 = ($$anchor2) => {
+      var fragment_8 = root_82();
+      var p_5 = sibling(first_child(fragment_8));
+      var text_8 = child(p_5);
+      reset(p_5);
+      next();
+      template_effect(($0) => set_text(text_8, `
+    ${$0 ?? ""}
+  `), [() => t("items.noMore")]);
+      append($$anchor2, fragment_8);
+    };
+    if_block(node_4, ($$render) => {
       if (get2(loading))
-        $$render(consequent_3);
+        $$render(consequent_4);
       else if (!get2(hasMore) && get2(items).length > 0)
-        $$render(consequent_4, 1);
+        $$render(consequent_5, 1);
     });
   }
-  var div_1 = sibling(node_3, 2);
+  var div_1 = sibling(node_4, 2);
   bind_this(div_1, ($$value) => set(sentinel, $$value), () => get2(sentinel));
   append($$anchor, fragment);
   return pop($$exports);
@@ -8459,14 +8684,182 @@ if (undefined) {}
 var ItemList_default = ItemList;
 delegate(["click"]);
 
-// web/src/App.svelte
+// web/src/components/Settings.svelte
 var root_17 = from_html(`
-    <!>
+    <p class="text-sm text-neutral-400 dark:text-neutral-500"> </p>
   `, 1);
 var root_26 = from_html(`
+    <p class="text-sm text-red-500"> </p>
+  `, 1);
+var root_44 = from_html(`
+      <p class="mt-3 text-sm text-red-500"> </p>
+    `, 1);
+var root_34 = from_html(`
+    <div class="space-y-6">
+      <div class="space-y-1">
+        <label for="whitelist" class="text-sm text-neutral-600 dark:text-neutral-400"> </label>
+        <input id="whitelist" type="text"/>
+        <p class="text-xs text-neutral-400 dark:text-neutral-500"> </p>
+      </div>
+    </div>
     <!>
   `, 1);
-var root16 = from_html(`
+var root17 = from_html(`
+
+<section>
+  <h2 class="mb-6 text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </h2>
+
+  <!>
+</section>`, 1);
+function Settings($$anchor, $$props) {
+  push($$props, true);
+  const settingsSaveHost = getContext(SETTINGS_SAVE_KEY);
+  const inputClass = "w-full border-0 border-b border-neutral-200 bg-transparent py-2 text-sm outline-none placeholder:text-neutral-300 focus:border-neutral-900 dark:border-neutral-700 dark:placeholder:text-neutral-600 dark:focus:border-neutral-100";
+  let whitelist = state("");
+  let loading = state(true);
+  let loaded = state(false);
+  let loadError = state("");
+  let saveError = state("");
+  async function load() {
+    set(loading, true);
+    set(loadError, "");
+    try {
+      const data = await fetchSettings();
+      set(whitelist, data.whitelist, true);
+      set(loaded, true);
+    } catch (e) {
+      set(loadError, e instanceof Error ? e.message : t("settings.loadFailed"), true);
+    } finally {
+      set(loading, false);
+    }
+  }
+  async function persist() {
+    if (!get2(loaded) || get2(loading))
+      return;
+    set(saveError, "");
+    try {
+      set(whitelist, normalizeCommas(get2(whitelist)), true);
+      const data = await saveSettings({ whitelist: get2(whitelist) });
+      set(whitelist, data.whitelist, true);
+    } catch (e) {
+      set(saveError, e instanceof Error ? e.message : t("settings.saveFailed"), true);
+      throw e;
+    }
+  }
+  onMount(() => {
+    settingsSaveHost.register(persist);
+    load();
+    return () => settingsSaveHost.register(undefined);
+  });
+  next();
+  var fragment = root17();
+  var section = sibling(first_child(fragment));
+  var h2 = sibling(child(section));
+  var text2 = child(h2);
+  reset(h2);
+  var node = sibling(h2, 2);
+  {
+    var consequent = ($$anchor2) => {
+      var fragment_1 = root_17();
+      var p = sibling(first_child(fragment_1));
+      var text_1 = child(p);
+      reset(p);
+      next();
+      template_effect(($0) => set_text(text_1, `
+      ${$0 ?? ""}
+    `), [() => t("settings.loading")]);
+      append($$anchor2, fragment_1);
+    };
+    var consequent_1 = ($$anchor2) => {
+      var fragment_2 = root_26();
+      var p_1 = sibling(first_child(fragment_2));
+      var text_2 = child(p_1, true);
+      reset(p_1);
+      next();
+      template_effect(() => set_text(text_2, get2(loadError)));
+      append($$anchor2, fragment_2);
+    };
+    var alternate = ($$anchor2) => {
+      var fragment_3 = root_34();
+      var div = sibling(first_child(fragment_3));
+      var div_1 = sibling(child(div));
+      var label = sibling(child(div_1));
+      var text_3 = child(label);
+      reset(label);
+      var input = sibling(label, 2);
+      remove_input_defaults(input);
+      set_class(input, 1, clsx2(inputClass));
+      var p_2 = sibling(input, 2);
+      var text_4 = child(p_2);
+      reset(p_2);
+      next();
+      reset(div_1);
+      next();
+      reset(div);
+      var node_1 = sibling(div, 2);
+      {
+        var consequent_2 = ($$anchor3) => {
+          var fragment_4 = root_44();
+          var p_3 = sibling(first_child(fragment_4));
+          var text_5 = child(p_3, true);
+          reset(p_3);
+          next();
+          template_effect(() => set_text(text_5, get2(saveError)));
+          append($$anchor3, fragment_4);
+        };
+        if_block(node_1, ($$render) => {
+          if (get2(saveError))
+            $$render(consequent_2);
+        });
+      }
+      next();
+      template_effect(($0, $1, $2) => {
+        set_text(text_3, `
+          ${$0 ?? ""}
+        `);
+        set_attribute2(input, "placeholder", $1);
+        set_text(text_4, `
+          ${$2 ?? ""}
+        `);
+      }, [
+        () => t("settings.whitelist"),
+        () => t("settings.whitelistHint"),
+        () => t("settings.whitelistHint")
+      ]);
+      bind_value(input, () => get2(whitelist), ($$value) => set(whitelist, $$value));
+      append($$anchor2, fragment_3);
+    };
+    if_block(node, ($$render) => {
+      if (get2(loading))
+        $$render(consequent);
+      else if (get2(loadError))
+        $$render(consequent_1, 1);
+      else
+        $$render(alternate, -1);
+    });
+  }
+  next();
+  reset(section);
+  template_effect(($0) => set_text(text2, `
+    ${$0 ?? ""}
+  `), [() => t("settings.title")]);
+  append($$anchor, fragment);
+  pop();
+}
+if (undefined) {}
+var Settings_default = Settings;
+
+// web/src/App.svelte
+var root_18 = from_html(`
+    <!>
+  `, 1);
+var root_27 = from_html(`
+    <!>
+  `, 1);
+var root_35 = from_html(`
+    <!>
+  `, 1);
+var root18 = from_html(`
 
 <main class="mx-auto max-w-page px-5 py-16 font-sans">
   <!>
@@ -8477,32 +8870,43 @@ function App($$anchor, $$props) {
   const $route = () => store_get(route, "$route", $$stores);
   const [$$stores, $$cleanup] = setup_stores();
   const markAllReadHost = createMarkAllReadHost();
+  const settingsSaveHost = createSettingsSaveHost();
   setContext(MARK_ALL_READ_KEY, markAllReadHost);
+  setContext(SETTINGS_SAVE_KEY, settingsSaveHost);
   init();
   next();
-  var fragment = root16();
+  var fragment = root18();
   var main = sibling(first_child(fragment));
   var node = sibling(child(main));
   Header_default(node, {});
   var node_1 = sibling(node, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root_17();
+      var fragment_1 = root_18();
       var node_2 = sibling(first_child(fragment_1));
       FeedsManager_default(node_2, {});
       next();
       append($$anchor2, fragment_1);
     };
-    var alternate = ($$anchor2) => {
-      var fragment_2 = root_26();
+    var consequent_1 = ($$anchor2) => {
+      var fragment_2 = root_27();
       var node_3 = sibling(first_child(fragment_2));
-      ItemList_default(node_3, {});
+      Settings_default(node_3, {});
       next();
       append($$anchor2, fragment_2);
+    };
+    var alternate = ($$anchor2) => {
+      var fragment_3 = root_35();
+      var node_4 = sibling(first_child(fragment_3));
+      ItemList_default(node_4, {});
+      next();
+      append($$anchor2, fragment_3);
     };
     if_block(node_1, ($$render) => {
       if ($route() === "/feeds")
         $$render(consequent);
+      else if ($route() === "/settings")
+        $$render(consequent_1, 1);
       else
         $$render(alternate, -1);
     });
