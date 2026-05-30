@@ -27,14 +27,17 @@ Built on [Bun](https://bun.sh), [Elysia](https://elysiajs.com), and [Svelte 5](h
 
 - RSS/Atom feed management with auto-fetched metadata
 - Adaptive polling (5–30 min per feed) based on publish frequency
+- Keyword whitelist filter — keep items whose title or content matches any configured keyword; matched terms are highlighted in the list
 - Infinite scroll with cursor-based pagination
 - Read tracking for individual items or all visible items
+- Automatic cleanup of items older than 90 days
 
 **UI & Experience**
 
 - Real-time updates via Server-Sent Events (SSE)
 - Progressive Web App (installable, offline asset caching)
 - Bilingual UI (English / Chinese), light/dark theme, adjustable font size
+- Settings page (`/settings`) for editing the keyword whitelist
 
 **Integration & Networking**
 
@@ -119,6 +122,26 @@ Outbound HTTP requests (RSS fetches, Google News) honor standard proxy environme
 | `PROXY_PROTOCOL` | Protocol when using host/port form (default: `socks5h`) |
 | `NO_PROXY` | Comma-separated hosts to bypass |
 
+### Application settings (`settings.json`)
+
+Runtime settings are stored in `settings.json` at the project root (created automatically on first save from the UI or API). Loaded on startup.
+
+| Field | Description |
+| --- | --- |
+| `whitelist` | Comma-separated keywords (English or Chinese commas). An item is shown only if its title or content contains at least one keyword (case-insensitive). Leave empty to disable filtering. |
+| `prompt` | Reserved for future AI-based relevance filtering; editable via the API. |
+
+Example:
+
+```json
+{
+  "whitelist": "基金,券商,证券,保险",
+  "prompt": ""
+}
+```
+
+Changes to `whitelist` apply to newly fetched items only; existing rows in the database are not re-evaluated.
+
 ## Background & Service Mode
 
 ### One-click start (macOS / Linux / Windows)
@@ -166,6 +189,8 @@ Add to your MCP client config (e.g. Cursor or Claude Desktop):
 
 ### Available tools
 
+All news query tools return only whitelist-passed items (`filter_passed = 1`).
+
 | Tool | Description |
 | --- | --- |
 | `add_feed` | Add an RSS feed (metadata auto-fetched when omitted) |
@@ -201,6 +226,24 @@ All endpoints return JSON. When `HOST=127.0.0.1`, these routes are localhost-onl
 | `POST` | `/api/items/:id/read` | Mark one item as read |
 | `POST` | `/api/items/read-all` | Mark all items up to a timestamp as read |
 
+Only items that pass the whitelist filter (`filter_passed = 1`) are returned. Each item includes `content` (summary text), `filter_passed`, and `pass_reason` (matched keywords, comma-separated).
+
+Query parameters for `GET /api/items`:
+
+| Parameter | Description |
+| --- | --- |
+| `cursor` | Pagination cursor from a previous response |
+| `limit` | Page size (default 20, max 50) |
+| `since`, `until` | Absolute ISO 8601 time bounds |
+| `unit`, `count` | Relative window (e.g. `unit=hour&count=2` for the last 2 hours) |
+
+### Settings — `/api/settings`
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/api/settings` | Read `whitelist` and `prompt` |
+| `POST` | `/api/settings` | Update settings (partial body accepted) |
+
 ### Real-time — `/sse`
 
 Connect with `EventSource` to receive `items` events when new articles arrive, plus periodic `ping` heartbeats.
@@ -209,22 +252,25 @@ Connect with `EventSource` to receive `items` events when new articles arrive, p
 
 1. On startup and every minute (UTC cron), the scheduler loads feeds whose `next_fetched_at` is due.
 2. Each feed is fetched over HTTP with a 15 s timeout and parsed as RSS/Atom.
-3. New items are deduplicated by `(feed_id, guid)` and inserted into SQLite.
-4. Inserted items are broadcast to connected SSE clients.
+3. New items are deduplicated by `(feed_id, guid)`, evaluated against the keyword whitelist, and inserted into SQLite with `filter_passed` and `pass_reason`.
+4. Items that pass the filter are broadcast to connected SSE clients; filtered-out items remain in the database but are hidden from the UI and API.
 5. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear.
+6. Daily at 01:00 UTC, items older than 90 days are deleted.
 
 ## Project Structure
 
 ```
 ├── web/              Svelte frontend source
 ├── public/           Built static assets (generated)
-├── routes/           REST API routes (feeds, items)
+├── routes/           REST API routes (feeds, items, settings)
 ├── mcp/              MCP server and tools
 ├── sse/              Server-Sent Events streaming
-├── services/         Feed fetcher, scheduler, HTTP client
+├── services/         Feed fetcher, scheduler, HTTP client, whitelist filter
 ├── db/               Drizzle schema and data access
 ├── shared/           Shared types and utilities
 ├── drizzle/          SQL migrations
+├── settings.json     Runtime whitelist / prompt settings
+├── settings.ts       Settings load and persist
 ├── main.ts           Application entry point
 └── build.ts          Frontend build script
 ```
