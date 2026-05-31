@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { searchGoogleNews } from "../../services/google-news-fetcher";
+import { searchGoogleNews } from "../../services/google-news";
 
 const googleNewsTimeWindowSchema = z
   .enum(["1h", "1d", "3d", "7d", "1m"])

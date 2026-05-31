@@ -2925,6 +2925,11 @@ function autofocus(dom, value) {
     });
   }
 }
+function remove_textarea_child(dom) {
+  if (hydrating && get_first_child(dom) !== null) {
+    clear_text_content(dom);
+  }
+}
 var listening_to_form_reset = false;
 function add_form_reset_listener() {
   if (!listening_to_form_reset) {
@@ -6639,7 +6644,11 @@ var messages = {
     "items.noMore": "没有更多了",
     "items.loadFailed": "加载失败",
     "items.markAllRead": "全部已读",
-    "items.passReason": "匹配：{reason}",
+    "items.matchedKeywords": "匹配：{keywords}",
+    "items.passReason": "AI：{reason}",
+    "items.filterBy": "筛选",
+    "items.filterPassed": "通过",
+    "items.filterFailed": "未通过",
     "feeds.title": "Feed 管理",
     "settings.title": "设置",
     "settings.back": "返回",
@@ -6697,7 +6706,11 @@ var messages = {
     "items.noMore": "No more news",
     "items.loadFailed": "Failed to load",
     "items.markAllRead": "Mark all as read",
-    "items.passReason": "Matched: {reason}",
+    "items.matchedKeywords": "Matched: {keywords}",
+    "items.passReason": "AI: {reason}",
+    "items.filterBy": "Filter",
+    "items.filterPassed": "Passed",
+    "items.filterFailed": "Failed",
     "feeds.title": "Feed management",
     "settings.title": "Settings",
     "settings.back": "Back",
@@ -6866,77 +6879,8 @@ if (undefined) {}
 var FontSizeToggle_default = FontSizeToggle;
 delegate(["click"]);
 
-// node_modules/@lucide/svelte/dist/icons/check-check.svelte
-var root6 = from_html(`<!--
-@lucide/svelte v1.16.0 - ISC
-
-This source code is licensed under the ISC license.
-See the LICENSE file in the root directory of this source tree.
--->
-
-
-
-
-<!--
-@component
-
-Lucide SVG icon component, renders SVG Element with children.
-
-@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMTggNiA3IDE3bC01LTUiIC8+CiAgPHBhdGggZD0ibTIyIDEwLTcuNSA3LjVMMTMgMTYiIC8+Cjwvc3ZnPgo=) - https://lucide.dev/icons/check-check
-@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
--->
-
-<!>`, 1);
-function Check_check($$anchor, $$props) {
-  let props = rest_props($$props, ["$$slots", "$$events", "$$legacy"]);
-  const iconNode = [
-    ["path", { d: "M18 6 7 17l-5-5" }],
-    ["path", { d: "m22 10-7.5 7.5L13 16" }]
-  ];
-  var fragment = root6();
-  var node = first_child(fragment);
-  var node_1 = sibling(node, 2);
-  var node_2 = sibling(node_1, 2);
-  Icon_default(node_2, spread_props({ name: "check-check" }, () => props, {
-    get iconNode() {
-      return iconNode;
-    }
-  }));
-  append($$anchor, fragment);
-}
-if (undefined) {}
-var check_check_default = Check_check;
-// web/src/components/buttons/MarkAllReadButton.svelte
-var root7 = from_html(`
-
-<button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
-  <!>
-</button>`, 1);
-function MarkAllReadButton($$anchor, $$props) {
-  push($$props, true);
-  const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
-  const label = user_derived(() => t("items.markAllRead"));
-  next();
-  var fragment = root7();
-  var button = sibling(first_child(fragment));
-  var node = sibling(child(button));
-  check_check_default(node, spread_props(() => iconProps));
-  next();
-  reset(button);
-  template_effect(() => {
-    set_attribute2(button, "aria-label", get2(label));
-    set_attribute2(button, "title", get2(label));
-  });
-  delegated("click", button, () => void $$props.onMarkAllRead());
-  append($$anchor, fragment);
-  pop();
-}
-if (undefined) {}
-var MarkAllReadButton_default = MarkAllReadButton;
-delegate(["click"]);
-
 // web/src/components/buttons/LanguageToggle.svelte
-var root8 = from_html(`
+var root6 = from_html(`
 
 <button type="button" class="inline-flex min-w-[2rem] cursor-pointer items-center justify-center rounded-md p-1.5 text-xs font-medium text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"> </button>`, 1);
 function LanguageToggle($$anchor, $$props) {
@@ -6944,7 +6888,7 @@ function LanguageToggle($$anchor, $$props) {
   const label = user_derived(() => localeState.locale === "zh" ? "EN" : "中");
   const aria = user_derived(() => localeState.locale === "zh" ? t("lang.switchToEn") : t("lang.switchToZh"));
   next();
-  var fragment = root8();
+  var fragment = root6();
   var button = sibling(first_child(fragment));
   var text2 = child(button);
   reset(button);
@@ -6966,7 +6910,7 @@ var LanguageToggle_default = LanguageToggle;
 delegate(["click"]);
 
 // node_modules/@lucide/svelte/dist/icons/moon.svelte
-var root9 = from_html(`<!--
+var root7 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -6996,7 +6940,7 @@ function Moon($$anchor, $$props) {
       }
     ]
   ];
-  var fragment = root9();
+  var fragment = root7();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -7010,7 +6954,7 @@ function Moon($$anchor, $$props) {
 if (undefined) {}
 var moon_default = Moon;
 // node_modules/@lucide/svelte/dist/icons/sun.svelte
-var root10 = from_html(`<!--
+var root8 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -7043,7 +6987,7 @@ function Sun($$anchor, $$props) {
     ["path", { d: "m6.34 17.66-1.41 1.41" }],
     ["path", { d: "m19.07 4.93-1.41 1.41" }]
   ];
-  var fragment = root10();
+  var fragment = root8();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -7097,7 +7041,7 @@ var root_13 = from_html(`
 var root_22 = from_html(`
     <!>
   `, 1);
-var root11 = from_html(`
+var root9 = from_html(`
 
 <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
   <!>
@@ -7107,7 +7051,7 @@ function ThemeToggle($$anchor, $$props) {
   const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
   init();
   next();
-  var fragment = root11();
+  var fragment = root9();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   {
@@ -7151,20 +7095,6 @@ if (undefined) {}
 var ThemeToggle_default = ThemeToggle;
 delegate(["click"]);
 
-// web/src/lib/mark-all-read.ts
-var MARK_ALL_READ_KEY = Symbol("markAllRead");
-function createMarkAllReadHost() {
-  let handler;
-  return {
-    register(next2) {
-      handler = next2;
-    },
-    markAllRead() {
-      handler?.();
-    }
-  };
-}
-
 // web/src/components/Header.svelte
 var root_14 = from_html(`
         <a>NanoFlux</a>
@@ -7205,15 +7135,7 @@ var root_5 = from_html(`
           </a>
         </nav>
       `, 1);
-var root_6 = from_html(`
-      <span class="inline-flex items-center justify-center rounded-md p-1.5 invisible pointer-events-none" aria-hidden="true">
-        <span class="size-[18px]"></span>
-      </span>
-    `, 1);
-var root_7 = from_html(`
-      <!>
-    `, 1);
-var root12 = from_html(`
+var root10 = from_html(`
 
 <header>
   <div class="min-w-0 flex-1">
@@ -7227,7 +7149,6 @@ var root12 = from_html(`
     <!>
     <!>
     <!>
-    <!>
   </div>
 </header>`, 1);
 function Header($$anchor, $$props) {
@@ -7236,7 +7157,6 @@ function Header($$anchor, $$props) {
   const [$$stores, $$cleanup] = setup_stores();
   const COMPACT_ENTER = 72;
   const COMPACT_EXIT = 8;
-  const markAllReadHost = getContext(MARK_ALL_READ_KEY);
   const settingsSaveHost = getContext(SETTINGS_SAVE_KEY);
   function navClickSettingsBack() {
     return async (event2) => {
@@ -7297,7 +7217,7 @@ function Header($$anchor, $$props) {
     requestAnimationFrame(() => syncCompact());
   });
   next();
-  var fragment = root12();
+  var fragment = root10();
   var header = sibling(first_child(fragment));
   var div = sibling(child(header));
   var div_1 = sibling(child(div));
@@ -7449,32 +7369,11 @@ function Header($$anchor, $$props) {
   reset(div);
   var div_4 = sibling(div, 2);
   var node_3 = sibling(child(div_4));
-  {
-    var consequent_3 = ($$anchor2) => {
-      var fragment_6 = root_6();
-      next(2);
-      append($$anchor2, fragment_6);
-    };
-    var alternate_2 = ($$anchor2) => {
-      var fragment_7 = root_7();
-      var node_4 = sibling(first_child(fragment_7));
-      MarkAllReadButton_default(node_4, { onMarkAllRead: () => markAllReadHost.markAllRead() });
-      next();
-      append($$anchor2, fragment_7);
-    };
-    if_block(node_3, ($$render) => {
-      if (get2(isSubPage))
-        $$render(consequent_3);
-      else
-        $$render(alternate_2, -1);
-    });
-  }
-  var node_5 = sibling(node_3, 2);
-  FontSizeToggle_default(node_5, {});
-  var node_6 = sibling(node_5, 2);
-  LanguageToggle_default(node_6, {});
-  var node_7 = sibling(node_6, 2);
-  ThemeToggle_default(node_7, {});
+  FontSizeToggle_default(node_3, {});
+  var node_4 = sibling(node_3, 2);
+  LanguageToggle_default(node_4, {});
+  var node_5 = sibling(node_4, 2);
+  ThemeToggle_default(node_5, {});
   next();
   reset(div_4);
   next();
@@ -7493,7 +7392,7 @@ var Header_default = Header;
 delegate(["click"]);
 
 // node_modules/@lucide/svelte/dist/icons/pencil.svelte
-var root13 = from_html(`<!--
+var root11 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -7524,7 +7423,7 @@ function Pencil($$anchor, $$props) {
     ],
     ["path", { d: "m15 5 4 4" }]
   ];
-  var fragment = root13();
+  var fragment = root11();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -7538,7 +7437,7 @@ function Pencil($$anchor, $$props) {
 if (undefined) {}
 var pencil_default = Pencil;
 // node_modules/@lucide/svelte/dist/icons/trash-2.svelte
-var root14 = from_html(`<!--
+var root12 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -7567,7 +7466,7 @@ function Trash_2($$anchor, $$props) {
     ["path", { d: "M3 6h18" }],
     ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" }]
   ];
-  var fragment = root14();
+  var fragment = root12();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -7605,8 +7504,11 @@ async function request(url, options = {}) {
   }
   return body;
 }
-async function fetchItemsPage(cursor, limit = 20) {
-  const params = new URLSearchParams({ limit: String(limit) });
+async function fetchItemsPage(cursor, limit = 20, filterPassed = 1) {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    filter_passed: String(filterPassed)
+  });
   if (cursor)
     params.set("cursor", cursor);
   const body = await request(`/api/items?${params}`);
@@ -7744,10 +7646,10 @@ var root_42 = from_html(`
 var root_52 = from_html(`
     <p class="text-sm text-red-500"> </p>
   `, 1);
-var root_62 = from_html(`
+var root_6 = from_html(`
     <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
   `, 1);
-var root_72 = from_html(`
+var root_7 = from_html(`
     <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
   `, 1);
 var root_122 = from_html(`
@@ -7786,7 +7688,7 @@ var root_8 = from_html(`
     <!>
     <div class="h-1" aria-hidden="true"></div>
   `, 1);
-var root15 = from_html(`
+var root13 = from_html(`
 
 <section class="mb-10">
   <form class="space-y-3">
@@ -8009,7 +7911,7 @@ function FeedsManager($$anchor, $$props) {
     return () => clearInterval(timer);
   });
   next();
-  var fragment = root15();
+  var fragment = root13();
   var section = sibling(first_child(fragment));
   var form = sibling(child(section));
   var input = sibling(child(form));
@@ -8123,7 +8025,7 @@ function FeedsManager($$anchor, $$props) {
       append($$anchor2, fragment_5);
     };
     var consequent_5 = ($$anchor2) => {
-      var fragment_6 = root_62();
+      var fragment_6 = root_6();
       var p_4 = sibling(first_child(fragment_6));
       var text_9 = child(p_4, true);
       reset(p_4);
@@ -8132,7 +8034,7 @@ function FeedsManager($$anchor, $$props) {
       append($$anchor2, fragment_6);
     };
     var consequent_6 = ($$anchor2) => {
-      var fragment_7 = root_72();
+      var fragment_7 = root_7();
       var p_5 = sibling(first_child(fragment_7));
       var text_10 = child(p_5, true);
       reset(p_5);
@@ -8361,7 +8263,8 @@ function connectItemStream() {
   es = new EventSource("/sse");
   es.addEventListener("items", (ev) => {
     try {
-      dispatch(JSON.parse(ev.data));
+      const raw = JSON.parse(ev.data);
+      dispatch(Array.isArray(raw) ? raw.map(normalizeItem) : []);
     } catch {}
   });
   return () => {
@@ -8370,11 +8273,38 @@ function connectItemStream() {
   };
 }
 
+// utils/text.ts
+var wordSegmenter = new Intl.Segmenter("zh", { granularity: "word" });
+function isStoredKeywordList(value) {
+  if (!value)
+    return false;
+  const trimmed = value.trim();
+  if (trimmed.length > 60)
+    return false;
+  if (/[。；！？!?]/.test(trimmed))
+    return false;
+  if (/不相关|无关|判定|重点关注|资管频道|关联度/.test(trimmed))
+    return false;
+  const parts = trimmed.replaceAll("，", ",").split(",").map((part) => part.trim()).filter(Boolean);
+  if (parts.length === 0)
+    return false;
+  return parts.every((part) => part.length <= 16);
+}
+
 // web/src/lib/highlight.ts
-function parseMatchedKeywords(passReason) {
-  if (!passReason)
+function parseMatchedKeywords(matchedKeywords) {
+  if (!matchedKeywords)
     return [];
-  return normalizeCommas(passReason).split(",").map((keyword) => keyword.trim()).filter(Boolean);
+  return normalizeCommas(matchedKeywords).split(",").map((keyword) => keyword.trim()).filter(Boolean);
+}
+function getItemFilterDisplay(item) {
+  const keywordsText = isStoredKeywordList(item.matched_keywords) ? item.matched_keywords : null;
+  const aiReason = item.pass_reason ?? (item.matched_keywords && !isStoredKeywordList(item.matched_keywords) ? item.matched_keywords : null);
+  return {
+    keywords: parseMatchedKeywords(keywordsText),
+    keywordsText,
+    aiReason
+  };
 }
 function splitByKeywords(text2, keywords) {
   if (!text2 || keywords.length === 0) {
@@ -8435,6 +8365,97 @@ function getMatchedContentPreview(content, keywords) {
   return extractMatchedSnippet(content, keywords);
 }
 
+// node_modules/@lucide/svelte/dist/icons/message-circle-check.svelte
+var root14 = from_html(`<!--
+@lucide/svelte v1.16.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMi45OTIgMTYuMzQyYTIgMiAwIDAgMSAuMDk0IDEuMTY3bC0xLjA2NSAzLjI5YTEgMSAwIDAgMCAxLjIzNiAxLjE2OGwzLjQxMy0uOTk4YTIgMiAwIDAgMSAxLjA5OS4wOTIgMTAgMTAgMCAxIDAtNC43NzctNC43MTkiIC8+CiAgPHBhdGggZD0ibTkgMTIgMiAyIDQtNCIgLz4KPC9zdmc+Cg==) - https://lucide.dev/icons/message-circle-check
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Message_circle_check($$anchor, $$props) {
+  let props = rest_props($$props, ["$$slots", "$$events", "$$legacy"]);
+  const iconNode = [
+    [
+      "path",
+      {
+        d: "M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"
+      }
+    ],
+    ["path", { d: "m9 12 2 2 4-4" }]
+  ];
+  var fragment = root14();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "message-circle-check" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var message_circle_check_default = Message_circle_check;
+// node_modules/@lucide/svelte/dist/icons/message-circle-x.svelte
+var root15 = from_html(`<!--
+@lucide/svelte v1.16.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMi45OTIgMTYuMzQyYTIgMiAwIDAgMSAuMDk0IDEuMTY3bC0xLjA2NSAzLjI5YTEgMSAwIDAgMCAxLjIzNiAxLjE2OGwzLjQxMy0uOTk4YTIgMiAwIDAgMSAxLjA5OS4wOTIgMTAgMTAgMCAxIDAtNC43NzctNC43MTkiIC8+CiAgPHBhdGggZD0ibTE1IDktNiA2IiAvPgogIDxwYXRoIGQ9Im05IDkgNiA2IiAvPgo8L3N2Zz4K) - https://lucide.dev/icons/message-circle-x
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Message_circle_x($$anchor, $$props) {
+  let props = rest_props($$props, ["$$slots", "$$events", "$$legacy"]);
+  const iconNode = [
+    [
+      "path",
+      {
+        d: "M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"
+      }
+    ],
+    ["path", { d: "m15 9-6 6" }],
+    ["path", { d: "m9 9 6 6" }]
+  ];
+  var fragment = root15();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "message-circle-x" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var message_circle_x_default = Message_circle_x;
 // web/src/components/HighlightedText.svelte
 var root_25 = from_html(`
     <mark class="rounded-sm bg-amber-200/80 px-0.5 font-[inherit] text-inherit dark:bg-amber-500/35"> </mark>
@@ -8488,6 +8509,75 @@ function HighlightedText($$anchor, $$props) {
 if (undefined) {}
 var HighlightedText_default = HighlightedText;
 
+// node_modules/@lucide/svelte/dist/icons/check-check.svelte
+var root17 = from_html(`<!--
+@lucide/svelte v1.16.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMTggNiA3IDE3bC01LTUiIC8+CiAgPHBhdGggZD0ibTIyIDEwLTcuNSA3LjVMMTMgMTYiIC8+Cjwvc3ZnPgo=) - https://lucide.dev/icons/check-check
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Check_check($$anchor, $$props) {
+  let props = rest_props($$props, ["$$slots", "$$events", "$$legacy"]);
+  const iconNode = [
+    ["path", { d: "M18 6 7 17l-5-5" }],
+    ["path", { d: "m22 10-7.5 7.5L13 16" }]
+  ];
+  var fragment = root17();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "check-check" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var check_check_default = Check_check;
+// web/src/components/buttons/MarkAllReadButton.svelte
+var root18 = from_html(`
+
+<button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
+  <!>
+</button>`, 1);
+function MarkAllReadButton($$anchor, $$props) {
+  push($$props, true);
+  const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
+  const label = user_derived(() => t("items.markAllRead"));
+  next();
+  var fragment = root18();
+  var button = sibling(first_child(fragment));
+  var node = sibling(child(button));
+  check_check_default(node, spread_props(() => iconProps));
+  next();
+  reset(button);
+  template_effect(() => {
+    set_attribute2(button, "aria-label", get2(label));
+    set_attribute2(button, "title", get2(label));
+  });
+  delegated("click", button, () => void $$props.onMarkAllRead());
+  append($$anchor, fragment);
+  pop();
+}
+if (undefined) {}
+var MarkAllReadButton_default = MarkAllReadButton;
+delegate(["click"]);
+
 // web/src/components/ItemList.svelte
 var root_17 = from_html(`
   <p class="py-6 text-sm text-red-500"> </p>
@@ -8500,7 +8590,27 @@ var root_53 = from_html(`
               <!>
             </p>
           `, 1);
-var root_63 = from_html(`
+var root_82 = from_html(`
+                      <!>
+                    `, 1);
+var root_92 = from_html(`
+                      <!>
+                    `, 1);
+var root_72 = from_html(`
+                <div class="group/preason relative shrink-0">
+                  <button type="button" class="inline-flex cursor-help items-center justify-center rounded-sm p-0.5 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+                    <!>
+                  </button>
+                  <div role="tooltip" class="pointer-events-none absolute bottom-full left-0 z-20 mb-1 w-max max-w-xs rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-xs leading-snug whitespace-normal text-neutral-600 opacity-0 shadow-sm transition-opacity group-hover/preason:opacity-100 group-focus-within/preason:opacity-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 [@media(hover:none)]:opacity-100"> </div>
+                </div>
+              `, 1);
+var root_62 = from_html(`
+            <div class="mt-1.5 flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500">
+              <span> </span>
+              <!>
+            </div>
+          `, 1);
+var root_10 = from_html(`
             <p class="mt-1.5 text-xs text-neutral-400 dark:text-neutral-500"> </p>
           `, 1);
 var root_43 = from_html(`
@@ -8526,13 +8636,21 @@ var root_33 = from_html(`
     <!>
   </ul>
 `, 1);
-var root_73 = from_html(`
+var root_11 = from_html(`
   <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root_82 = from_html(`
+var root_123 = from_html(`
   <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root17 = from_html(`
+var root19 = from_html(`
+
+<div class="mb-6 flex items-center justify-end gap-4">
+  <!>
+  <div class="flex gap-3 text-xs" role="group">
+    <button type="button"> </button>
+    <button type="button"> </button>
+  </div>
+</div>
 
 <!>
 
@@ -8541,7 +8659,7 @@ var root17 = from_html(`
 <div class="h-1" aria-hidden="true"></div>`, 1);
 function ItemList($$anchor, $$props) {
   push($$props, true);
-  const markAllReadHost = getContext(MARK_ALL_READ_KEY);
+  const passReasonIconProps = { size: 14, strokeWidth: 1.5, "aria-hidden": true };
   const PAGE_SIZE = 20;
   const MAX_LIST_ITEMS = 100;
   let items = state(proxy([]));
@@ -8550,30 +8668,47 @@ function ItemList($$anchor, $$props) {
   let loading = state(false);
   let error = state("");
   let sentinel = state(null);
-  let started = state(false);
+  let filter = state("passed");
+  let loadGeneration = 0;
   let now2 = state(proxy(Date.now()));
+  const filterPassed = user_derived(() => get2(filter) === "passed" ? 1 : 0);
+  function resetList() {
+    set(items, [], true);
+    set(cursor, null);
+    set(hasMore, true);
+    set(error, "");
+    set(loading, false);
+  }
   async function loadMore() {
     if (get2(loading) || !get2(hasMore))
       return;
+    const gen = ++loadGeneration;
     set(loading, true);
     set(error, "");
     try {
-      const page = await fetchItemsPage(get2(cursor) ?? undefined, PAGE_SIZE);
+      const page = await fetchItemsPage(get2(cursor) ?? undefined, PAGE_SIZE, get2(filterPassed));
+      if (gen !== loadGeneration)
+        return;
       set(items, [...get2(items), ...page.data], true);
       set(cursor, page.nextCursor, true);
       set(hasMore, page.hasMore, true);
     } catch (e) {
+      if (gen !== loadGeneration)
+        return;
       set(error, e instanceof Error ? e.message : t("items.loadFailed"), true);
     } finally {
-      set(loading, false);
+      if (gen === loadGeneration)
+        set(loading, false);
     }
   }
-  user_effect(() => {
-    if (!get2(started)) {
-      set(started, true);
-      loadMore();
-    }
-  });
+  async function setFilter(next2) {
+    if (next2 === get2(filter))
+      return;
+    set(filter, next2, true);
+    loadGeneration++;
+    resetList();
+    await loadMore();
+  }
   user_effect(() => {
     if (!get2(sentinel))
       return;
@@ -8594,7 +8729,8 @@ function ItemList($$anchor, $$props) {
     if (!incoming.length)
       return;
     const seen = new Set(get2(items).map((n) => n.id));
-    const fresh = incoming.filter((n) => !seen.has(n.id));
+    const wantPassed = get2(filter) === "passed";
+    const fresh = incoming.filter((n) => !seen.has(n.id) && (wantPassed ? n.filter_passed === true : n.filter_passed === false));
     if (!fresh.length)
       return;
     fresh.sort(compareItem);
@@ -8638,11 +8774,8 @@ function ItemList($$anchor, $$props) {
     await markAllItemsRead(until);
     set(items, get2(items).map((item) => item.published_at <= until ? { ...item, is_read: true } : item), true);
   }
-  user_effect(() => {
-    markAllReadHost.register(markAllRead);
-    return () => markAllReadHost.register(undefined);
-  });
   onMount(() => {
+    loadMore();
     const unsubscribe = subscribeItemStream(mergeIncomingItem);
     const timer = setInterval(() => {
       set(now2, Date.now(), true);
@@ -8654,71 +8787,85 @@ function ItemList($$anchor, $$props) {
   });
   var $$exports = { markAllRead };
   next();
-  var fragment = root17();
-  var node = sibling(first_child(fragment));
+  var fragment = root19();
+  var div = sibling(first_child(fragment));
+  var node = sibling(child(div));
+  MarkAllReadButton_default(node, { onMarkAllRead: () => markAllRead() });
+  var div_1 = sibling(node, 2);
+  var button = sibling(child(div_1));
+  var text2 = child(button);
+  reset(button);
+  var button_1 = sibling(button, 2);
+  var text_1 = child(button_1);
+  reset(button_1);
+  next();
+  reset(div_1);
+  next();
+  reset(div);
+  var node_1 = sibling(div, 2);
   {
     var consequent = ($$anchor2) => {
       var fragment_1 = root_17();
       var p = sibling(first_child(fragment_1));
-      var text2 = child(p, true);
+      var text_2 = child(p, true);
       reset(p);
       next();
-      template_effect(() => set_text(text2, get2(error)));
+      template_effect(() => set_text(text_2, get2(error)));
       append($$anchor2, fragment_1);
     };
     var consequent_1 = ($$anchor2) => {
       var fragment_2 = root_26();
       var p_1 = sibling(first_child(fragment_2));
-      var text_1 = child(p_1, true);
+      var text_3 = child(p_1, true);
       reset(p_1);
       next();
-      template_effect(($0) => set_text(text_1, $0), [() => t("items.noItems")]);
+      template_effect(($0) => set_text(text_3, $0), [() => t("items.noItems")]);
       append($$anchor2, fragment_2);
     };
-    var alternate = ($$anchor2) => {
+    var alternate_1 = ($$anchor2) => {
       var fragment_3 = root_33();
       var ul = sibling(first_child(fragment_3));
-      var node_1 = sibling(child(ul));
-      each(node_1, 17, () => get2(items), (item) => item.id, ($$anchor3, item) => {
-        const keywords = user_derived(() => parseMatchedKeywords(get2(item).pass_reason));
-        const contentPreview = user_derived(() => getMatchedContentPreview(get2(item).content, get2(keywords)));
+      var node_2 = sibling(child(ul));
+      each(node_2, 17, () => get2(items), (item) => item.id, ($$anchor3, item) => {
+        const filterDisplay = user_derived(() => getItemFilterDisplay(get2(item)));
+        const contentPreview = user_derived(() => getMatchedContentPreview(get2(item).content, get2(filterDisplay).keywords));
         next();
         var fragment_4 = root_43();
         var li = sibling(first_child(fragment_4));
         var article = sibling(child(li));
-        var div = sibling(child(article));
-        var time = sibling(child(div));
-        var text_2 = child(time);
+        var div_2 = sibling(child(article));
+        var time = sibling(child(div_2));
+        var text_4 = child(time);
         reset(time);
         var span = sibling(time, 4);
-        var text_3 = child(span, true);
+        var text_5 = child(span, true);
         reset(span);
         next();
-        reset(div);
-        var a_1 = sibling(div, 2);
-        var node_2 = sibling(child(a_1));
-        HighlightedText_default(node_2, {
+        reset(div_2);
+        var a_1 = sibling(div_2, 2);
+        var node_3 = sibling(child(a_1));
+        HighlightedText_default(node_3, {
           get text() {
             return get2(item).title;
           },
           get keywords() {
-            return get2(keywords);
+            return get2(filterDisplay).keywords;
           }
         });
         next();
         reset(a_1);
-        var node_3 = sibling(a_1, 2);
+        var node_4 = sibling(a_1, 2);
         {
           var consequent_2 = ($$anchor4) => {
             var fragment_5 = root_53();
             var p_2 = sibling(first_child(fragment_5));
-            var node_4 = sibling(child(p_2));
-            HighlightedText_default(node_4, {
+            var node_5 = sibling(child(p_2));
+            HighlightedText_default(node_5, {
               get text() {
                 return get2(contentPreview);
               },
               get keywords() {
-                return get2(keywords);
+                return get2(filterDisplay).keywords;
               }
             });
             next();
@@ -8726,29 +8873,97 @@ function ItemList($$anchor, $$props) {
             next();
             append($$anchor4, fragment_5);
           };
-          if_block(node_3, ($$render) => {
+          if_block(node_4, ($$render) => {
             if (get2(contentPreview))
               $$render(consequent_2);
           });
         }
-        var node_5 = sibling(node_3, 2);
+        var node_6 = sibling(node_4, 2);
         {
-          var consequent_3 = ($$anchor4) => {
-            var fragment_6 = root_63();
-            var p_3 = sibling(first_child(fragment_6));
-            var text_4 = child(p_3);
-            reset(p_3);
+          var consequent_5 = ($$anchor4) => {
+            var fragment_6 = root_62();
+            var div_3 = sibling(first_child(fragment_6));
+            var span_1 = sibling(child(div_3));
+            var text_6 = child(span_1);
+            reset(span_1);
+            var node_7 = sibling(span_1, 2);
+            {
+              var consequent_4 = ($$anchor5) => {
+                var fragment_7 = root_72();
+                var div_4 = sibling(first_child(fragment_7));
+                var button_2 = sibling(child(div_4));
+                var node_8 = sibling(child(button_2));
+                {
+                  var consequent_3 = ($$anchor6) => {
+                    var fragment_8 = root_82();
+                    var node_9 = sibling(first_child(fragment_8));
+                    message_circle_check_default(node_9, spread_props(() => passReasonIconProps));
+                    next();
+                    append($$anchor6, fragment_8);
+                  };
+                  var alternate = ($$anchor6) => {
+                    var fragment_9 = root_92();
+                    var node_10 = sibling(first_child(fragment_9));
+                    message_circle_x_default(node_10, spread_props(() => passReasonIconProps));
+                    next();
+                    append($$anchor6, fragment_9);
+                  };
+                  if_block(node_8, ($$render) => {
+                    if (get2(item).filter_passed)
+                      $$render(consequent_3);
+                    else
+                      $$render(alternate, -1);
+                  });
+                }
+                next();
+                reset(button_2);
+                var div_5 = sibling(button_2, 2);
+                var text_7 = child(div_5);
+                reset(div_5);
+                next();
+                reset(div_4);
+                next();
+                template_effect(() => {
+                  set_attribute2(button_2, "aria-label", get2(filterDisplay).aiReason);
+                  set_text(text_7, `
+                    ${get2(filterDisplay).aiReason ?? ""}
+                  `);
+                });
+                append($$anchor5, fragment_7);
+              };
+              if_block(node_7, ($$render) => {
+                if (get2(filterDisplay).aiReason)
+                  $$render(consequent_4);
+              });
+            }
             next();
-            template_effect(($0) => set_text(text_4, `
-              ${$0 ?? ""}
-            `), [
-              () => tf("items.passReason", { reason: get2(item).pass_reason })
+            reset(div_3);
+            next();
+            template_effect(($0) => set_text(text_6, `
+                ${$0 ?? ""}
+              `), [
+              () => tf("items.matchedKeywords", { keywords: get2(filterDisplay).keywordsText })
             ]);
             append($$anchor4, fragment_6);
           };
-          if_block(node_5, ($$render) => {
-            if (get2(item).pass_reason)
-              $$render(consequent_3);
+          var consequent_6 = ($$anchor4) => {
+            var fragment_10 = root_10();
+            var p_3 = sibling(first_child(fragment_10));
+            var text_8 = child(p_3);
+            reset(p_3);
+            next();
+            template_effect(($0) => set_text(text_8, `
+              ${$0 ?? ""}
+            `), [
+              () => tf("items.passReason", { reason: get2(filterDisplay).aiReason })
+            ]);
+            append($$anchor4, fragment_10);
+          };
+          if_block(node_6, ($$render) => {
+            if (get2(filterDisplay).keywordsText)
+              $$render(consequent_5);
+            else if (get2(filterDisplay).aiReason)
+              $$render(consequent_6, 1);
           });
         }
         next();
@@ -8758,10 +8973,10 @@ function ItemList($$anchor, $$props) {
         next();
         template_effect(($0) => {
           set_attribute2(time, "datetime", get2(item).published_at);
-          set_text(text_2, `
+          set_text(text_4, `
               ${$0 ?? ""}
             `);
-          set_text(text_3, get2(item).feed_title);
+          set_text(text_5, get2(item).feed_title);
           set_attribute2(a_1, "href", get2(item).link);
           set_class(a_1, 1, `mt-1 block text-sm leading-snug hover:text-neutral-600 dark:hover:text-neutral-300 ${get2(item).is_read ? "font-normal text-neutral-500 dark:text-neutral-500" : "font-medium text-neutral-900 dark:text-neutral-100"}`);
         }, [() => formatTime(get2(item).published_at, get2(now2))]);
@@ -8773,48 +8988,67 @@ function ItemList($$anchor, $$props) {
       next();
       append($$anchor2, fragment_3);
     };
-    if_block(node, ($$render) => {
+    if_block(node_1, ($$render) => {
       if (get2(error))
         $$render(consequent);
       else if (get2(items).length === 0 && !get2(loading))
         $$render(consequent_1, 1);
       else
-        $$render(alternate, -1);
+        $$render(alternate_1, -1);
     });
   }
-  var node_6 = sibling(node, 2);
+  var node_11 = sibling(node_1, 2);
   {
-    var consequent_4 = ($$anchor2) => {
-      var fragment_7 = root_73();
-      var p_4 = sibling(first_child(fragment_7));
-      var text_5 = child(p_4);
+    var consequent_7 = ($$anchor2) => {
+      var fragment_11 = root_11();
+      var p_4 = sibling(first_child(fragment_11));
+      var text_9 = child(p_4);
       reset(p_4);
       next();
-      template_effect(($0) => set_text(text_5, `
+      template_effect(($0) => set_text(text_9, `
     ${$0 ?? ""}
   `), [() => t("items.loading")]);
-      append($$anchor2, fragment_7);
+      append($$anchor2, fragment_11);
     };
-    var consequent_5 = ($$anchor2) => {
-      var fragment_8 = root_82();
-      var p_5 = sibling(first_child(fragment_8));
-      var text_6 = child(p_5);
+    var consequent_8 = ($$anchor2) => {
+      var fragment_12 = root_123();
+      var p_5 = sibling(first_child(fragment_12));
+      var text_10 = child(p_5);
       reset(p_5);
       next();
-      template_effect(($0) => set_text(text_6, `
+      template_effect(($0) => set_text(text_10, `
     ${$0 ?? ""}
   `), [() => t("items.noMore")]);
-      append($$anchor2, fragment_8);
+      append($$anchor2, fragment_12);
     };
-    if_block(node_6, ($$render) => {
+    if_block(node_11, ($$render) => {
       if (get2(loading))
-        $$render(consequent_4);
+        $$render(consequent_7);
       else if (!get2(hasMore) && get2(items).length > 0)
-        $$render(consequent_5, 1);
+        $$render(consequent_8, 1);
     });
   }
-  var div_1 = sibling(node_6, 2);
-  bind_this(div_1, ($$value) => set(sentinel, $$value), () => get2(sentinel));
+  var div_6 = sibling(node_11, 2);
+  bind_this(div_6, ($$value) => set(sentinel, $$value), () => get2(sentinel));
+  template_effect(($0, $1, $2) => {
+    set_attribute2(div_1, "aria-label", $0);
+    set_class(button, 1, `transition-colors ${get2(filter) === "passed" ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"}`);
+    set_attribute2(button, "aria-pressed", get2(filter) === "passed");
+    set_text(text2, `
+      ${$1 ?? ""}
+    `);
+    set_class(button_1, 1, `transition-colors ${get2(filter) === "failed" ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"}`);
+    set_attribute2(button_1, "aria-pressed", get2(filter) === "failed");
+    set_text(text_1, `
+      ${$2 ?? ""}
+    `);
+  }, [
+    () => t("items.filterBy"),
+    () => t("items.filterPassed"),
+    () => t("items.filterFailed")
+  ]);
+  delegated("click", button, () => setFilter("passed"));
+  delegated("click", button_1, () => setFilter("failed"));
   append($$anchor, fragment);
   return pop($$exports);
 }
@@ -8839,10 +9073,15 @@ var root_34 = from_html(`
         <input id="whitelist" type="text"/>
         <p class="text-xs text-neutral-400 dark:text-neutral-500"> </p>
       </div>
+      <div class="space-y-1">
+        <label for="prompt" class="text-sm text-neutral-600 dark:text-neutral-400"> </label>
+        <textarea id="prompt"></textarea>
+        <p class="text-xs text-neutral-400 dark:text-neutral-500"> </p>
+      </div>
     </div>
     <!>
   `, 1);
-var root18 = from_html(`
+var root20 = from_html(`
 
 <section>
   <h2 class="mb-6 text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </h2>
@@ -8853,7 +9092,9 @@ function Settings($$anchor, $$props) {
   push($$props, true);
   const settingsSaveHost = getContext(SETTINGS_SAVE_KEY);
   const inputClass = "w-full border-0 border-b border-neutral-200 bg-transparent py-2 text-sm outline-none placeholder:text-neutral-300 focus:border-neutral-900 dark:border-neutral-700 dark:placeholder:text-neutral-600 dark:focus:border-neutral-100";
+  const textareaClass = "min-h-48 resize-y " + inputClass;
   let whitelist = state("");
+  let prompt = state("");
   let loading = state(true);
   let loaded = state(false);
   let loadError = state("");
@@ -8864,6 +9105,7 @@ function Settings($$anchor, $$props) {
     try {
       const data = await fetchSettings();
       set(whitelist, data.whitelist, true);
+      set(prompt, data.prompt, true);
       set(loaded, true);
     } catch (e) {
       set(loadError, e instanceof Error ? e.message : t("settings.loadFailed"), true);
@@ -8877,8 +9119,9 @@ function Settings($$anchor, $$props) {
     set(saveError, "");
     try {
       set(whitelist, normalizeCommas(get2(whitelist)), true);
-      const data = await saveSettings({ whitelist: get2(whitelist) });
+      const data = await saveSettings({ whitelist: get2(whitelist), prompt: get2(prompt) });
       set(whitelist, data.whitelist, true);
+      set(prompt, data.prompt, true);
     } catch (e) {
       set(saveError, e instanceof Error ? e.message : t("settings.saveFailed"), true);
       throw e;
@@ -8890,7 +9133,7 @@ function Settings($$anchor, $$props) {
     return () => settingsSaveHost.register(undefined);
   });
   next();
-  var fragment = root18();
+  var fragment = root20();
   var section = sibling(first_child(fragment));
   var h2 = sibling(child(section));
   var text2 = child(h2);
@@ -8932,17 +9175,29 @@ function Settings($$anchor, $$props) {
       reset(p_2);
       next();
       reset(div_1);
+      var div_2 = sibling(div_1, 2);
+      var label_1 = sibling(child(div_2));
+      var text_5 = child(label_1);
+      reset(label_1);
+      var textarea = sibling(label_1, 2);
+      remove_textarea_child(textarea);
+      set_class(textarea, 1, clsx2(textareaClass));
+      var p_3 = sibling(textarea, 2);
+      var text_6 = child(p_3);
+      reset(p_3);
+      next();
+      reset(div_2);
       next();
       reset(div);
       var node_1 = sibling(div, 2);
       {
         var consequent_2 = ($$anchor3) => {
           var fragment_4 = root_44();
-          var p_3 = sibling(first_child(fragment_4));
-          var text_5 = child(p_3, true);
-          reset(p_3);
+          var p_4 = sibling(first_child(fragment_4));
+          var text_7 = child(p_4, true);
+          reset(p_4);
           next();
-          template_effect(() => set_text(text_5, get2(saveError)));
+          template_effect(() => set_text(text_7, get2(saveError)));
           append($$anchor3, fragment_4);
         };
         if_block(node_1, ($$render) => {
@@ -8951,7 +9206,7 @@ function Settings($$anchor, $$props) {
         });
       }
       next();
-      template_effect(($0, $1, $2) => {
+      template_effect(($0, $1, $2, $3, $4, $5) => {
         set_text(text_3, `
           ${$0 ?? ""}
         `);
@@ -8959,12 +9214,23 @@ function Settings($$anchor, $$props) {
         set_text(text_4, `
           ${$2 ?? ""}
         `);
+        set_text(text_5, `
+          ${$3 ?? ""}
+        `);
+        set_attribute2(textarea, "placeholder", $4);
+        set_text(text_6, `
+          ${$5 ?? ""}
+        `);
       }, [
         () => t("settings.whitelist"),
         () => t("settings.whitelistHint"),
-        () => t("settings.whitelistHint")
+        () => t("settings.whitelistHint"),
+        () => t("settings.prompt"),
+        () => t("settings.promptHint"),
+        () => t("settings.promptHint")
       ]);
       bind_value(input, () => get2(whitelist), ($$value) => set(whitelist, $$value));
+      bind_value(textarea, () => get2(prompt), ($$value) => set(prompt, $$value));
       append($$anchor2, fragment_3);
     };
     if_block(node, ($$render) => {
@@ -8997,7 +9263,7 @@ var root_28 = from_html(`
 var root_35 = from_html(`
     <!>
   `, 1);
-var root19 = from_html(`
+var root21 = from_html(`
 
 <main class="mx-auto max-w-page px-5 py-16 font-sans">
   <!>
@@ -9007,13 +9273,11 @@ function App($$anchor, $$props) {
   push($$props, false);
   const $route = () => store_get(route, "$route", $$stores);
   const [$$stores, $$cleanup] = setup_stores();
-  const markAllReadHost = createMarkAllReadHost();
   const settingsSaveHost = createSettingsSaveHost();
-  setContext(MARK_ALL_READ_KEY, markAllReadHost);
   setContext(SETTINGS_SAVE_KEY, settingsSaveHost);
   init();
   next();
-  var fragment = root19();
+  var fragment = root21();
   var main = sibling(first_child(fragment));
   var node = sibling(child(main));
   Header_default(node, {});

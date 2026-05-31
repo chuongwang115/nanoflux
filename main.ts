@@ -8,6 +8,7 @@ import {
 import { buildWebManifest } from "./shared/manifest";
 import type { Locale } from "./shared/locale";
 import { closeDatabase } from "./db/database";
+import { repairItemFilterMetadata } from "./db/repair-metadata";
 import { routes as itemsRoutes } from "./routes/items";
 import { routes as feedsRoutes } from "./routes/feeds";
 import { routes as settingsRoutes } from "./routes/settings";
@@ -29,7 +30,9 @@ function manifestLocale(query: Record<string, string | undefined>): Locale {
   return "zh";
 }
 
-void loadSettings()
+void loadSettings().then(() => {
+  repairItemFilterMetadata();
+});
 void startScheduler();
 
 const host = resolveHost();

@@ -1,5 +1,5 @@
 import { clearItems } from "../db/items";
-import { fetchDueFeeds } from "./feed-fetcher";
+import { fetchDueFeeds } from "./feeds/fetcher";
 
 const TICK_CRON = "* * * * *";
 const CLEANUP_CRON = "0 1 * * *";

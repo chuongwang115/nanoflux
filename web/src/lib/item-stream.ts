@@ -1,4 +1,4 @@
-import type { Item } from "./api";
+import { normalizeItem, type Item } from "./api";
 
 type Listener = (items: Item[]) => void;
 
@@ -25,7 +25,8 @@ export function connectItemStream(): () => void {
 
   es.addEventListener("items", (ev) => {
     try {
-      dispatch(JSON.parse(ev.data) as Item[]);
+      const raw = JSON.parse(ev.data) as Item[];
+      dispatch(Array.isArray(raw) ? raw.map(normalizeItem) : []);
     } catch {
       /* ignore malformed payloads */
     }

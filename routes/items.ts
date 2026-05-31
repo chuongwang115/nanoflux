@@ -7,6 +7,12 @@ import {
 import { DEFAULT_LIMIT, MAX_LIMIT } from "../db/schema";
 import { encodeCursor, parseTimeUnit } from "../db/utils";
 
+function parseFilterPassed(raw: unknown): 0 | 1 | undefined {
+  if (raw === 0 || raw === "0") return 0;
+  if (raw === 1 || raw === "1") return 1;
+  return undefined;
+}
+
 function getItemsHandler({ query }: {
   query?: {
     cursor?: string;
@@ -15,6 +21,7 @@ function getItemsHandler({ query }: {
     until?: string;
     unit?: string;
     count?: number;
+    filter_passed?: number;
   }
 }) {
 
@@ -30,6 +37,8 @@ function getItemsHandler({ query }: {
       return { code: 400, message: `Invalid time unit: ${query.unit}` };
     }
 
+    const filterPassed = parseFilterPassed(query?.filter_passed);
+
     const selected = getItems({
       cursor: query?.cursor,
       limit:adjustedLimit,
@@ -37,6 +46,7 @@ function getItemsHandler({ query }: {
       until: query?.until,
       unit: unit ? unit.toString() : undefined,
       count: query?.count,
+      filterPassed,
     });
 
     const hasMore = selected.length > adjustedLimit;

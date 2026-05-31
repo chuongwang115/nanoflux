@@ -268,9 +268,24 @@ async function readHttpResponse(
   });
 }
 
-function buildRawRequest(target: URL, init: UndiciRequestInit): string {
+function resolveRequestBody(body: UndiciRequestInit["body"]): Buffer | null {
+  if (body == null) return null;
+  if (typeof body === "string") return Buffer.from(body, "utf8");
+  if (Buffer.isBuffer(body)) return body;
+  if (body instanceof Uint8Array) return Buffer.from(body);
+  return null;
+}
+
+function buildRawRequestHead(
+  target: URL,
+  init: UndiciRequestInit,
+  bodyLength: number,
+): string {
   const method = (init.method ?? "GET").toUpperCase();
   const headers = normalizeHeaders(init.headers);
+  if (bodyLength > 0 && !headers["Content-Length"] && !headers["content-length"]) {
+    headers["Content-Length"] = String(bodyLength);
+  }
   const lines = [
     `${method} ${target.pathname}${target.search} HTTP/1.1`,
     `Host: ${target.hostname}`,
@@ -338,7 +353,10 @@ async function requestViaSocks(
       ? await connectTls(socket, target.hostname, signal)
       : socket;
 
-    transport.write(buildRawRequest(target, init));
+    const body = resolveRequestBody(init.body);
+    const bodyLength = body?.length ?? 0;
+    transport.write(buildRawRequestHead(target, init, bodyLength));
+    if (body && bodyLength > 0) transport.write(body);
     return await readHttpResponse(transport, timeoutMs, signal);
   } finally {
     unbindAbort();
@@ -382,7 +400,7 @@ export function resolveProxyUrl(url: string): string | undefined {
   return proxyFromEnv();
 }
 
-export async function httpGet(
+async function httpRequest(
   url: string,
   init: UndiciRequestInit = {},
 ): Promise<Response> {
@@ -399,4 +417,18 @@ export async function httpGet(
     ...init,
     dispatcher: getHttpProxyAgent(proxyUrl),
   }) as unknown as Response;
+}
+
+export async function httpGet(
+  url: string,
+  init: UndiciRequestInit = {},
+): Promise<Response> {
+  return httpRequest(url, init);
+}
+
+export async function httpPost(
+  url: string,
+  init: UndiciRequestInit = {},
+): Promise<Response> {
+  return httpRequest(url, { ...init, method: init.method ?? "POST" });
 }

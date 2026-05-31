@@ -10,7 +10,6 @@ import {
 import { db } from "./database";
 import { getFeed } from "./feeds";
 import { feeds, items, DEFAULT_LIMIT, MAX_LIMIT } from "./schema";
-import { applyWhitelistFilter } from "../services/whitelist-filter";
 import { newItemId, decodeCursor, parseTimeRange, TimeUnit, toUtcIso } from "./utils";
 
 export function getItems(options?: {
@@ -20,6 +19,7 @@ export function getItems(options?: {
   count?: number;
   keyword?: string;
   isRead?: number;
+  filterPassed?: number;
   cursor?: string;
   limit?: number;
 }): any[] {
@@ -50,7 +50,10 @@ export function getItems(options?: {
       : undefined;
 
     const readFilter = options?.isRead ? eq(items.is_read, options.isRead) : undefined;
-    const passedFilter = eq(items.filter_passed, 1);
+    const passedFilter =
+      options?.filterPassed === 0 || options?.filterPassed === 1
+        ? eq(items.filter_passed, options.filterPassed)
+        : eq(items.filter_passed, 1);
 
     const selected = db
       .select({
@@ -63,6 +66,7 @@ export function getItems(options?: {
         published_at: items.published_at,
         is_read: items.is_read,
         filter_passed: items.filter_passed,
+        matched_keywords: items.matched_keywords,
         pass_reason: items.pass_reason,
         created_at: items.created_at,
         feed_title: feeds.title,
@@ -87,7 +91,16 @@ export function getItems(options?: {
 
 export function addItems(
   feedId: string,
-  newItems: any[],
+  newItems: {
+    guid: string;
+    title: string;
+    link: string;
+    content: string | null;
+    published_at: string;
+    filter_passed: number;
+    matched_keywords: string | null;
+    pass_reason: string | null;
+  }[],
 ): any[] {
 
   try {
@@ -105,10 +118,7 @@ export function addItems(
     for (const newItem of newItems) {
 
       const id = newItemId();
-      const { filter_passed, pass_reason } = applyWhitelistFilter(
-        newItem.title,
-        newItem.content,
-      );
+      const { filter_passed, matched_keywords, pass_reason } = newItem;
 
       const inserted = db.insert(items)
         .values({
@@ -121,6 +131,7 @@ export function addItems(
           published_at: newItem.published_at,
           is_read: 0,
           filter_passed,
+          matched_keywords,
           pass_reason,
         })
         .onConflictDoNothing({ target: [items.feed_id, items.guid] })
@@ -128,7 +139,7 @@ export function addItems(
         .get();
 
 
-      if (inserted && filter_passed) {
+      if (inserted) {
         insertedItems.push({
           ...inserted,
           created_at: toUtcIso(inserted.created_at),

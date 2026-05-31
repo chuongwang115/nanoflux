@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getContext, onMount } from "svelte";
+  import { onMount } from "svelte";
   import { t, tf } from "../lib/locale.svelte";
   import { subscribeItemStream } from "../lib/item-stream";
   import {
@@ -8,19 +8,27 @@
     markItemRead,
     type Item,
   } from "../lib/api";
-  import { parseMatchedKeywords, getMatchedContentPreview } from "../lib/highlight";
-  import { formatTime } from "../lib/utils";
-  import HighlightedText from "./HighlightedText.svelte";
   import {
-    MARK_ALL_READ_KEY,
-    type MarkAllReadHost,
-  } from "../lib/mark-all-read";
+    getItemFilterDisplay,
+    getMatchedContentPreview,
+  } from "../lib/highlight";
+  import { formatTime } from "../lib/utils";
+  import MessageCircleCheck from "@lucide/svelte/icons/message-circle-check";
+  import MessageCircleX from "@lucide/svelte/icons/message-circle-x";
+  import HighlightedText from "./HighlightedText.svelte";
+  import MarkAllReadButton from "./buttons/MarkAllReadButton.svelte";
 
-  const markAllReadHost = getContext<MarkAllReadHost>(MARK_ALL_READ_KEY);
+  const passReasonIconProps = {
+    size: 14,
+    strokeWidth: 1.5,
+    "aria-hidden": true as const,
+  };
 
   const PAGE_SIZE = 20;
   /** Cap in-memory list after SSE inserts to avoid DOM bloat. */
   const MAX_LIST_ITEMS = 100;
+
+  type ItemFilter = "passed" | "failed";
 
   let items = $state<Item[]>([]);
   let cursor = $state<string | null>(null);
@@ -28,33 +36,52 @@
   let loading = $state(false);
   let error = $state("");
   let sentinel = $state<HTMLDivElement | null>(null);
-  let started = $state(false);
+  let filter = $state<ItemFilter>("passed");
+  let loadGeneration = 0;
   /** Bumps every minute so relative timestamps (e.g. "18 min ago") stay current. */
   let now = $state(Date.now());
 
+  const filterPassed = $derived(filter === "passed" ? 1 : 0);
+
+  function resetList() {
+    items = [];
+    cursor = null;
+    hasMore = true;
+    error = "";
+    loading = false;
+  }
+
   async function loadMore() {
     if (loading || !hasMore) return;
+    const gen = ++loadGeneration;
     loading = true;
     error = "";
 
     try {
-      const page = await fetchItemsPage(cursor ?? undefined, PAGE_SIZE);
+      const page = await fetchItemsPage(
+        cursor ?? undefined,
+        PAGE_SIZE,
+        filterPassed,
+      );
+      if (gen !== loadGeneration) return;
       items = [...items, ...page.data];
       cursor = page.nextCursor;
       hasMore = page.hasMore;
     } catch (e) {
+      if (gen !== loadGeneration) return;
       error = e instanceof Error ? e.message : t("items.loadFailed");
     } finally {
-      loading = false;
+      if (gen === loadGeneration) loading = false;
     }
   }
 
-  $effect(() => {
-    if (!started) {
-      started = true;
-      loadMore();
-    }
-  });
+  async function setFilter(next: ItemFilter) {
+    if (next === filter) return;
+    filter = next;
+    loadGeneration++;
+    resetList();
+    await loadMore();
+  }
 
   $effect(() => {
     if (!sentinel) return;
@@ -79,7 +106,12 @@
   function mergeIncomingItem(incoming: Item[]) {
     if (!incoming.length) return;
     const seen = new Set(items.map((n) => n.id));
-    const fresh = incoming.filter((n) => !seen.has(n.id));
+    const wantPassed = filter === "passed";
+    const fresh = incoming.filter(
+      (n) =>
+        !seen.has(n.id) &&
+        (wantPassed ? n.filter_passed === true : n.filter_passed === false),
+    );
     if (!fresh.length) return;
 
     fresh.sort(compareItem);
@@ -129,12 +161,8 @@
     );
   }
 
-  $effect(() => {
-    markAllReadHost.register(markAllRead);
-    return () => markAllReadHost.register(undefined);
-  });
-
   onMount(() => {
+    void loadMore();
     const unsubscribe = subscribeItemStream(mergeIncomingItem);
     const timer = setInterval(() => {
       now = Date.now();
@@ -146,6 +174,36 @@
   });
 </script>
 
+<div class="mb-6 flex items-center justify-end gap-4">
+  <MarkAllReadButton onMarkAllRead={() => markAllRead()} />
+  <div
+    class="flex gap-3 text-xs"
+    role="group"
+    aria-label={t("items.filterBy")}
+  >
+    <button
+      type="button"
+      class="transition-colors {filter === 'passed'
+        ? 'text-neutral-900 dark:text-neutral-100'
+        : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}"
+      aria-pressed={filter === "passed"}
+      onclick={() => setFilter("passed")}
+    >
+      {t("items.filterPassed")}
+    </button>
+    <button
+      type="button"
+      class="transition-colors {filter === 'failed'
+        ? 'text-neutral-900 dark:text-neutral-100'
+        : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}"
+      aria-pressed={filter === "failed"}
+      onclick={() => setFilter("failed")}
+    >
+      {t("items.filterFailed")}
+    </button>
+  </div>
+</div>
+
 {#if error}
   <p class="py-6 text-sm text-red-500">{error}</p>
 {:else if items.length === 0 && !loading}
@@ -153,8 +211,11 @@
 {:else}
   <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
     {#each items as item (item.id)}
-      {@const keywords = parseMatchedKeywords(item.pass_reason)}
-      {@const contentPreview = getMatchedContentPreview(item.content, keywords)}
+      {@const filterDisplay = getItemFilterDisplay(item)}
+      {@const contentPreview = getMatchedContentPreview(
+        item.content,
+        filterDisplay.keywords,
+      )}
       <li class="py-5">
         <article>
           <div
@@ -177,18 +238,52 @@
               ? 'font-normal text-neutral-500 dark:text-neutral-500'
               : 'font-medium text-neutral-900 dark:text-neutral-100'}"
           >
-            <HighlightedText text={item.title} {keywords} />
+            <HighlightedText text={item.title} keywords={filterDisplay.keywords} />
           </a>
           {#if contentPreview}
             <p
               class="mt-2 line-clamp-2 text-sm text-neutral-400 dark:text-neutral-500"
             >
-              <HighlightedText text={contentPreview} {keywords} />
+              <HighlightedText
+                text={contentPreview}
+                keywords={filterDisplay.keywords}
+              />
             </p>
           {/if}
-          {#if item.pass_reason}
+          {#if filterDisplay.keywordsText}
+            <div
+              class="mt-1.5 flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500"
+            >
+              <span>
+                {tf("items.matchedKeywords", {
+                  keywords: filterDisplay.keywordsText,
+                })}
+              </span>
+              {#if filterDisplay.aiReason}
+                <div class="group/preason relative shrink-0">
+                  <button
+                    type="button"
+                    class="inline-flex cursor-help items-center justify-center rounded-sm p-0.5 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                    aria-label={filterDisplay.aiReason}
+                  >
+                    {#if item.filter_passed}
+                      <MessageCircleCheck {...passReasonIconProps} />
+                    {:else}
+                      <MessageCircleX {...passReasonIconProps} />
+                    {/if}
+                  </button>
+                  <div
+                    role="tooltip"
+                    class="pointer-events-none absolute bottom-full left-0 z-20 mb-1 w-max max-w-xs rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-xs leading-snug whitespace-normal text-neutral-600 opacity-0 shadow-sm transition-opacity group-hover/preason:opacity-100 group-focus-within/preason:opacity-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 [@media(hover:none)]:opacity-100"
+                  >
+                    {filterDisplay.aiReason}
+                  </div>
+                </div>
+              {/if}
+            </div>
+          {:else if filterDisplay.aiReason}
             <p class="mt-1.5 text-xs text-neutral-400 dark:text-neutral-500">
-              {tf("items.passReason", { reason: item.pass_reason })}
+              {tf("items.passReason", { reason: filterDisplay.aiReason })}
             </p>
           {/if}
         </article>

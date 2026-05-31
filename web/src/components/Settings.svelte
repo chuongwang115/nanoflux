@@ -12,8 +12,11 @@
 
   const inputClass =
     "w-full border-0 border-b border-neutral-200 bg-transparent py-2 text-sm outline-none placeholder:text-neutral-300 focus:border-neutral-900 dark:border-neutral-700 dark:placeholder:text-neutral-600 dark:focus:border-neutral-100";
+  const textareaClass =
+    "min-h-48 resize-y " + inputClass;
 
   let whitelist = $state("");
+  let prompt = $state("");
   let loading = $state(true);
   let loaded = $state(false);
   let loadError = $state("");
@@ -25,6 +28,7 @@
     try {
       const data = await fetchSettings();
       whitelist = data.whitelist;
+      prompt = data.prompt;
       loaded = true;
     } catch (e) {
       loadError = e instanceof Error ? e.message : t("settings.loadFailed");
@@ -38,8 +42,9 @@
     saveError = "";
     try {
       whitelist = normalizeCommas(whitelist);
-      const data = await saveSettings({ whitelist });
+      const data = await saveSettings({ whitelist, prompt });
       whitelist = data.whitelist;
+      prompt = data.prompt;
     } catch (e) {
       saveError = e instanceof Error ? e.message : t("settings.saveFailed");
       throw e;
@@ -84,6 +89,23 @@
         />
         <p class="text-xs text-neutral-400 dark:text-neutral-500">
           {t("settings.whitelistHint")}
+        </p>
+      </div>
+      <div class="space-y-1">
+        <label
+          for="prompt"
+          class="text-sm text-neutral-600 dark:text-neutral-400"
+        >
+          {t("settings.prompt")}
+        </label>
+        <textarea
+          id="prompt"
+          bind:value={prompt}
+          placeholder={t("settings.promptHint")}
+          class={textareaClass}
+        ></textarea>
+        <p class="text-xs text-neutral-400 dark:text-neutral-500">
+          {t("settings.promptHint")}
         </p>
       </div>
     </div>

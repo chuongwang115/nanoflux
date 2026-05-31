@@ -20,6 +20,7 @@ export type Item = {
   published_at: string;
   is_read: boolean;
   filter_passed: boolean | null;
+  matched_keywords: string | null;
   pass_reason: string | null;
   feed_title: string;
 };
@@ -56,7 +57,7 @@ function assertApiOk(body: ApiResult): void {
   }
 }
 
-function normalizeItem(raw: RawItem): Item {
+export function normalizeItem(raw: RawItem): Item {
   return {
     ...raw,
     is_read: Boolean(raw.is_read),
@@ -104,8 +105,12 @@ async function request<T>(
 export async function fetchItemsPage(
   cursor?: string,
   limit = 20,
+  filterPassed: 0 | 1 = 1,
 ): Promise<ItemsPage> {
-  const params = new URLSearchParams({ limit: String(limit) });
+  const params = new URLSearchParams({
+    limit: String(limit),
+    filter_passed: String(filterPassed),
+  });
   if (cursor) params.set("cursor", cursor);
   const body = await request<ItemsApiResult>(`/api/items?${params}`);
   assertApiOk(body);

@@ -16,17 +16,14 @@
     type SettingsSaveHost,
   } from "../lib/settings-save";
   import FontSizeToggle from "./buttons/FontSizeToggle.svelte";
-  import MarkAllReadButton from "./buttons/MarkAllReadButton.svelte";
   import LanguageToggle from "./buttons/LanguageToggle.svelte";
   import ThemeToggle from "./buttons/ThemeToggle.svelte";
   import { t } from "../lib/locale.svelte";
-  import { MARK_ALL_READ_KEY, type MarkAllReadHost } from "../lib/mark-all-read";
 
   /** Enter compact below this; exit above the lower value to avoid threshold flicker. */
   const COMPACT_ENTER = 72;
   const COMPACT_EXIT = 8;
 
-  const markAllReadHost = getContext<MarkAllReadHost>(MARK_ALL_READ_KEY);
   const settingsSaveHost = getContext<SettingsSaveHost>(SETTINGS_SAVE_KEY);
 
   function navClickSettingsBack() {
@@ -202,16 +199,6 @@
     </div>
   </div>
   <div class="flex shrink-0 items-center gap-0.5">
-    {#if isSubPage}
-      <span
-        class="inline-flex items-center justify-center rounded-md p-1.5 invisible pointer-events-none"
-        aria-hidden="true"
-      >
-        <span class="size-[18px]"></span>
-      </span>
-    {:else}
-      <MarkAllReadButton onMarkAllRead={() => markAllReadHost.markAllRead()} />
-    {/if}
     <FontSizeToggle />
     <LanguageToggle />
     <ThemeToggle />

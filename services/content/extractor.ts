@@ -1,5 +1,7 @@
 import { extractFromHtml } from "@extractus/article-extractor";
-import { httpGet } from "./http-fetcher";
+import { countContentTokens } from "../../utils/text";
+import { stripHtml } from "../../utils/html";
+import { httpGet } from "../http-fetcher";
 
 /** Unified token threshold; roughly ~200 Chinese chars / 80 English words. */
 export const FULL_CONTENT_MIN_TOKENS = 80;
@@ -10,21 +12,6 @@ const BROWSER_USER_AGENT =
 
 const ARTICLE_TIMEOUT_MS = 15_000;
 const SCRAPE_CONCURRENCY = 3;
-
-const wordSegmenter = new Intl.Segmenter("zh", { granularity: "word" });
-
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/** Unified word token count for Chinese and English (Intl.Segmenter, zero deps). */
-export function countContentTokens(text: string): number {
-  return [...wordSegmenter.segment(text)].filter((part) => part.isWordLike)
-    .length;
-}
 
 /** Whether content is long enough that scraping is unnecessary. */
 export function hasFullContent(content: string | null | undefined): boolean {

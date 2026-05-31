@@ -1,14 +1,41 @@
+import { isStoredKeywordList } from "../../../utils/text";
 import { normalizeCommas } from "./utils";
 
 export type TextSegment = { text: string; highlight: boolean };
 
-/** Keywords stored in `pass_reason` (comma-separated). */
-export function parseMatchedKeywords(passReason: string | null): string[] {
-  if (!passReason) return [];
-  return normalizeCommas(passReason)
+export type ItemFilterDisplay = {
+  keywords: string[];
+  keywordsText: string | null;
+  aiReason: string | null;
+};
+
+/** Keywords stored in `matched_keywords` (comma-separated). */
+export function parseMatchedKeywords(matchedKeywords: string | null): string[] {
+  if (!matchedKeywords) return [];
+  return normalizeCommas(matchedKeywords)
     .split(",")
     .map((keyword) => keyword.trim())
     .filter(Boolean);
+}
+
+/** Normalize `matched_keywords` / `pass_reason` for list rendering (incl. legacy rows). */
+export function getItemFilterDisplay(item: {
+  matched_keywords: string | null;
+  pass_reason: string | null;
+}): ItemFilterDisplay {
+  const keywordsText = isStoredKeywordList(item.matched_keywords)
+    ? item.matched_keywords
+    : null;
+  const aiReason =
+    item.pass_reason ??
+    (item.matched_keywords && !isStoredKeywordList(item.matched_keywords)
+      ? item.matched_keywords
+      : null);
+  return {
+    keywords: parseMatchedKeywords(keywordsText),
+    keywordsText,
+    aiReason,
+  };
 }
 
 /** Split text into plain and keyword-matched spans (case-insensitive). */

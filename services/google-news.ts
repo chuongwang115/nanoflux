@@ -1,8 +1,6 @@
 import Parser from "rss-parser";
-import { httpGet } from "./http-fetcher";
-
-const RSS_USER_AGENT = "NanoFlux/1.0 (+https://github.com/nanoflux)";
-const RSS_TIMEOUT_MS = 15_000;
+import { stripHtml } from "../utils/html";
+import { fetchRssFeed } from "./rss";
 
 /** Google News RSS `<source>` — not on rss-parser's default `Item` type. */
 type GoogleNewsRssItemFields = {
@@ -35,13 +33,6 @@ export type GoogleNewsSearchResult = {
   total: number;
   items: GoogleNewsItem[];
 };
-
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
 function googleLocaleParams(language: string): { gl: string; ceid: string } {
   const [langRaw, regionRaw] = language.split("-");
@@ -107,15 +98,7 @@ export async function searchGoogleNews(
   const language = params.language?.trim() || "en-US";
   const feedUrl = buildGoogleNewsRssUrl({ ...params, language });
 
-  const response = await httpGet(feedUrl, {
-    headers: { "User-Agent": RSS_USER_AGENT },
-    signal: AbortSignal.timeout(RSS_TIMEOUT_MS),
-  });
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} ${response.statusText}`);
-  }
-
-  const feed = await rssParser.parseString(await response.text());
+  const feed = await fetchRssFeed(feedUrl, rssParser);
   const items = (feed.items ?? [])
     .map(toGoogleNewsItem)
     .filter((item): item is GoogleNewsItem => item !== null);

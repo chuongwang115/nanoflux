@@ -10,7 +10,7 @@ import {
 } from "../db/feeds";
 import { encodeCursor } from "../db/utils";
 import { DEFAULT_LIMIT, MAX_LIMIT } from "../db/schema";
-import { fetchFeedMetadata } from "../services/feed-fetcher";
+import { fetchFeedMetadata } from "../services/feeds/fetcher";
 
 const FEED_SORTS = new Set<FeedSort>([
   "updated_desc",
