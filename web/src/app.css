@@ -7,17 +7,24 @@
 @theme {
   --font-sans: system-ui, "Segoe UI", sans-serif;
   --max-width-page: 680px;
-  --text-base: 14px;
+  --text-base: 16px;
   --text-base--line-height: 1.5;
-  --text-sm: 14px;
+  --text-sm: 16px;
   --text-sm--line-height: 1.5;
+  --text-xs: 14px;
+  --text-xs--line-height: calc(16 / 14);
+}
+
+html.font-small {
+  --text-base: 14px;
+  --text-sm: 14px;
   --text-xs: 12px;
   --text-xs--line-height: calc(16 / 12);
 }
 
 html.font-large {
-  --text-base: 16px;
-  --text-sm: 16px;
-  --text-xs: 14px;
-  --text-xs--line-height: calc(16 / 14);
+  --text-base: 18px;
+  --text-sm: 18px;
+  --text-xs: 16px;
+  --text-xs--line-height: calc(18 / 16);
 }

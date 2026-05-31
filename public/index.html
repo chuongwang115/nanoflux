@@ -28,8 +28,13 @@
     var t = localStorage.getItem("nanoflux-theme");
     if (t === "dark" || (!t && matchMedia("(prefers-color-scheme: dark)").matches))
       document.documentElement.classList.add("dark");
-    if (localStorage.getItem("nanoflux-font-size") === "large")
+    var fs = localStorage.getItem("nanoflux-font-size");
+    if (!localStorage.getItem("nanoflux-font-size-v2") && fs === "small")
+      fs = "medium";
+    if (fs === "large")
       document.documentElement.classList.add("font-large");
+    else if (fs === "small")
+      document.documentElement.classList.add("font-small");
   } catch (e) {}
 })();
 </script>

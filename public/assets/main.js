@@ -6596,22 +6596,45 @@ if (undefined) {}
 var a_arrow_up_default = A_arrow_up;
 // web/src/lib/fontSize.svelte.ts
 var STORAGE_KEY = "nanoflux-font-size";
+var MIGRATION_KEY = "nanoflux-font-size-v2";
+function migrateStoredFontSize() {
+  try {
+    if (localStorage.getItem(MIGRATION_KEY))
+      return;
+    if (localStorage.getItem(STORAGE_KEY) === "small") {
+      localStorage.setItem(STORAGE_KEY, "medium");
+    }
+    localStorage.setItem(MIGRATION_KEY, "1");
+  } catch {}
+}
 function readStored() {
   try {
+    migrateStoredFontSize();
     const v = localStorage.getItem(STORAGE_KEY);
-    if (v === "small" || v === "large")
+    if (v === "small" || v === "medium" || v === "large")
       return v;
   } catch {}
   return null;
 }
-var fontSizeState = proxy({ mode: "small" });
+var fontSizeState = proxy({ mode: "medium", direction: "up" });
 function applyFontSize(f) {
   if (typeof document === "undefined")
     return;
-  document.documentElement.classList.toggle("font-large", f === "large");
+  const root5 = document.documentElement;
+  root5.classList.toggle("font-small", f === "small");
+  root5.classList.toggle("font-large", f === "large");
+}
+function initDirection(mode) {
+  if (mode === "small")
+    fontSizeState.direction = "up";
+  else if (mode === "large")
+    fontSizeState.direction = "down";
+  else
+    fontSizeState.direction = "up";
 }
 function initFontSize() {
-  fontSizeState.mode = readStored() ?? "small";
+  fontSizeState.mode = readStored() ?? "medium";
+  initDirection(fontSizeState.mode);
   applyFontSize(fontSizeState.mode);
 }
 function setFontSize(f) {
@@ -6622,7 +6645,18 @@ function setFontSize(f) {
   applyFontSize(f);
 }
 function toggleFontSize() {
-  setFontSize(fontSizeState.mode === "small" ? "large" : "small");
+  const { mode, direction } = fontSizeState;
+  if (mode === "small") {
+    fontSizeState.direction = "up";
+    setFontSize("medium");
+  } else if (mode === "large") {
+    fontSizeState.direction = "down";
+    setFontSize("medium");
+  } else if (direction === "up") {
+    setFontSize("large");
+  } else {
+    setFontSize("small");
+  }
 }
 
 // shared/manifest.ts
@@ -6687,8 +6721,10 @@ var messages = {
     "theme.lightMode": "浅色模式",
     "theme.darkMode": "深色模式",
     "font.switchToSmall": "切换到小字体",
+    "font.switchToMedium": "切换到中等字体",
     "font.switchToLarge": "切换到大字体",
     "font.small": "小字体",
+    "font.medium": "中等字体",
     "font.large": "大字体",
     "lang.switchToEn": "切换到英文",
     "lang.switchToZh": "切换到中文",
@@ -6750,8 +6786,10 @@ var messages = {
     "theme.lightMode": "Light mode",
     "theme.darkMode": "Dark mode",
     "font.switchToSmall": "Switch to small text",
+    "font.switchToMedium": "Switch to medium text",
     "font.switchToLarge": "Switch to large text",
     "font.small": "Small text",
+    "font.medium": "Medium text",
     "font.large": "Large text",
     "lang.switchToEn": "Switch to English",
     "lang.switchToZh": "Switch to Chinese",
@@ -6831,9 +6869,12 @@ var root5 = from_html(`
   <!>
 </button>`, 1);
 function FontSizeToggle($$anchor, $$props) {
-  push($$props, false);
+  push($$props, true);
   const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
-  init();
+  const nextSize = user_derived(() => fontSizeState.mode === "small" || fontSizeState.mode === "large" ? "medium" : fontSizeState.direction === "up" ? "large" : "small");
+  const increasing = user_derived(() => fontSizeState.mode === "small" || fontSizeState.mode === "medium" && fontSizeState.direction === "up");
+  const switchLabel = user_derived(() => get2(nextSize) === "medium" ? t("font.switchToMedium") : get2(nextSize) === "large" ? t("font.switchToLarge") : t("font.switchToSmall"));
+  const currentLabel = user_derived(() => fontSizeState.mode === "small" ? t("font.small") : fontSizeState.mode === "medium" ? t("font.medium") : t("font.large"));
   next();
   var fragment = root5();
   var button = sibling(first_child(fragment));
@@ -6842,19 +6883,19 @@ function FontSizeToggle($$anchor, $$props) {
     var consequent = ($$anchor2) => {
       var fragment_1 = root_12();
       var node_1 = sibling(first_child(fragment_1));
-      a_arrow_down_default(node_1, spread_props(() => iconProps));
+      a_arrow_up_default(node_1, spread_props(() => iconProps));
       next();
       append($$anchor2, fragment_1);
     };
     var alternate = ($$anchor2) => {
       var fragment_2 = root_2();
       var node_2 = sibling(first_child(fragment_2));
-      a_arrow_up_default(node_2, spread_props(() => iconProps));
+      a_arrow_down_default(node_2, spread_props(() => iconProps));
       next();
       append($$anchor2, fragment_2);
     };
     if_block(node, ($$render) => {
-      if (fontSizeState.mode === "large")
+      if (get2(increasing))
         $$render(consequent);
       else
         $$render(alternate, -1);
@@ -6862,13 +6903,10 @@ function FontSizeToggle($$anchor, $$props) {
   }
   next();
   reset(button);
-  template_effect(($0, $1) => {
-    set_attribute2(button, "aria-label", $0);
-    set_attribute2(button, "title", $1);
-  }, [
-    () => fontSizeState.mode === "large" ? t("font.switchToSmall") : t("font.switchToLarge"),
-    () => fontSizeState.mode === "large" ? t("font.small") : t("font.large")
-  ]);
+  template_effect(() => {
+    set_attribute2(button, "aria-label", get2(switchLabel));
+    set_attribute2(button, "title", get2(currentLabel));
+  });
   delegated("click", button, function(...$$args) {
     toggleFontSize?.apply(this, $$args);
   });
