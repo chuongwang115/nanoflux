@@ -264,7 +264,7 @@ Connect with `EventSource` to receive `items` events when new articles arrive, p
 
 1. On startup and every minute (UTC cron), the scheduler loads feeds whose `next_fetched_at` is due.
 2. Each feed is fetched over HTTP with the `NanoFlux/1.0` user agent (15 s timeout) and parsed as RSS/Atom.
-3. Each entry gets a normalized GUID: MD5 hex of the article link (feeds that already provide an MD5 GUID are kept as-is). Per-feed known GUIDs are stored in the `guids` column so only entries not seen before are treated as new.
+3. Each entry gets a normalized GUID: MD5 hex of the article link (feeds that already provide an MD5 GUID are kept as-is). Per-feed known GUIDs are stored in the `last_guids` column so only entries not seen before are treated as new.
 4. For each new entry whose RSS summary is shorter than ~80 word tokens (counted with `Intl.Segmenter` for Chinese and English — roughly ~200 Chinese characters or ~80 English words), the article page is fetched (desktop browser user agent, 15 s timeout, up to 3 concurrent requests) and parsed with `@extractus/article-extractor` to fill in `content`. Already-known entries skip scraping.
 5. New items are deduplicated by `(feed_id, guid)`, evaluated against the keyword whitelist (title + content), and inserted into SQLite with `filter_passed` and `pass_reason`.
 6. Items that pass the filter are broadcast to connected SSE clients; filtered-out items remain in the database but are hidden from the UI and API.

@@ -204,7 +204,7 @@ export async function fetchFeed(feed: Feed): Promise<{
       .map(toStoredItem)
       .filter((item): item is NonNullable<typeof item> => item !== null);
 
-    const knownGuids = parseFeedGuids(feed.guids);
+    const knownGuids = parseFeedGuids(feed.last_guids);
     const candidates = entries.filter((entry) => !knownGuids.has(entry.guid));
     const enriched = await enrichItemsContent(candidates);
     const inserted = addItems(feed.id, enriched);
@@ -228,7 +228,7 @@ export async function fetchFeed(feed: Feed): Promise<{
       fetch_interval_min: nextInterval,
       ...(lastPublishedAt ? { last_published_at: lastPublishedAt } : {}),
       last_build_date: feedBuildDate(parsed),
-      guids: serializeFeedGuids(entries.map((entry) => entry.guid)),
+      last_guids: serializeFeedGuids(entries.map((entry) => entry.guid)),
     });
 
     return { newItems: inserted };
