@@ -28,16 +28,17 @@ Built on [Bun](https://bun.sh), [Elysia](https://elysiajs.com), and [Svelte 5](h
 - RSS/Atom feed management with auto-fetched metadata
 - Adaptive polling (5–30 min per feed) based on publish frequency
 - Full-text article extraction — when an RSS entry's summary is too short, the article page is fetched and parsed for richer content (improves whitelist matching and list previews)
-- Keyword whitelist filter — keep items whose title or content matches any configured keyword; matched terms are highlighted in the list
+- Keyword whitelist filter — keep items whose title or content matches any configured keyword; matched terms are highlighted in the list, with a keyword-context snippet as the content preview when the match is in the body
 - Infinite scroll with cursor-based pagination
 - Read tracking for individual items or all visible items
 - Automatic cleanup of items older than 90 days
 
 **UI & Experience**
 
-- Real-time updates via Server-Sent Events (SSE)
+- Real-time updates via Server-Sent Events (SSE); in-memory list capped at 100 items to limit DOM size
 - Progressive Web App (installable, offline asset caching)
 - Bilingual UI (English / Chinese), light/dark theme, adjustable font size
+- Feed management page (`/feeds`) with auto-preview, create/edit/delete, and sortable list
 - Settings page (`/settings`) for editing the keyword whitelist
 
 **Integration & Networking**
@@ -198,7 +199,7 @@ All news query tools return only whitelist-passed items (`filter_passed = 1`).
 | `add_feed` | Add an RSS feed (metadata auto-fetched when omitted) |
 | `update_feed` | Update feed title, URL, or description |
 | `delete_feed` | Remove a feed |
-| `search_feeds` | Search feeds by keyword |
+| `search_feeds` | Search feeds by keyword in title |
 | `get_news` | Fetch news in an absolute or relative time range |
 | `get_unread_news` | Fetch unread news in a relative time window |
 | `mark_news_read` | Mark items as read by ID or time range |
@@ -213,12 +214,21 @@ All endpoints return JSON. When `HOST=127.0.0.1`, these routes are localhost-onl
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/api/feeds` | List all feeds |
+| `GET` | `/api/feeds` | Paginated feed list (cursor, limit, keyword, sort) |
 | `GET` | `/api/feeds/:id` | Get a feed by ID |
 | `POST` | `/api/feeds/meta` | Preview feed title and description |
 | `POST` | `/api/feeds/create` | Create a feed |
 | `POST` | `/api/feeds/:id` | Update a feed |
 | `POST` | `/api/feeds/:id/delete` | Delete a feed and its items |
+
+Query parameters for `GET /api/feeds`:
+
+| Parameter | Description |
+| --- | --- |
+| `cursor` | Pagination cursor from a previous response |
+| `limit` | Page size (default 20, max 50) |
+| `keyword` | Search feeds by title |
+| `sort` | `updated_desc` (default), `published_desc`, or `published_asc` |
 
 ### Items — `/api/items`
 
@@ -253,12 +263,13 @@ Connect with `EventSource` to receive `items` events when new articles arrive, p
 ## How Feed Fetching Works
 
 1. On startup and every minute (UTC cron), the scheduler loads feeds whose `next_fetched_at` is due.
-2. Each feed is fetched over HTTP with a 15 s timeout and parsed as RSS/Atom.
-3. For each new entry whose RSS summary is shorter than ~80 word tokens, the article page is fetched (desktop browser user agent, 15 s timeout, up to 3 concurrent requests) and parsed with `@extractus/article-extractor` to fill in `content`.
-4. New items are deduplicated by `(feed_id, guid)`, evaluated against the keyword whitelist (title + content), and inserted into SQLite with `filter_passed` and `pass_reason`.
-5. Items that pass the filter are broadcast to connected SSE clients; filtered-out items remain in the database but are hidden from the UI and API.
-6. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear.
-7. Daily at 01:00 UTC, items older than 90 days are deleted.
+2. Each feed is fetched over HTTP with the `NanoFlux/1.0` user agent (15 s timeout) and parsed as RSS/Atom.
+3. Each entry gets a normalized GUID: MD5 hex of the article link (feeds that already provide an MD5 GUID are kept as-is). Per-feed known GUIDs are stored in the `guids` column so only entries not seen before are treated as new.
+4. For each new entry whose RSS summary is shorter than ~80 word tokens (counted with `Intl.Segmenter` for Chinese and English — roughly ~200 Chinese characters or ~80 English words), the article page is fetched (desktop browser user agent, 15 s timeout, up to 3 concurrent requests) and parsed with `@extractus/article-extractor` to fill in `content`. Already-known entries skip scraping.
+5. New items are deduplicated by `(feed_id, guid)`, evaluated against the keyword whitelist (title + content), and inserted into SQLite with `filter_passed` and `pass_reason`.
+6. Items that pass the filter are broadcast to connected SSE clients; filtered-out items remain in the database but are hidden from the UI and API.
+7. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear.
+8. Daily at 01:00 UTC, items older than 90 days are deleted.
 
 ## Project Structure
 
@@ -268,7 +279,7 @@ Connect with `EventSource` to receive `items` events when new articles arrive, p
 ├── routes/           REST API routes (feeds, items, settings)
 ├── mcp/              MCP server and tools
 ├── sse/              Server-Sent Events streaming
-├── services/         Feed fetcher, article extractor, scheduler, HTTP client, whitelist filter
+├── services/         Feed fetcher, article extractor, scheduler, HTTP client, whitelist filter, Google News
 ├── db/               Drizzle schema and data access
 ├── shared/           Shared types and utilities
 ├── drizzle/          SQL migrations

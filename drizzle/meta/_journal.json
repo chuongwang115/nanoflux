@@ -36,6 +36,13 @@
       "when": 1780220000000,
       "tag": "0004_opposite_dagger",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1780221000000,
+      "tag": "0005_rename_last_pub_date_to_last_build_date",
+      "breakpoints": true
     }
   ]
 }

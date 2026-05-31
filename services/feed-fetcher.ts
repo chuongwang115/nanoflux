@@ -59,10 +59,14 @@ function toStoredItem(entry: Parser.Item) {
   return { guid, title, link, content: (description && description != title ? description : null), published_at };
 }
 
-function feedPubDate(parsed: Record<string, unknown>): string | null {
+function feedBuildDate(parsed: Record<string, unknown>): string | null {
   const pubDate =
-    typeof parsed.pubDate === "string" ? parsed.pubDate.trim() : "";
-  return pubDate || null;
+    typeof parsed.pubDate === "string" ? parsed.pubDate : undefined;
+  const lastBuildDate =
+    typeof parsed.lastBuildDate === "string"
+      ? parsed.lastBuildDate
+      : undefined;
+  return parsePublishedAt(pubDate) || parsePublishedAt(lastBuildDate);
 }
 
 function maxPublishedAt(
@@ -223,7 +227,7 @@ export async function fetchFeed(feed: Feed): Promise<{
       next_fetched_at: nextFetchedAtIso(nextInterval),
       fetch_interval_min: nextInterval,
       ...(lastPublishedAt ? { last_published_at: lastPublishedAt } : {}),
-      last_pub_date: feedPubDate(parsed),
+      last_build_date: feedBuildDate(parsed),
       guids: serializeFeedGuids(entries.map((entry) => entry.guid)),
     });
 

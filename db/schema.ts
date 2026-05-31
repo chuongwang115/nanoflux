@@ -17,7 +17,7 @@ export const feeds = sqliteTable(
     description: text("description"),
     fetch_interval_min: integer("fetch_interval_min").notNull().default(15),
     next_fetched_at: text("next_fetched_at"),
-    last_pub_date: text("last_pub_date"),
+    last_build_date: text("last_build_date"),
     guids: text("guids"),
     last_published_at: text("last_published_at"),
     created_at: text("created_at")

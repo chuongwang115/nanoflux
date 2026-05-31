@@ -17,7 +17,7 @@ function getSettingsHandler() {
 async function updateSettingsHandler({
   body,
 }: {
-  body: { whitelist?: string; prompt?: string };
+  body: any;
 }) {
   try {
     await updateSettings(body ?? {});
