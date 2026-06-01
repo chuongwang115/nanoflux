@@ -205,10 +205,11 @@ export async function markItemRead(id: string) {
 
 export type Settings = {
   whitelist: string;
+  blacklist: string;
   prompt: string;
 };
 
-export type SettingsUpdate = Pick<Settings, "whitelist"> &
+export type SettingsUpdate = Pick<Settings, "whitelist" | "blacklist"> &
   Partial<Pick<Settings, "prompt">>;
 
 type SettingsApiResult = {

@@ -24,15 +24,17 @@ export async function loadSettings(): Promise<void> {
     }
 }
 
-export function getSettings(): { whitelist: string; prompt: string } {
+export function getSettings(): { whitelist: string; blacklist: string; prompt: string } {
     return {
         whitelist: settings.whitelist ?? "",
+        blacklist: settings.blacklist ?? "",
         prompt: settings.prompt ?? ""
     };
 }
 
 export async function updateSettings(newSettings: {
     whitelist?: string;
+    blacklist?: string;
     prompt?: string;
 }): Promise<void> {
     const current = getSettings();
@@ -41,6 +43,10 @@ export async function updateSettings(newSettings: {
             newSettings.whitelist !== undefined
                 ? newSettings.whitelist
                 : current.whitelist,
+        blacklist:
+            newSettings.blacklist !== undefined
+                ? newSettings.blacklist
+                : current.blacklist,
         prompt:
             newSettings.prompt !== undefined ? newSettings.prompt : current.prompt,
     };

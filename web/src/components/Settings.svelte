@@ -16,6 +16,7 @@
     "min-h-48 resize-y " + inputClass;
 
   let whitelist = $state("");
+  let blacklist = $state("");
   let prompt = $state("");
   let loading = $state(true);
   let loaded = $state(false);
@@ -28,6 +29,7 @@
     try {
       const data = await fetchSettings();
       whitelist = data.whitelist;
+      blacklist = data.blacklist;
       prompt = data.prompt;
       loaded = true;
     } catch (e) {
@@ -42,8 +44,10 @@
     saveError = "";
     try {
       whitelist = normalizeCommas(whitelist);
-      const data = await saveSettings({ whitelist, prompt });
+      blacklist = normalizeCommas(blacklist);
+      const data = await saveSettings({ whitelist, blacklist, prompt });
       whitelist = data.whitelist;
+      blacklist = data.blacklist;
       prompt = data.prompt;
     } catch (e) {
       saveError = e instanceof Error ? e.message : t("settings.saveFailed");
@@ -89,6 +93,24 @@
         />
         <p class="text-xs text-neutral-400 dark:text-neutral-500">
           {t("settings.whitelistHint")}
+        </p>
+      </div>
+      <div class="space-y-1">
+        <label
+          for="blacklist"
+          class="text-sm text-neutral-600 dark:text-neutral-400"
+        >
+          {t("settings.blacklist")}
+        </label>
+        <input
+          id="blacklist"
+          type="text"
+          bind:value={blacklist}
+          placeholder={t("settings.blacklistHint")}
+          class={inputClass}
+        />
+        <p class="text-xs text-neutral-400 dark:text-neutral-500">
+          {t("settings.blacklistHint")}
         </p>
       </div>
       <div class="space-y-1">

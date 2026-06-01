@@ -1,4 +1,5 @@
 import { applyAiFilter } from "./ai";
+import { applyBlacklistFilter } from "./blacklist";
 import { applyWhitelistFilter } from "./whitelist";
 
 export type ItemFilterResult = {
@@ -11,6 +12,10 @@ export async function applyItemFilter(
   title: string,
   content: string | null,
 ): Promise<ItemFilterResult> {
+  const blacklist = applyBlacklistFilter(title, content);
+  if (blacklist.filter_passed !== 1) {
+    return blacklist;
+  }
   const whitelist = applyWhitelistFilter(title, content);
   if (whitelist.filter_passed !== 1) {
     return whitelist;

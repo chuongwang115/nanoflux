@@ -6688,6 +6688,8 @@ var messages = {
     "settings.back": "返回",
     "settings.whitelist": "白名单关键词",
     "settings.whitelistHint": "逗号分隔，匹配任一关键词则保留",
+    "settings.blacklist": "黑名单关键词",
+    "settings.blacklistHint": "逗号分隔，匹配任一关键词则过滤",
     "settings.prompt": "AI 过滤提示词",
     "settings.promptHint": "用于 AI 判断资讯是否相关的说明",
     "settings.loading": "加载中…",
@@ -6753,6 +6755,8 @@ var messages = {
     "settings.filter": "Content filter",
     "settings.whitelist": "Whitelist keywords",
     "settings.whitelistHint": "Comma-separated; keep items matching any keyword",
+    "settings.blacklist": "Blacklist keywords",
+    "settings.blacklistHint": "Comma-separated; reject items matching any keyword",
     "settings.prompt": "AI filter prompt",
     "settings.promptHint": "Instructions for AI relevance filtering",
     "settings.loading": "Loading…",
@@ -9112,6 +9116,11 @@ var root_34 = from_html(`
         <p class="text-xs text-neutral-400 dark:text-neutral-500"> </p>
       </div>
       <div class="space-y-1">
+        <label for="blacklist" class="text-sm text-neutral-600 dark:text-neutral-400"> </label>
+        <input id="blacklist" type="text"/>
+        <p class="text-xs text-neutral-400 dark:text-neutral-500"> </p>
+      </div>
+      <div class="space-y-1">
         <label for="prompt" class="text-sm text-neutral-600 dark:text-neutral-400"> </label>
         <textarea id="prompt"></textarea>
         <p class="text-xs text-neutral-400 dark:text-neutral-500"> </p>
@@ -9132,6 +9141,7 @@ function Settings($$anchor, $$props) {
   const inputClass = "w-full border-0 border-b border-neutral-200 bg-transparent py-2 text-sm outline-none placeholder:text-neutral-300 focus:border-neutral-900 dark:border-neutral-700 dark:placeholder:text-neutral-600 dark:focus:border-neutral-100";
   const textareaClass = "min-h-48 resize-y " + inputClass;
   let whitelist = state("");
+  let blacklist = state("");
   let prompt = state("");
   let loading = state(true);
   let loaded = state(false);
@@ -9143,6 +9153,7 @@ function Settings($$anchor, $$props) {
     try {
       const data = await fetchSettings();
       set(whitelist, data.whitelist, true);
+      set(blacklist, data.blacklist, true);
       set(prompt, data.prompt, true);
       set(loaded, true);
     } catch (e) {
@@ -9157,8 +9168,14 @@ function Settings($$anchor, $$props) {
     set(saveError, "");
     try {
       set(whitelist, normalizeCommas(get2(whitelist)), true);
-      const data = await saveSettings({ whitelist: get2(whitelist), prompt: get2(prompt) });
+      set(blacklist, normalizeCommas(get2(blacklist)), true);
+      const data = await saveSettings({
+        whitelist: get2(whitelist),
+        blacklist: get2(blacklist),
+        prompt: get2(prompt)
+      });
       set(whitelist, data.whitelist, true);
+      set(blacklist, data.blacklist, true);
       set(prompt, data.prompt, true);
     } catch (e) {
       set(saveError, e instanceof Error ? e.message : t("settings.saveFailed"), true);
@@ -9217,25 +9234,37 @@ function Settings($$anchor, $$props) {
       var label_1 = sibling(child(div_2));
       var text_5 = child(label_1);
       reset(label_1);
-      var textarea = sibling(label_1, 2);
-      remove_textarea_child(textarea);
-      set_class(textarea, 1, clsx2(textareaClass));
-      var p_3 = sibling(textarea, 2);
+      var input_1 = sibling(label_1, 2);
+      remove_input_defaults(input_1);
+      set_class(input_1, 1, clsx2(inputClass));
+      var p_3 = sibling(input_1, 2);
       var text_6 = child(p_3);
       reset(p_3);
       next();
       reset(div_2);
+      var div_3 = sibling(div_2, 2);
+      var label_2 = sibling(child(div_3));
+      var text_7 = child(label_2);
+      reset(label_2);
+      var textarea = sibling(label_2, 2);
+      remove_textarea_child(textarea);
+      set_class(textarea, 1, clsx2(textareaClass));
+      var p_4 = sibling(textarea, 2);
+      var text_8 = child(p_4);
+      reset(p_4);
+      next();
+      reset(div_3);
       next();
       reset(div);
       var node_1 = sibling(div, 2);
       {
         var consequent_2 = ($$anchor3) => {
           var fragment_4 = root_44();
-          var p_4 = sibling(first_child(fragment_4));
-          var text_7 = child(p_4, true);
-          reset(p_4);
+          var p_5 = sibling(first_child(fragment_4));
+          var text_9 = child(p_5, true);
+          reset(p_5);
           next();
-          template_effect(() => set_text(text_7, get2(saveError)));
+          template_effect(() => set_text(text_9, get2(saveError)));
           append($$anchor3, fragment_4);
         };
         if_block(node_1, ($$render) => {
@@ -9244,7 +9273,7 @@ function Settings($$anchor, $$props) {
         });
       }
       next();
-      template_effect(($0, $1, $2, $3, $4, $5) => {
+      template_effect(($0, $1, $2, $3, $4, $5, $6, $7, $8) => {
         set_text(text_3, `
           ${$0 ?? ""}
         `);
@@ -9255,19 +9284,30 @@ function Settings($$anchor, $$props) {
         set_text(text_5, `
           ${$3 ?? ""}
         `);
-        set_attribute2(textarea, "placeholder", $4);
+        set_attribute2(input_1, "placeholder", $4);
         set_text(text_6, `
           ${$5 ?? ""}
+        `);
+        set_text(text_7, `
+          ${$6 ?? ""}
+        `);
+        set_attribute2(textarea, "placeholder", $7);
+        set_text(text_8, `
+          ${$8 ?? ""}
         `);
       }, [
         () => t("settings.whitelist"),
         () => t("settings.whitelistHint"),
         () => t("settings.whitelistHint"),
+        () => t("settings.blacklist"),
+        () => t("settings.blacklistHint"),
+        () => t("settings.blacklistHint"),
         () => t("settings.prompt"),
         () => t("settings.promptHint"),
         () => t("settings.promptHint")
       ]);
       bind_value(input, () => get2(whitelist), ($$value) => set(whitelist, $$value));
+      bind_value(input_1, () => get2(blacklist), ($$value) => set(blacklist, $$value));
       bind_value(textarea, () => get2(prompt), ($$value) => set(prompt, $$value));
       append($$anchor2, fragment_3);
     };

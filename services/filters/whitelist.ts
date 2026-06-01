@@ -1,11 +1,15 @@
 import { getSettings } from "../../settings";
 
-export function parseWhitelistKeywords(whitelist: string): string[] {
-  return whitelist
+export function parseKeywordList(raw: string): string[] {
+  return raw
     .replaceAll("，", ",")
     .split(",")
     .map((keyword) => keyword.trim())
     .filter(Boolean);
+}
+
+export function parseWhitelistKeywords(whitelist: string): string[] {
+  return parseKeywordList(whitelist);
 }
 
 export function applyWhitelistFilter(
