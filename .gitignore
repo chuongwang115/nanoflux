@@ -40,3 +40,6 @@ data.sqlite-wal
 
 # cursor
 .cursor
+
+# settings
+settings.json
