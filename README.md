@@ -28,10 +28,11 @@ Built on [Bun](https://bun.sh), [Elysia](https://elysiajs.com), and [Svelte 5](h
 - RSS/Atom feed management with auto-fetched metadata
 - Adaptive polling (5–30 min per feed) based on publish frequency
 - Full-text article extraction — when an RSS entry's summary is too short, the article page is fetched and parsed for richer content (improves filtering and list previews)
-- Two-stage content filter:
-  1. **Keyword whitelist** — keep items whose title or content matches any configured keyword; matched terms are highlighted in the list, with a keyword-context snippet as the content preview when the match is in the body
-  2. **AI relevance filter** (optional) — after passing the whitelist, items can be scored by an OpenAI-compatible chat model against a custom prompt; rejected items are stored but hidden by default
-- Toggle between passed and failed items in the list; AI rejection reasons shown inline
+- Three-stage content filter:
+  1. **Keyword blacklist** — drop items whose title or content matches any configured keyword (runs first)
+  2. **Keyword whitelist** — keep items whose title or content matches any configured keyword; matched terms are highlighted in the list, with a keyword-context snippet as the content preview when the match is in the body
+  3. **AI relevance filter** (optional) — after passing the whitelist, items can be scored by an OpenAI-compatible chat model against a custom prompt; rejected items are stored but hidden by default
+- List tabs: **Unread** (default), **Passed**, and **Failed**; AI rejection reasons shown inline on failed items
 - Infinite scroll with cursor-based pagination
 - Read tracking for individual items or all visible items
 - Automatic cleanup of items older than 90 days
@@ -42,7 +43,7 @@ Built on [Bun](https://bun.sh), [Elysia](https://elysiajs.com), and [Svelte 5](h
 - Progressive Web App (installable, offline asset caching)
 - Bilingual UI (English / Chinese), light/dark theme, adjustable font size
 - Feed management page (`/feeds`) with auto-preview, create/edit/delete, and sortable list
-- Settings page (`/settings`) for editing the keyword whitelist and AI filter prompt
+- Settings page (`/settings`) for editing keyword blacklist/whitelist and the AI filter prompt
 
 **Integration & Networking**
 
@@ -120,7 +121,7 @@ Create a `.env` file (see `.env.example`):
 
 ### AI filter (optional)
 
-When `settings.json` contains a non-empty `prompt`, new items that pass the whitelist are sent to an OpenAI-compatible chat completions endpoint for relevance scoring. Configure these in `.env`:
+When `settings.json` contains a non-empty `prompt`, new items that pass the blacklist and whitelist are sent to an OpenAI-compatible chat completions endpoint for relevance scoring. Configure these in `.env`:
 
 | Variable | Description |
 | --- | --- |
@@ -147,7 +148,8 @@ Runtime settings are stored in `settings.json` at the project root (created auto
 
 | Field | Description |
 | --- | --- |
-| `whitelist` | Comma-separated keywords (English or Chinese commas). An item must match at least one keyword (case-insensitive) before the AI filter runs. Leave empty to disable keyword filtering (all items proceed to the AI step, if configured). |
+| `blacklist` | Comma-separated keywords (English or Chinese commas). An item is rejected if its title or content matches any keyword (case-insensitive). Leave empty to disable. |
+| `whitelist` | Comma-separated keywords. An item must match at least one keyword before the AI filter runs. Leave empty to skip whitelist filtering (all non-blacklisted items proceed to the AI step, if configured). |
 | `prompt` | Instructions for the AI relevance filter. Leave empty to skip AI filtering and show all whitelist-passed items. |
 
 Example:
@@ -155,11 +157,12 @@ Example:
 ```json
 {
   "whitelist": "基金,券商,证券,保险",
+  "blacklist": "早间新闻精选,投资避雷针",
   "prompt": "Keep only news directly related to asset management regulation, product launches, or institutional fund flows."
 }
 ```
 
-Changes to `whitelist` or `prompt` apply to newly fetched items only; existing rows in the database are not re-evaluated.
+Changes to `blacklist`, `whitelist`, or `prompt` apply to newly fetched items only; existing rows in the database are not re-evaluated.
 
 ## Background & Service Mode
 
@@ -208,7 +211,7 @@ Add to your MCP client config (e.g. Cursor or Claude Desktop):
 
 ### Available tools
 
-All news query tools return only filter-passed items (`filter_passed = 1` — passed both whitelist and AI filter when configured).
+All news query tools return only filter-passed items (`filter_passed = 1` — passed blacklist, whitelist, and AI filter when configured).
 
 | Tool | Description |
 | --- | --- |
@@ -262,7 +265,8 @@ Query parameters for `GET /api/items`:
 | --- | --- |
 | `cursor` | Pagination cursor from a previous response |
 | `limit` | Page size (default 20, max 50) |
-| `filter_passed` | `1` (default in UI) or `0` — show passed or failed items |
+| `filter_passed` | `1` (default) or `0` — show passed or failed items |
+| `is_read` | `0` or `1` — filter by read state (the UI default **Unread** tab uses `filter_passed=1&is_read=0`) |
 | `since`, `until` | Absolute ISO 8601 time bounds |
 | `unit`, `count` | Relative window (e.g. `unit=hour&count=2` for the last 2 hours) |
 
@@ -270,7 +274,7 @@ Query parameters for `GET /api/items`:
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/api/settings` | Read `whitelist` and `prompt` |
+| `GET` | `/api/settings` | Read `blacklist`, `whitelist`, and `prompt` |
 | `POST` | `/api/settings` | Update settings (partial body accepted) |
 
 ### Real-time — `/sse`
@@ -283,7 +287,7 @@ Connect with `EventSource` to receive `items` events when new articles arrive, p
 2. Each feed is fetched over HTTP with the `NanoFlux/1.0` user agent (15 s timeout) and parsed as RSS/Atom.
 3. Each entry gets a normalized GUID: MD5 hex of the article link (feeds that already provide an MD5 GUID are kept as-is). Per-feed known GUIDs are stored in the `last_guids` column so only entries not seen before are treated as new.
 4. For each new entry whose RSS summary is shorter than ~80 word tokens (counted with `Intl.Segmenter` for Chinese and English — roughly ~200 Chinese characters or ~80 English words), the article page is fetched (desktop browser user agent, 15 s timeout, up to 3 concurrent requests) and parsed with `@extractus/article-extractor` to fill in `content`. Already-known entries skip scraping.
-5. New items are deduplicated by `(feed_id, guid)`, evaluated against the keyword whitelist (title + content), and inserted into SQLite with `filter_passed` and `matched_keywords`.
+5. New items are deduplicated by `(feed_id, guid)`, evaluated through the filter pipeline (blacklist → whitelist → optional AI on title + content), and inserted into SQLite with `filter_passed`, `matched_keywords`, and `pass_reason` when applicable.
 6. Items that pass the filter are broadcast to connected SSE clients; filtered-out items remain in the database but are hidden from the UI and API.
 7. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear.
 8. Daily at 01:00 UTC, items older than 90 days are deleted.
@@ -299,7 +303,7 @@ Connect with `EventSource` to receive `items` events when new articles arrive, p
 ├── services/
 │   ├── feeds/        Feed fetching and adaptive polling intervals
 │   ├── content/      Full-text article extraction
-│   ├── filters/      Whitelist and AI relevance filters
+│   ├── filters/      Blacklist, whitelist, and AI relevance filters
 │   ├── rss.ts        RSS/Atom HTTP fetch and parse
 │   ├── google-news.ts Live Google News search
 │   ├── http-fetcher.ts Shared HTTP client (proxy-aware)
@@ -308,7 +312,7 @@ Connect with `EventSource` to receive `items` events when new articles arrive, p
 ├── utils/            Date, hash, HTML, and text helpers
 ├── shared/           Shared types and utilities
 ├── drizzle/          SQL migrations
-├── settings.json     Runtime whitelist / prompt settings
+├── settings.json     Runtime blacklist / whitelist / prompt settings
 ├── settings.ts       Settings load and persist
 ├── main.ts           Application entry point
 └── build.ts          Frontend build script

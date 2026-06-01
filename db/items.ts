@@ -49,7 +49,10 @@ export function getItems(options?: {
         )
       : undefined;
 
-    const readFilter = options?.isRead ? eq(items.is_read, options.isRead) : undefined;
+    const readFilter =
+      options?.isRead === 0 || options?.isRead === 1
+        ? eq(items.is_read, options.isRead)
+        : undefined;
     const passedFilter =
       options?.filterPassed === 0 || options?.filterPassed === 1
         ? eq(items.filter_passed, options.filterPassed)

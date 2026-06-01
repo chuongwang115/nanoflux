@@ -106,12 +106,14 @@ export async function fetchItemsPage(
   cursor?: string,
   limit = 20,
   filterPassed: 0 | 1 = 1,
+  isRead?: 0 | 1,
 ): Promise<ItemsPage> {
   const params = new URLSearchParams({
     limit: String(limit),
     filter_passed: String(filterPassed),
   });
   if (cursor) params.set("cursor", cursor);
+  if (isRead === 0 || isRead === 1) params.set("is_read", String(isRead));
   const body = await request<ItemsApiResult>(`/api/items?${params}`);
   assertApiOk(body);
   if (!body.data) {

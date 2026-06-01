@@ -13,6 +13,12 @@ function parseFilterPassed(raw: unknown): 0 | 1 | undefined {
   return undefined;
 }
 
+function parseIsRead(raw: unknown): 0 | 1 | undefined {
+  if (raw === 0 || raw === "0") return 0;
+  if (raw === 1 || raw === "1") return 1;
+  return undefined;
+}
+
 function getItemsHandler({ query }: {
   query?: {
     cursor?: string;
@@ -22,6 +28,7 @@ function getItemsHandler({ query }: {
     unit?: string;
     count?: number;
     filter_passed?: number;
+    is_read?: number;
   }
 }) {
 
@@ -38,6 +45,7 @@ function getItemsHandler({ query }: {
     }
 
     const filterPassed = parseFilterPassed(query?.filter_passed);
+    const isRead = parseIsRead(query?.is_read);
 
     const selected = getItems({
       cursor: query?.cursor,
@@ -47,6 +55,7 @@ function getItemsHandler({ query }: {
       unit: unit ? unit.toString() : undefined,
       count: query?.count,
       filterPassed,
+      isRead,
     });
 
     const hasMore = selected.length > adjustedLimit;

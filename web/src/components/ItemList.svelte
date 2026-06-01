@@ -13,8 +13,8 @@
     getMatchedContentPreview,
   } from "../lib/highlight";
   import { formatTime } from "../lib/utils";
-  import MessageCircleCheck from "@lucide/svelte/icons/message-circle-check";
-  import MessageCircleX from "@lucide/svelte/icons/message-circle-x";
+  import Lightbulb from "@lucide/svelte/icons/lightbulb";
+  import LightbulbOff from "@lucide/svelte/icons/lightbulb-off";
   import HighlightedText from "./HighlightedText.svelte";
   import MarkAllReadButton from "./buttons/MarkAllReadButton.svelte";
 
@@ -28,7 +28,7 @@
   /** Cap in-memory list after SSE inserts to avoid DOM bloat. */
   const MAX_LIST_ITEMS = 100;
 
-  type ItemFilter = "passed" | "failed";
+  type ItemFilter = "passed" | "failed" | "unread";
 
   let items = $state<Item[]>([]);
   let cursor = $state<string | null>(null);
@@ -36,12 +36,13 @@
   let loading = $state(false);
   let error = $state("");
   let sentinel = $state<HTMLDivElement | null>(null);
-  let filter = $state<ItemFilter>("passed");
+  let filter = $state<ItemFilter>("unread");
   let loadGeneration = 0;
   /** Bumps every minute so relative timestamps (e.g. "18 min ago") stay current. */
   let now = $state(Date.now());
 
-  const filterPassed = $derived(filter === "passed" ? 1 : 0);
+  const filterPassed = $derived(filter === "failed" ? 0 : 1);
+  const filterIsRead = $derived(filter === "unread" ? (0 as const) : undefined);
 
   function resetList() {
     items = [];
@@ -62,6 +63,7 @@
         cursor ?? undefined,
         PAGE_SIZE,
         filterPassed,
+        filterIsRead,
       );
       if (gen !== loadGeneration) return;
       items = [...items, ...page.data];
@@ -106,12 +108,13 @@
   function mergeIncomingItem(incoming: Item[]) {
     if (!incoming.length) return;
     const seen = new Set(items.map((n) => n.id));
-    const wantPassed = filter === "passed";
-    const fresh = incoming.filter(
-      (n) =>
-        !seen.has(n.id) &&
-        (wantPassed ? n.filter_passed === true : n.filter_passed === false),
-    );
+    const fresh = incoming.filter((n) => {
+      if (seen.has(n.id)) return false;
+      if (filter === "failed") return n.filter_passed === false;
+      if (filter === "unread")
+        return n.filter_passed === true && !n.is_read;
+      return n.filter_passed === true;
+    });
     if (!fresh.length) return;
 
     fresh.sort(compareItem);
@@ -136,13 +139,21 @@
 
   function handleOpenItem(item: Item) {
     if (item.is_read) return;
-    items = items.map((n) =>
-      n.id === item.id ? { ...n, is_read: true } : n,
-    );
-    void markItemRead(item.id).catch(() => {
+    if (filter === "unread") {
+      items = items.filter((n) => n.id !== item.id);
+    } else {
       items = items.map((n) =>
-        n.id === item.id ? { ...n, is_read: false } : n,
+        n.id === item.id ? { ...n, is_read: true } : n,
       );
+    }
+    void markItemRead(item.id).catch(() => {
+      if (filter === "unread") {
+        items = [...items, { ...item, is_read: false }].sort(compareItem);
+      } else {
+        items = items.map((n) =>
+          n.id === item.id ? { ...n, is_read: false } : n,
+        );
+      }
     });
   }
 
@@ -156,9 +167,13 @@
     }, undefined);
     if (!until) return;
     await markAllItemsRead(until);
-    items = items.map((item) =>
-      item.published_at <= until ? { ...item, is_read: true } : item,
-    );
+    if (filter === "unread") {
+      items = items.filter((item) => item.published_at > until);
+    } else {
+      items = items.map((item) =>
+        item.published_at <= until ? { ...item, is_read: true } : item,
+      );
+    }
   }
 
   onMount(() => {
@@ -181,6 +196,16 @@
     role="group"
     aria-label={t("items.filterBy")}
   >
+    <button
+      type="button"
+      class="transition-colors {filter === 'unread'
+        ? 'text-neutral-900 dark:text-neutral-100'
+        : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}"
+      aria-pressed={filter === "unread"}
+      onclick={() => setFilter("unread")}
+    >
+      {t("items.filterUnread")}
+    </button>
     <button
       type="button"
       class="transition-colors {filter === 'passed'
@@ -267,9 +292,9 @@
                     aria-label={filterDisplay.aiReason}
                   >
                     {#if item.filter_passed}
-                      <MessageCircleCheck {...passReasonIconProps} />
+                      <Lightbulb {...passReasonIconProps} />
                     {:else}
-                      <MessageCircleX {...passReasonIconProps} />
+                      <LightbulbOff {...passReasonIconProps} />
                     {/if}
                   </button>
                   <div
