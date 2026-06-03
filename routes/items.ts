@@ -29,6 +29,7 @@ function getItemsHandler({ query }: {
     count?: number;
     filter_passed?: number;
     is_read?: number;
+    passed_filter_id?: string;
   }
 }) {
 
@@ -46,6 +47,7 @@ function getItemsHandler({ query }: {
 
     const filterPassed = parseFilterPassed(query?.filter_passed);
     const isRead = parseIsRead(query?.is_read);
+    const passedFilterId = query?.passed_filter_id?.trim() || undefined;
 
     const selected = getItems({
       cursor: query?.cursor,
@@ -56,6 +58,7 @@ function getItemsHandler({ query }: {
       count: query?.count,
       filterPassed,
       isRead,
+      passedFilterId,
     });
 
     const hasMore = selected.length > adjustedLimit;
@@ -82,10 +85,16 @@ function getItemsHandler({ query }: {
 }
 
 function markItemsReadHandler({ body }: {
-  body: any;
+  body: {
+    until?: string;
+    filter_passed?: number;
+    passed_filter_id?: string;
+  };
 }) {
   try {
-    markItemsRead(body.until);
+    const filterPassed = parseFilterPassed(body.filter_passed);
+    const passedFilterId = body.passed_filter_id?.trim() || undefined;
+    markItemsRead(body.until ?? "", { filterPassed, passedFilterId });
     return { code: 0, message: "ok" };
   } catch (error) {
     const message =

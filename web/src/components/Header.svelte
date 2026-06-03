@@ -1,20 +1,14 @@
 <script lang="ts">
-  import { getContext, onMount } from "svelte";
-  import Settings2 from "@lucide/svelte/icons/settings-2";
+  import { onMount } from "svelte";
   import {
     feedsHref,
+    filtersHref,
     homeHref,
     navClick,
-    navigateToParent,
     navClickParent,
     route,
-    settingsHref,
     shouldHandleNavClick,
   } from "../lib/router";
-  import {
-    SETTINGS_SAVE_KEY,
-    type SettingsSaveHost,
-  } from "../lib/settings-save";
   import FontSizeToggle from "./buttons/FontSizeToggle.svelte";
   import LanguageToggle from "./buttons/LanguageToggle.svelte";
   import ThemeToggle from "./buttons/ThemeToggle.svelte";
@@ -23,21 +17,6 @@
   /** Enter compact below this; exit above the lower value to avoid threshold flicker. */
   const COMPACT_ENTER = 72;
   const COMPACT_EXIT = 8;
-
-  const settingsSaveHost = getContext<SettingsSaveHost>(SETTINGS_SAVE_KEY);
-
-  function navClickSettingsBack() {
-    return async (event: MouseEvent) => {
-      if (!shouldHandleNavClick(event)) return;
-      event.preventDefault();
-      try {
-        await settingsSaveHost.saveBeforeLeave();
-      } catch {
-        return;
-      }
-      navigateToParent();
-    };
-  }
 
   function readCompact(scrollY: number, current: boolean): boolean {
     if (!current && scrollY > COMPACT_ENTER) return true;
@@ -52,10 +31,8 @@
   let compact = $state(initialCompact());
 
   const isFeeds = $derived($route === "/feeds");
-  const isSettings = $derived($route === "/settings");
-  const isSubPage = $derived(isFeeds || isSettings);
-
-  const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true as const };
+  const isFilters = $derived($route === "/filters");
+  const isSubPage = $derived(isFeeds || isFilters);
 
   const rowClass = $derived(
     `transition-[gap] duration-300 ${compact ? "flex min-w-0 items-center justify-between gap-4" : ""}`,
@@ -112,7 +89,7 @@
       {#if isSubPage}
         <a
           href={homeHref()}
-          onclick={isSettings ? navClickSettingsBack() : navClickParent()}
+          onclick={navClickParent()}
           class="{titleClass} hover:opacity-70"
         >NanoFlux</a>
       {:else}
@@ -146,14 +123,14 @@
           </a>
           <p>{t("feeds.title")}</p>
         </div>
-      {:else if isSettings}
+      {:else if isFilters}
         <div class="{subClass} gap-3">
           <a
             href={homeHref()}
-            onclick={navClickSettingsBack()}
+            onclick={navClickParent()}
             class="inline-flex shrink-0 rounded-md p-1 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
-            aria-label={t("settings.back")}
-            title={t("settings.back")}
+            aria-label={t("filters.back")}
+            title={t("filters.back")}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -171,7 +148,7 @@
               <path d="M19 12H5" />
             </svg>
           </a>
-          <p>{t("settings.title")}</p>
+          <p>{t("filters.title")}</p>
         </div>
       {:else}
         <nav class={subClass} aria-label={t("items.latest")}>
@@ -186,13 +163,11 @@
           </a>
           <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
           <a
-            href={settingsHref()}
-            onclick={navClick("/settings")}
-            class="inline-flex shrink-0 rounded-md p-0.5 hover:text-neutral-900 dark:hover:text-neutral-100"
-            aria-label={t("settings.title")}
-            title={t("settings.title")}
+            href={filtersHref()}
+            onclick={navClick("/filters")}
+            class="hover:text-neutral-900 dark:hover:text-neutral-100"
           >
-            <Settings2 {...iconProps} />
+            {t("items.filters")}
           </a>
         </nav>
       {/if}

@@ -3,14 +3,52 @@ import {
   desc,
   eq,
   gte,
+  isNotNull,
+  isNull,
   lt,
   lte,
   or,
+  sql,
 } from "drizzle-orm";
+import { getFilters } from "../filters";
+import {
+  isItemFilterPassed,
+} from "../shared/passed-filters";
 import { db } from "./database";
 import { getFeed } from "./feeds";
 import { feeds, items, DEFAULT_LIMIT, MAX_LIMIT } from "./schema";
 import { newItemId, decodeCursor, parseTimeRange, TimeUnit, toUtcIso } from "./utils";
+
+function buildPassedFilter(filterPassed?: number) {
+  const hasFilters = getFilters().length > 0;
+  if (!hasFilters) {
+    return filterPassed === 0 ? sql`1 = 0` : undefined;
+  }
+
+  if (filterPassed === 0) {
+    return isNull(items.passed_filters);
+  }
+  if (filterPassed === 1) {
+    return isNotNull(items.passed_filters);
+  }
+  return undefined;
+}
+
+function buildPassedFilterIdFilter(filterId?: string) {
+  const id = filterId?.trim();
+  if (!id) return undefined;
+
+  return sql`(
+    ${items.passed_filters} IS NOT NULL
+    AND (
+      ${items.passed_filters} LIKE ${'%"id":"' + id + '"%'}
+      OR ${items.passed_filters} = ${id}
+      OR ${items.passed_filters} LIKE ${id + ",%"}
+      OR ${items.passed_filters} LIKE ${"%," + id + ",%"}
+      OR ${items.passed_filters} LIKE ${"%," + id}
+    )
+  )`;
+}
 
 export function getItems(options?: {
   since?: string;
@@ -20,6 +58,7 @@ export function getItems(options?: {
   keyword?: string;
   isRead?: number;
   filterPassed?: number;
+  passedFilterId?: string;
   cursor?: string;
   limit?: number;
 }): any[] {
@@ -53,10 +92,9 @@ export function getItems(options?: {
       options?.isRead === 0 || options?.isRead === 1
         ? eq(items.is_read, options.isRead)
         : undefined;
-    const passedFilter =
-      options?.filterPassed === 0 || options?.filterPassed === 1
-        ? eq(items.filter_passed, options.filterPassed)
-        : eq(items.filter_passed, 1);
+    const passedFilter = buildPassedFilter(options?.filterPassed);
+    const passedFilterIdFilter = buildPassedFilterIdFilter(options?.passedFilterId);
+    const hasFilters = getFilters().length > 0;
 
     const selected = db
       .select({
@@ -68,21 +106,20 @@ export function getItems(options?: {
         content: items.content,
         published_at: items.published_at,
         is_read: items.is_read,
-        filter_passed: items.filter_passed,
-        matched_keywords: items.matched_keywords,
-        pass_reason: items.pass_reason,
+        passed_filters: items.passed_filters,
         created_at: items.created_at,
         feed_title: feeds.title,
       })
       .from(items)
       .innerJoin(feeds, eq(items.feed_id, feeds.id))
-      .where(and(timeFilter, cursorFilter, readFilter, passedFilter))
+      .where(and(timeFilter, cursorFilter, readFilter, passedFilter, passedFilterIdFilter))
       .orderBy(desc(items.published_at), desc(items.id))
       .limit(adjustedLimit + 1)
       .all();
 
     return selected.map((row) => ({
       ...row,
+      filter_passed: isItemFilterPassed(row.passed_filters, hasFilters),
       created_at: toUtcIso(row.created_at),
     }));
   
@@ -100,9 +137,7 @@ export function addItems(
     link: string;
     content: string | null;
     published_at: string;
-    filter_passed: number;
-    matched_keywords: string | null;
-    pass_reason: string | null;
+    passed_filters: string | null;
   }[],
 ): any[] {
 
@@ -115,13 +150,14 @@ export function addItems(
     }
 
     const feed_title = feed.title;
+    const hasFilters = getFilters().length > 0;
 
     let insertedItems = [];
 
     for (const newItem of newItems) {
 
       const id = newItemId();
-      const { filter_passed, matched_keywords, pass_reason } = newItem;
+      const { passed_filters } = newItem;
 
       const inserted = db.insert(items)
         .values({
@@ -133,9 +169,7 @@ export function addItems(
           content: newItem.content,
           published_at: newItem.published_at,
           is_read: 0,
-          filter_passed,
-          matched_keywords,
-          pass_reason,
+          passed_filters,
         })
         .onConflictDoNothing({ target: [items.feed_id, items.guid] })
         .returning()
@@ -145,6 +179,7 @@ export function addItems(
       if (inserted) {
         insertedItems.push({
           ...inserted,
+          filter_passed: isItemFilterPassed(inserted.passed_filters, hasFilters),
           created_at: toUtcIso(inserted.created_at),
           feed_title,
         });
@@ -159,13 +194,29 @@ export function addItems(
   }
 }
 
-export function markItemsRead(until: string): void {
+export function markItemsRead(
+  until: string,
+  options?: {
+    filterPassed?: number;
+    passedFilterId?: string;
+  },
+): void {
   
   try {
 
+    const passedFilter = buildPassedFilter(options?.filterPassed);
+    const passedFilterIdFilter = buildPassedFilterIdFilter(options?.passedFilterId);
+
     db.update(items)
     .set({ is_read: 1 })
-    .where(and(lte(items.published_at, until), eq(items.is_read, 0)))
+    .where(
+      and(
+        lte(items.published_at, until),
+        eq(items.is_read, 0),
+        passedFilter,
+        passedFilterIdFilter,
+      ),
+    )
     .run();
 
   } catch (error) {

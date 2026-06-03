@@ -8,17 +8,16 @@ import {
 import { buildWebManifest } from "./shared/manifest";
 import type { Locale } from "./shared/locale";
 import { closeDatabase } from "./db/database";
-import { repairItemFilterMetadata } from "./db/repair-metadata";
 import { routes as itemsRoutes } from "./routes/items";
 import { routes as feedsRoutes } from "./routes/feeds";
-import { routes as settingsRoutes } from "./routes/settings";
+import { routes as filtersRoutes } from "./routes/filters";
 import { routes as mcpRoutes } from "./mcp/route";
 import { routes as sseRoutes } from "./sse/route";
 import {
   startScheduler,
   stopScheduler,
 } from "./services/scheduler";
-import { loadSettings } from "./settings";
+import { loadFilters } from "./filters";
 
 const PUBLIC_DIR = join(import.meta.dir, "public");
 const indexHtml = () => Bun.file(join(PUBLIC_DIR, "index.html"));
@@ -30,10 +29,9 @@ function manifestLocale(query: Record<string, string | undefined>): Locale {
   return "zh";
 }
 
-void loadSettings().then(() => {
-  repairItemFilterMetadata();
+void loadFilters().then(() => {
+  void startScheduler();
 });
-void startScheduler();
 
 const host = resolveHost();
 const restrictLocalhost = isLocalhostRestricted(host);
@@ -41,7 +39,7 @@ const restrictLocalhost = isLocalhostRestricted(host);
 const backendRoutes = new Elysia()
   .use(itemsRoutes)
   .use(feedsRoutes)
-  .use(settingsRoutes)
+  .use(filtersRoutes)
   .use(mcpRoutes)
   .use(sseRoutes);
 
@@ -52,7 +50,7 @@ const protectedBackendRoutes = restrictLocalhost
 const publicRoutes = new Elysia()
   .get("/", indexHtml)
   .get("/feeds", indexHtml)
-  .get("/settings", indexHtml)
+  .get("/filters", indexHtml)
   .get("/manifest.webmanifest", ({ query, set }) => {
     set.headers["content-type"] = "application/manifest+json; charset=utf-8";
     return JSON.stringify(buildWebManifest(manifestLocale(query)));

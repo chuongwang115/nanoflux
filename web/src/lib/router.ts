@@ -1,8 +1,7 @@
 import { get, writable } from "svelte/store";
-import { saveSettingsBeforeLeave } from "./settings-save";
 
 /** Logical routes (not URL pathnames). */
-export type AppRoute = "/" | "/feeds" | "/settings";
+export type AppRoute = "/" | "/feeds" | "/filters";
 
 const scrollByRoute = new Map<string, number>();
 
@@ -10,23 +9,26 @@ export const route = writable<AppRoute>("/");
 
 function pathnameToRoute(pathname: string): AppRoute {
   if (pathname.endsWith("/feeds")) return "/feeds";
-  if (pathname.endsWith("/settings")) return "/settings";
+  if (pathname.endsWith("/filters")) return "/filters";
   return "/";
 }
 
 function routeToRelativeHref(next: AppRoute): string {
   if (next === "/feeds") return "feeds";
-  if (next === "/settings") return "settings";
-  // /app/feeds has no trailing slash: ".." resolves to site root (/), not /app/.
+  if (next === "/filters") return "filters";
   const path = window.location.pathname;
-  if (path.endsWith("/feeds/") || path.endsWith("/settings/")) return "..";
+  if (path.endsWith("/feeds/") || path.endsWith("/filters/")) {
+    return "..";
+  }
   return "./";
 }
 
 /** Relative link to the app home (sibling of the feeds segment). */
 export function homeHref(): string {
   const path = window.location.pathname;
-  if (path.endsWith("/feeds/") || path.endsWith("/settings/")) return "..";
+  if (path.endsWith("/feeds/") || path.endsWith("/filters/")) {
+    return "..";
+  }
   return "./";
 }
 
@@ -35,9 +37,9 @@ export function feedsHref(): string {
   return "feeds";
 }
 
-/** Relative link to the settings page. */
-export function settingsHref(): string {
-  return "settings";
+/** Relative link to the filters page. */
+export function filtersHref(): string {
+  return "filters";
 }
 
 export function navigateToParent() {
@@ -76,17 +78,8 @@ export function initRouter(): void {
   syncRouteFromLocation();
 
   window.addEventListener("popstate", () => {
-    void (async () => {
-      if (get(route) === "/settings") {
-        try {
-          await saveSettingsBeforeLeave();
-        } catch {
-          return;
-        }
-      }
-      syncRouteFromLocation();
-      restoreScroll(get(route));
-    })();
+    syncRouteFromLocation();
+    restoreScroll(get(route));
   });
 }
 

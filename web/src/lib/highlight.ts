@@ -1,15 +1,19 @@
-import { isStoredKeywordList } from "../../../utils/text";
+import {
+  parsePassedFilters,
+  type PassedFilterEntry,
+} from "../../../shared/passed-filters";
 import { normalizeCommas } from "./utils";
 
 export type TextSegment = { text: string; highlight: boolean };
 
 export type ItemFilterDisplay = {
   keywords: string[];
-  keywordsText: string | null;
+  filtersText: string | null;
   aiReason: string | null;
+  passedFilters: PassedFilterEntry[];
 };
 
-/** Keywords stored in `matched_keywords` (comma-separated). */
+/** Keywords stored in filter entry metadata (comma-separated). */
 export function parseMatchedKeywords(matchedKeywords: string | null): string[] {
   if (!matchedKeywords) return [];
   return normalizeCommas(matchedKeywords)
@@ -18,23 +22,47 @@ export function parseMatchedKeywords(matchedKeywords: string | null): string[] {
     .filter(Boolean);
 }
 
-/** Normalize `matched_keywords` / `pass_reason` for list rendering (incl. legacy rows). */
-export function getItemFilterDisplay(item: {
-  matched_keywords: string | null;
-  pass_reason: string | null;
-}): ItemFilterDisplay {
-  const keywordsText = isStoredKeywordList(item.matched_keywords)
-    ? item.matched_keywords
-    : null;
-  const aiReason =
-    item.pass_reason ??
-    (item.matched_keywords && !isStoredKeywordList(item.matched_keywords)
-      ? item.matched_keywords
-      : null);
+function mergeKeywordLists(entries: PassedFilterEntry[]): string[] {
+  return [
+    ...new Set(entries.flatMap((entry) => parseMatchedKeywords(entry.keywords))),
+  ];
+}
+
+function mergeFilterNames(
+  entries: PassedFilterEntry[],
+  filterNames?: ReadonlyMap<string, string>,
+): string | null {
+  const names = [
+    ...new Set(
+      entries
+        .map((entry) => filterNames?.get(entry.id) ?? entry.id)
+        .filter(Boolean),
+    ),
+  ];
+  return names.length > 0 ? names.join(", ") : null;
+}
+
+function mergeAiReasons(entries: PassedFilterEntry[]): string | null {
+  const reasons = entries
+    .map((entry) => entry.reason?.trim())
+    .filter((reason): reason is string => Boolean(reason));
+  if (reasons.length === 0) return null;
+  return [...new Set(reasons)].join("\n");
+}
+
+/** Normalize filter metadata for list rendering. */
+export function getItemFilterDisplay(
+  item: {
+    passed_filters?: string | null;
+  },
+  filterNames?: ReadonlyMap<string, string>,
+): ItemFilterDisplay {
+  const passedFilters = parsePassedFilters(item.passed_filters ?? null);
   return {
-    keywords: parseMatchedKeywords(keywordsText),
-    keywordsText,
-    aiReason,
+    keywords: mergeKeywordLists(passedFilters),
+    filtersText: mergeFilterNames(passedFilters, filterNames),
+    aiReason: mergeAiReasons(passedFilters),
+    passedFilters,
   };
 }
 

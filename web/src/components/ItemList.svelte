@@ -1,34 +1,39 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { t, tf } from "../lib/locale.svelte";
+  import { t } from "../lib/locale.svelte";
   import { subscribeItemStream } from "../lib/item-stream";
   import {
+    fetchFilters,
     fetchItemsPage,
     markAllItemsRead,
     markItemRead,
+    type Filter,
     type Item,
   } from "../lib/api";
   import {
     getItemFilterDisplay,
     getMatchedContentPreview,
+    parseMatchedKeywords,
   } from "../lib/highlight";
+  import { parsePassedFilters } from "../../../shared/passed-filters";
   import { formatTime } from "../lib/utils";
-  import Lightbulb from "@lucide/svelte/icons/lightbulb";
-  import LightbulbOff from "@lucide/svelte/icons/lightbulb-off";
+  import {
+    persistSelectedFilterId,
+    readStoredSelectedFilterId,
+    resolveSelectedFilterId,
+    UNMATCHED_FILTER_ID,
+  } from "../lib/selected-filter";
   import HighlightedText from "./HighlightedText.svelte";
   import MarkAllReadButton from "./buttons/MarkAllReadButton.svelte";
 
-  const passReasonIconProps = {
-    size: 14,
-    strokeWidth: 1.5,
-    "aria-hidden": true as const,
-  };
+  const filterTooltipClass =
+    "pointer-events-none absolute bottom-full left-0 z-20 mb-1 w-max max-w-xs rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-xs leading-snug whitespace-normal text-neutral-600 opacity-0 shadow-sm transition-opacity group-hover/filter:opacity-100 group-focus-within/filter:opacity-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 [@media(hover:none)]:opacity-100";
 
   const PAGE_SIZE = 20;
   /** Cap in-memory list after SSE inserts to avoid DOM bloat. */
   const MAX_LIST_ITEMS = 100;
 
-  type ItemFilter = "passed" | "failed" | "unread";
+  type ItemFilter = "unread" | "all";
 
   let items = $state<Item[]>([]);
   let cursor = $state<string | null>(null);
@@ -37,12 +42,45 @@
   let error = $state("");
   let sentinel = $state<HTMLDivElement | null>(null);
   let filter = $state<ItemFilter>("unread");
+  let selectedFilterId = $state<string | null>(null);
+  let filters = $state<Filter[]>([]);
+  let filterNameById = $state(new Map<string, string>());
+  /** Block list/SSE until filters and stored selection are restored (avoids unfiltered fetch on refresh). */
+  let filtersInitialized = $state(false);
+  /** Gate SSE merges until filter selection is restored from storage. */
+  let streamReady = $state(false);
   let loadGeneration = 0;
   /** Bumps every minute so relative timestamps (e.g. "18 min ago") stay current. */
   let now = $state(Date.now());
 
-  const filterPassed = $derived(filter === "failed" ? 0 : 1);
   const filterIsRead = $derived(filter === "unread" ? (0 as const) : undefined);
+
+  function filterTabClass(active: boolean): string {
+    return active
+      ? "text-neutral-900 underline underline-offset-4 decoration-neutral-900 dark:text-neutral-100 dark:decoration-neutral-100"
+      : "text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300";
+  }
+
+  function itemMatchesSelectedFilter(item: Item): boolean {
+    if (!selectedFilterId) return true;
+    if (selectedFilterId === UNMATCHED_FILTER_ID) {
+      return !item.passed_filters?.trim();
+    }
+    return parsePassedFilters(item.passed_filters ?? null).some(
+      (entry) => entry.id === selectedFilterId,
+    );
+  }
+
+  function fetchFilterPassed(): 0 | undefined {
+    return selectedFilterId === UNMATCHED_FILTER_ID ? 0 : undefined;
+  }
+
+  function fetchPassedFilterId(): string | undefined {
+    if (!selectedFilterId || selectedFilterId === UNMATCHED_FILTER_ID) {
+      return undefined;
+    }
+    return selectedFilterId;
+  }
 
   function resetList() {
     items = [];
@@ -53,7 +91,7 @@
   }
 
   async function loadMore() {
-    if (loading || !hasMore) return;
+    if (!filtersInitialized || loading || !hasMore) return;
     const gen = ++loadGeneration;
     loading = true;
     error = "";
@@ -62,8 +100,9 @@
       const page = await fetchItemsPage(
         cursor ?? undefined,
         PAGE_SIZE,
-        filterPassed,
+        fetchFilterPassed(),
         filterIsRead,
+        fetchPassedFilterId(),
       );
       if (gen !== loadGeneration) return;
       items = [...items, ...page.data];
@@ -77,9 +116,17 @@
     }
   }
 
-  async function setFilter(next: ItemFilter) {
+  async function setReadFilter(next: ItemFilter) {
     if (next === filter) return;
     filter = next;
+    loadGeneration++;
+    resetList();
+    await loadMore();
+  }
+
+  async function toggleFilterSelect(id: string) {
+    selectedFilterId = selectedFilterId === id ? null : id;
+    persistSelectedFilterId(selectedFilterId);
     loadGeneration++;
     resetList();
     await loadMore();
@@ -99,6 +146,12 @@
     return () => observer.disconnect();
   });
 
+  function itemMatchesListView(item: Item): boolean {
+    if (!itemMatchesSelectedFilter(item)) return false;
+    if (filter === "unread" && item.is_read) return false;
+    return true;
+  }
+
   function compareItem(a: Item, b: Item): number {
     const cmp = b.published_at.localeCompare(a.published_at);
     if (cmp !== 0) return cmp;
@@ -106,15 +159,9 @@
   }
 
   function mergeIncomingItem(incoming: Item[]) {
-    if (!incoming.length) return;
+    if (!streamReady || !incoming.length) return;
     const seen = new Set(items.map((n) => n.id));
-    const fresh = incoming.filter((n) => {
-      if (seen.has(n.id)) return false;
-      if (filter === "failed") return n.filter_passed === false;
-      if (filter === "unread")
-        return n.filter_passed === true && !n.is_read;
-      return n.filter_passed === true;
-    });
+    const fresh = incoming.filter((n) => !seen.has(n.id) && itemMatchesListView(n));
     if (!fresh.length) return;
 
     fresh.sort(compareItem);
@@ -166,7 +213,10 @@
       return max;
     }, undefined);
     if (!until) return;
-    await markAllItemsRead(until);
+    await markAllItemsRead(until, {
+      filterPassed: fetchFilterPassed(),
+      passedFilterId: fetchPassedFilterId(),
+    });
     if (filter === "unread") {
       items = items.filter((item) => item.published_at > until);
     } else {
@@ -177,55 +227,102 @@
   }
 
   onMount(() => {
-    void loadMore();
-    const unsubscribe = subscribeItemStream(mergeIncomingItem);
+    let unsubscribe: (() => void) | undefined;
+
+    void (async () => {
+      try {
+        const loaded = await fetchFilters();
+        filters = loaded;
+        filterNameById = new Map(loaded.map((f) => [f.id, f.name]));
+        selectedFilterId = resolveSelectedFilterId(
+          readStoredSelectedFilterId(),
+          loaded,
+        );
+        persistSelectedFilterId(selectedFilterId);
+      } catch {
+        selectedFilterId = null;
+        persistSelectedFilterId(null);
+      }
+      loadGeneration++;
+      resetList();
+      filtersInitialized = true;
+      streamReady = true;
+      unsubscribe = subscribeItemStream(mergeIncomingItem);
+      await loadMore();
+    })();
+
     const timer = setInterval(() => {
       now = Date.now();
     }, 60_000);
     return () => {
-      unsubscribe();
+      unsubscribe?.();
+      streamReady = false;
       clearInterval(timer);
     };
   });
 </script>
 
-<div class="mb-6 flex items-center justify-end gap-4">
-  <MarkAllReadButton onMarkAllRead={() => markAllRead()} />
-  <div
-    class="flex gap-3 text-xs"
-    role="group"
-    aria-label={t("items.filterBy")}
-  >
-    <button
-      type="button"
-      class="transition-colors {filter === 'unread'
-        ? 'text-neutral-900 dark:text-neutral-100'
-        : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}"
-      aria-pressed={filter === "unread"}
-      onclick={() => setFilter("unread")}
+<div
+  class="mb-6 flex items-center gap-4 {filters.length > 0
+    ? 'justify-between'
+    : 'justify-end'}"
+>
+  {#if filters.length > 0}
+    <div
+      class="flex min-w-0 flex-wrap items-center gap-3 text-xs"
+      role="group"
+      aria-label={t("items.activeFilters")}
     >
-      {t("items.filterUnread")}
-    </button>
-    <button
-      type="button"
-      class="transition-colors {filter === 'passed'
-        ? 'text-neutral-900 dark:text-neutral-100'
-        : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}"
-      aria-pressed={filter === "passed"}
-      onclick={() => setFilter("passed")}
+      {#each filters as f (f.id)}
+        <button
+          type="button"
+          class="transition-colors {filterTabClass(selectedFilterId === f.id)}"
+          aria-pressed={selectedFilterId === f.id}
+          onclick={() => toggleFilterSelect(f.id)}
+        >
+          {f.name}
+        </button>
+      {/each}
+      <button
+        type="button"
+        class="transition-colors {filterTabClass(
+          selectedFilterId === UNMATCHED_FILTER_ID,
+        )}"
+        aria-pressed={selectedFilterId === UNMATCHED_FILTER_ID}
+        onclick={() => toggleFilterSelect(UNMATCHED_FILTER_ID)}
+      >
+        {t("items.filterUnmatched")}
+      </button>
+    </div>
+  {/if}
+  <div class="flex shrink-0 items-center gap-4">
+    <MarkAllReadButton onMarkAllRead={() => markAllRead()} />
+    <div
+      class="flex gap-3 text-xs"
+      role="group"
+      aria-label={t("items.filterBy")}
     >
-      {t("items.filterPassed")}
-    </button>
-    <button
-      type="button"
-      class="transition-colors {filter === 'failed'
-        ? 'text-neutral-900 dark:text-neutral-100'
-        : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}"
-      aria-pressed={filter === "failed"}
-      onclick={() => setFilter("failed")}
-    >
-      {t("items.filterFailed")}
-    </button>
+      <button
+        type="button"
+        class="transition-colors {filter === 'unread'
+          ? 'text-neutral-900 dark:text-neutral-100'
+          : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}"
+        aria-pressed={filter === "unread"}
+        onclick={() => setReadFilter("unread")}
+      >
+        {t("items.filterUnread")}
+      </button>
+      <button
+        type="button"
+        class="transition-colors {filter === 'all'
+          ? 'text-neutral-900 dark:text-neutral-100'
+          : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}"
+        aria-pressed={filter === "all"}
+        onclick={() => setReadFilter("all")}
+      >
+        {t("items.filterAll")}
+      </button>
+    </div>
   </div>
 </div>
 
@@ -236,7 +333,7 @@
 {:else}
   <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
     {#each items as item (item.id)}
-      {@const filterDisplay = getItemFilterDisplay(item)}
+      {@const filterDisplay = getItemFilterDisplay(item, filterNameById)}
       {@const contentPreview = getMatchedContentPreview(
         item.content,
         filterDisplay.keywords,
@@ -275,40 +372,53 @@
               />
             </p>
           {/if}
-          {#if filterDisplay.keywordsText}
+          {#if filterDisplay.passedFilters.length > 0}
             <div
-              class="mt-1.5 flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500"
+              class="mt-1.5 text-xs text-neutral-400 dark:text-neutral-500"
             >
-              <span>
-                {tf("items.matchedKeywords", {
-                  keywords: filterDisplay.keywordsText,
-                })}
-              </span>
-              {#if filterDisplay.aiReason}
-                <div class="group/preason relative shrink-0">
-                  <button
-                    type="button"
-                    class="inline-flex cursor-help items-center justify-center rounded-sm p-0.5 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
-                    aria-label={filterDisplay.aiReason}
+              {#each filterDisplay.passedFilters as entry, index (entry.id)}
+                {@const name = filterNameById.get(entry.id) ?? entry.id}
+                {@const keywords = parseMatchedKeywords(entry.keywords)}
+                {@const reason = entry.reason?.trim() || null}
+                {#if index > 0}<span>, </span>{/if}
+                {#if keywords.length > 0 || reason}
+                  <span
+                    class="group/filter relative inline cursor-help underline decoration-dotted decoration-neutral-300 underline-offset-2 dark:decoration-neutral-600"
+                    tabindex="0"
                   >
-                    {#if item.filter_passed}
-                      <Lightbulb {...passReasonIconProps} />
-                    {:else}
-                      <LightbulbOff {...passReasonIconProps} />
-                    {/if}
-                  </button>
-                  <div
-                    role="tooltip"
-                    class="pointer-events-none absolute bottom-full left-0 z-20 mb-1 w-max max-w-xs rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-xs leading-snug whitespace-normal text-neutral-600 opacity-0 shadow-sm transition-opacity group-hover/preason:opacity-100 group-focus-within/preason:opacity-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 [@media(hover:none)]:opacity-100"
-                  >
-                    {filterDisplay.aiReason}
-                  </div>
-                </div>
-              {/if}
+                    {name}
+                    <span role="tooltip" class={filterTooltipClass}>
+                      {#if keywords.length > 0}
+                        <span
+                          class="block font-medium text-neutral-700 dark:text-neutral-200"
+                        >
+                          {t("items.matchedKeywords")}
+                        </span>
+                        <span>{keywords.join(", ")}</span>
+                      {/if}
+                      {#if reason}
+                        <span
+                          class="block font-medium text-neutral-700 dark:text-neutral-200 {keywords.length >
+                          0
+                            ? 'mt-1'
+                            : ''}"
+                        >
+                          {t("items.passReason")}
+                        </span>
+                        <span>{reason}</span>
+                      {/if}
+                    </span>
+                  </span>
+                {:else}
+                  <span>{name}</span>
+                {/if}
+              {/each}
             </div>
           {:else if filterDisplay.aiReason}
-            <p class="mt-1.5 text-xs text-neutral-400 dark:text-neutral-500">
-              {tf("items.passReason", { reason: filterDisplay.aiReason })}
+            <p
+              class="mt-1.5 text-xs text-neutral-400 dark:text-neutral-500"
+            >
+              {filterDisplay.aiReason}
             </p>
           {/if}
         </article>

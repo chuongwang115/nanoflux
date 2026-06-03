@@ -1,5 +1,3 @@
-import { getSettings } from "../../settings";
-
 export function parseKeywordList(raw: string): string[] {
   return raw
     .replaceAll("，", ",")
@@ -15,11 +13,12 @@ export function parseWhitelistKeywords(whitelist: string): string[] {
 export function applyWhitelistFilter(
   title: string,
   content: string | null,
-): { filter_passed: number; matched_keywords: string | null; pass_reason: string | null } {
-  const keywords = parseWhitelistKeywords(getSettings().whitelist);
+  whitelist: string,
+): { passed: boolean; keywords: string | null; reason: string | null } {
+  const keywords = parseWhitelistKeywords(whitelist);
 
   if (keywords.length === 0) {
-    return { filter_passed: 1, matched_keywords: null, pass_reason: null };
+    return { passed: true, keywords: null, reason: null };
   }
 
   const haystack = `${title}\n${content ?? ""}`.toLowerCase();
@@ -28,8 +27,8 @@ export function applyWhitelistFilter(
   );
 
   if (matched.length === 0) {
-    return { filter_passed: 0, matched_keywords: null, pass_reason: null };
+    return { passed: false, keywords: null, reason: null };
   }
 
-  return { filter_passed: 1, matched_keywords: matched.join(","), pass_reason: null };
+  return { passed: true, keywords: matched.join(","), reason: null };
 }

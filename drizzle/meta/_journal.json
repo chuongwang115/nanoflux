@@ -64,6 +64,20 @@
       "when": 1780229834560,
       "tag": "0008_stale_goliath",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1780230000000,
+      "tag": "0009_add_passed_filters",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1780231000000,
+      "tag": "0010_drop_legacy_filter_columns",
+      "breakpoints": true
     }
   ]
 }

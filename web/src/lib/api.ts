@@ -20,8 +20,7 @@ export type Item = {
   published_at: string;
   is_read: boolean;
   filter_passed: boolean | null;
-  matched_keywords: string | null;
-  pass_reason: string | null;
+  passed_filters: string | null;
   feed_title: string;
 };
 
@@ -105,15 +104,19 @@ async function request<T>(
 export async function fetchItemsPage(
   cursor?: string,
   limit = 20,
-  filterPassed: 0 | 1 = 1,
+  filterPassed?: 0 | 1,
   isRead?: 0 | 1,
+  passedFilterId?: string,
 ): Promise<ItemsPage> {
   const params = new URLSearchParams({
     limit: String(limit),
-    filter_passed: String(filterPassed),
   });
+  if (filterPassed === 0 || filterPassed === 1) {
+    params.set("filter_passed", String(filterPassed));
+  }
   if (cursor) params.set("cursor", cursor);
   if (isRead === 0 || isRead === 1) params.set("is_read", String(isRead));
+  if (passedFilterId) params.set("passed_filter_id", passedFilterId);
   const body = await request<ItemsApiResult>(`/api/items?${params}`);
   assertApiOk(body);
   if (!body.data) {
@@ -187,13 +190,30 @@ export function deleteFeed(id: string) {
   });
 }
 
-export async function markAllItemsRead(until: string) {
+export async function markAllItemsRead(
+  until: string,
+  options?: {
+    filterPassed?: 0 | 1;
+    passedFilterId?: string;
+  },
+) {
   if (!until) {
     throw new Error("Missing until timestamp");
   }
+  const payload: {
+    until: string;
+    filter_passed?: 0 | 1;
+    passed_filter_id?: string;
+  } = { until };
+  if (options?.filterPassed === 0 || options?.filterPassed === 1) {
+    payload.filter_passed = options.filterPassed;
+  }
+  if (options?.passedFilterId) {
+    payload.passed_filter_id = options.passedFilterId;
+  }
   const body = await request<ApiResult>("/api/items/read-all", {
     method: "POST",
-    body: JSON.stringify({ until }),
+    body: JSON.stringify(payload),
   });
   assertApiOk(body);
 }
@@ -205,38 +225,82 @@ export async function markItemRead(id: string) {
   assertApiOk(body);
 }
 
-export type Settings = {
+export type Filter = {
+  id: string;
+  name: string;
   whitelist: string;
   blacklist: string;
   prompt: string;
+  created_at: string;
+  updated_at: string;
 };
 
-export type SettingsUpdate = Pick<Settings, "whitelist" | "blacklist"> &
-  Partial<Pick<Settings, "prompt">>;
-
-type SettingsApiResult = {
+type FiltersApiResult = {
   code: number;
   message: string;
-  data?: Settings;
+  data?: {
+    filters: Filter[];
+  };
 };
 
-export async function fetchSettings(): Promise<Settings> {
-  const body = await request<SettingsApiResult>("/api/settings");
+type FilterApiResult = {
+  code: number;
+  message: string;
+  data?: Filter;
+};
+
+export async function fetchFilters(): Promise<Filter[]> {
+  const body = await request<FiltersApiResult>("/api/filters");
   assertApiOk(body);
   if (!body.data) {
-    throw new Error(body.message || "Failed to load settings");
+    throw new Error(body.message || "Failed to load filters");
   }
-  return body.data;
+  return body.data.filters;
 }
 
-export async function saveSettings(payload: SettingsUpdate): Promise<Settings> {
-  const body = await request<SettingsApiResult>("/api/settings", {
+export function createFilter(payload: {
+  name: string;
+  whitelist: string;
+  blacklist: string;
+  prompt: string;
+}) {
+  return request<FilterApiResult>("/api/filters/create", {
     method: "POST",
     body: JSON.stringify(payload),
+  }).then((body) => {
+    assertApiOk(body);
+    if (!body.data) {
+      throw new Error(body.message || "Failed to create filter");
+    }
+    return body.data;
   });
-  assertApiOk(body);
-  if (!body.data) {
-    throw new Error(body.message || "Failed to save settings");
-  }
-  return body.data;
+}
+
+export function updateFilter(
+  id: string,
+  payload: {
+    name: string;
+    whitelist: string;
+    blacklist: string;
+    prompt: string;
+  },
+) {
+  return request<FilterApiResult>(`/api/filters/${id}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }).then((body) => {
+    assertApiOk(body);
+    if (!body.data) {
+      throw new Error(body.message || "Failed to update filter");
+    }
+    return body.data;
+  });
+}
+
+export function deleteFilter(id: string) {
+  return request<ApiResult>(`/api/filters/${id}/delete`, {
+    method: "POST",
+  }).then((body) => {
+    assertApiOk(body);
+  });
 }

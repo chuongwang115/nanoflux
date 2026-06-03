@@ -41,5 +41,5 @@ data.sqlite-wal
 # cursor
 .cursor
 
-# settings
-settings.json
+# filters.json
+filters.json

@@ -47,9 +47,7 @@ export const items = sqliteTable(
     content: text("content"),
     published_at: text("published_at").notNull(),
     is_read: integer("is_read").notNull().default(0),
-    filter_passed: integer("filter_passed"),
-    matched_keywords: text("matched_keywords"),
-    pass_reason: text("pass_reason"),
+    passed_filters: text("passed_filters"),
     created_at: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),

@@ -1,4 +1,3 @@
-import { getSettings } from "../../settings";
 import { httpPost } from "../http-fetcher";
 
 const AI_TIMEOUT_MS = 30_000;
@@ -11,9 +10,9 @@ type AiConfig = {
 };
 
 type AiFilterResult = {
-  filter_passed: number;
-  matched_keywords: string | null;
-  pass_reason: string | null;
+  passed: boolean;
+  keywords: string | null;
+  reason: string | null;
 };
 
 function aiConfig(): AiConfig | null {
@@ -58,9 +57,9 @@ function parseAiVerdict(
 
 function withoutAi(whitelistReason: string | null): AiFilterResult {
   return {
-    filter_passed: 1,
-    matched_keywords: whitelistReason,
-    pass_reason: null,
+    passed: true,
+    keywords: whitelistReason,
+    reason: null,
   };
 }
 
@@ -68,9 +67,10 @@ export async function applyAiFilter(
   title: string,
   content: string | null,
   whitelistReason: string | null,
+  prompt: string,
 ): Promise<AiFilterResult> {
-  const prompt = getSettings().prompt.trim();
-  if (!prompt) {
+  const trimmedPrompt = prompt.trim();
+  if (!trimmedPrompt) {
     return withoutAi(whitelistReason);
   }
 
@@ -85,7 +85,7 @@ export async function applyAiFilter(
   const bodyContent = (content ?? "").slice(0, MAX_CONTENT_CHARS);
   const userMessage = [
     "Criteria:",
-    prompt,
+    trimmedPrompt,
     "",
     `Title: ${title}`,
     "",
@@ -131,9 +131,9 @@ export async function applyAiFilter(
     }
 
     return {
-      filter_passed: verdict.pass ? 1 : 0,
-      matched_keywords: whitelistReason,
-      pass_reason: verdict.reason,
+      passed: verdict.pass,
+      keywords: whitelistReason,
+      reason: verdict.reason,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

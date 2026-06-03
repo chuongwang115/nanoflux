@@ -1,14 +1,14 @@
-import { getSettings } from "../../settings";
 import { parseKeywordList } from "./whitelist";
 
 export function applyBlacklistFilter(
   title: string,
   content: string | null,
-): { filter_passed: number; matched_keywords: string | null; pass_reason: string | null } {
-  const keywords = parseKeywordList(getSettings().blacklist);
+  blacklist: string,
+): { passed: boolean; keywords: string | null; reason: string | null } {
+  const keywords = parseKeywordList(blacklist);
 
   if (keywords.length === 0) {
-    return { filter_passed: 1, matched_keywords: null, pass_reason: null };
+    return { passed: true, keywords: null, reason: null };
   }
 
   const haystack = `${title}\n${content ?? ""}`.toLowerCase();
@@ -17,12 +17,12 @@ export function applyBlacklistFilter(
   );
 
   if (!blocked) {
-    return { filter_passed: 1, matched_keywords: null, pass_reason: null };
+    return { passed: true, keywords: null, reason: null };
   }
 
   return {
-    filter_passed: 0,
-    matched_keywords: null,
-    pass_reason: null,
+    passed: false,
+    keywords: null,
+    reason: null,
   };
 }

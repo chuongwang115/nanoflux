@@ -1,26 +1,80 @@
+import { getFilters, type Filter } from "../../filters";
+import {
+  serializePassedFilters,
+  type PassedFilterEntry,
+} from "../../shared/passed-filters";
 import { applyAiFilter } from "./ai";
 import { applyBlacklistFilter } from "./blacklist";
 import { applyWhitelistFilter } from "./whitelist";
 
-export type ItemFilterResult = {
-  filter_passed: number;
-  matched_keywords: string | null;
-  pass_reason: string | null;
+export type FilterStepResult = {
+  passed: boolean;
+  keywords: string | null;
+  reason: string | null;
 };
+
+export type ItemFilterResult = {
+  passed_filters: string | null;
+};
+
+const PASSED: ItemFilterResult = {
+  passed_filters: null,
+};
+
+const FAILED: ItemFilterResult = {
+  passed_filters: null,
+};
+
+async function applyConfiguredFilter(
+  title: string,
+  content: string | null,
+  filter: Filter,
+): Promise<FilterStepResult> {
+  const blacklist = applyBlacklistFilter(title, content, filter.blacklist);
+  if (!blacklist.passed) {
+    return blacklist;
+  }
+  const whitelist = applyWhitelistFilter(title, content, filter.whitelist);
+  if (!whitelist.passed) {
+    return whitelist;
+  }
+  return applyAiFilter(
+    title,
+    content,
+    whitelist.keywords,
+    filter.prompt,
+  );
+}
 
 export async function applyItemFilter(
   title: string,
   content: string | null,
 ): Promise<ItemFilterResult> {
-  const blacklist = applyBlacklistFilter(title, content);
-  if (blacklist.filter_passed !== 1) {
-    return blacklist;
+  const filters = getFilters();
+  if (filters.length === 0) {
+    return PASSED;
   }
-  const whitelist = applyWhitelistFilter(title, content);
-  if (whitelist.filter_passed !== 1) {
-    return whitelist;
+
+  const passed: PassedFilterEntry[] = [];
+
+  for (const filter of filters) {
+    const result = await applyConfiguredFilter(title, content, filter);
+    if (result.passed) {
+      passed.push({
+        id: filter.id,
+        keywords: result.keywords,
+        reason: result.reason,
+      });
+    }
   }
-  return applyAiFilter(title, content, whitelist.matched_keywords);
+
+  if (passed.length === 0) {
+    return FAILED;
+  }
+
+  return {
+    passed_filters: serializePassedFilters(passed),
+  };
 }
 
 export async function filterItems<
