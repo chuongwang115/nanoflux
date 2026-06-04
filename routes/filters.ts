@@ -4,8 +4,17 @@ import {
   deleteFilter,
   getFilter,
   getFilters,
+  reorderFilter,
   updateFilter,
+  type FilterReorderAction,
 } from "../filters";
+
+const REORDER_ACTIONS = new Set<FilterReorderAction>([
+  "up",
+  "down",
+  "top",
+  "bottom",
+]);
 
 function getFiltersHandler() {
   try {
@@ -74,9 +83,31 @@ async function deleteFilterHandler({ params }: { params: { id: string } }) {
   }
 }
 
+async function reorderFilterHandler({
+  params,
+  body,
+}: {
+  params: { id: string };
+  body: { action?: string };
+}) {
+  try {
+    const action = body?.action;
+    if (!action || !REORDER_ACTIONS.has(action as FilterReorderAction)) {
+      return { code: 400, message: "Invalid reorder action" };
+    }
+    const filters = await reorderFilter(params.id, action as FilterReorderAction);
+    return { code: 0, message: "ok", data: { filters } };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to reorder filter";
+    return { code: 500, message };
+  }
+}
+
 export const routes = new Elysia({ prefix: "/api/filters" })
   .get("/", getFiltersHandler)
   .post("/create", createFilterHandler)
   .get("/:id", getFilterHandler)
   .post("/:id", updateFilterHandler)
+  .post("/:id/reorder", reorderFilterHandler)
   .post("/:id/delete", deleteFilterHandler);

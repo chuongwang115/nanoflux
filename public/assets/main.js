@@ -6601,6 +6601,8 @@ var messages = {
     "items.filterUnread": "未读",
     "items.filterAll": "全部",
     "items.filterUnmatched": "未匹配",
+    "items.filterAccept": "认可",
+    "items.filterReject": "排除",
     "feeds.title": "Feed 管理",
     "feeds.back": "返回",
     "feeds.name": "名称",
@@ -6637,13 +6639,17 @@ var messages = {
     "filters.filterList": "Filter 列表",
     "filters.noFilters": "暂无 Filters",
     "filters.noKeywords": "未设置",
-    "filters.updatedAt": "更新时间",
     "filters.edit": "编辑",
+    "filters.moveTop": "置顶",
+    "filters.moveUp": "上移",
+    "filters.moveDown": "下移",
+    "filters.moveBottom": "置底",
     "filters.delete": "删除",
     "filters.confirmDelete": "确定删除该 Filter？",
     "filters.loadFailed": "加载失败",
     "filters.saveFailed": "保存失败",
     "filters.deleteFailed": "删除失败",
+    "filters.reorderFailed": "排序失败",
     "theme.switchToLight": "切换到浅色模式",
     "theme.switchToDark": "切换到深色模式",
     "theme.lightMode": "浅色模式",
@@ -6681,6 +6687,8 @@ var messages = {
     "items.filterUnread": "Unread",
     "items.filterAll": "All",
     "items.filterUnmatched": "Unmatched",
+    "items.filterAccept": "Accept",
+    "items.filterReject": "Reject",
     "feeds.title": "Feed management",
     "feeds.back": "Back",
     "feeds.name": "Name",
@@ -6717,13 +6725,17 @@ var messages = {
     "filters.filterList": "Filters",
     "filters.noFilters": "No filters yet",
     "filters.noKeywords": "Not set",
-    "filters.updatedAt": "Updated",
     "filters.edit": "Edit",
+    "filters.moveTop": "Move to top",
+    "filters.moveUp": "Move up",
+    "filters.moveDown": "Move down",
+    "filters.moveBottom": "Move to bottom",
     "filters.delete": "Delete",
     "filters.confirmDelete": "Delete this filter?",
     "filters.loadFailed": "Failed to load",
     "filters.saveFailed": "Failed to save",
     "filters.deleteFailed": "Failed to delete",
+    "filters.reorderFailed": "Failed to reorder",
     "theme.switchToLight": "Switch to light mode",
     "theme.switchToDark": "Switch to dark mode",
     "theme.lightMode": "Light mode",
@@ -7554,6 +7566,14 @@ async function markItemRead(id) {
   });
   assertApiOk(body);
 }
+async function setItemFilterVerdict(itemId, filterId, verdict) {
+  const body = await request(`/api/items/${itemId}/filter-verdict`, {
+    method: "POST",
+    body: JSON.stringify({ filter_id: filterId, verdict })
+  });
+  assertApiOk(body);
+  return body.data;
+}
 async function fetchFilters() {
   const body = await request("/api/filters");
   assertApiOk(body);
@@ -7591,6 +7611,18 @@ function deleteFilter(id) {
     method: "POST"
   }).then((body) => {
     assertApiOk(body);
+  });
+}
+function reorderFilter(id, action2) {
+  return request(`/api/filters/${id}/reorder`, {
+    method: "POST",
+    body: JSON.stringify({ action: action2 })
+  }).then((body) => {
+    assertApiOk(body);
+    if (!body.data) {
+      throw new Error(body.message || "Failed to reorder filters");
+    }
+    return body.data.filters;
   });
 }
 
@@ -8286,8 +8318,170 @@ function Lightbulb($$anchor, $$props) {
 }
 if (undefined) {}
 var lightbulb_default = Lightbulb;
-// node_modules/@lucide/svelte/dist/icons/shield-check.svelte
+// node_modules/@lucide/svelte/dist/icons/arrow-down.svelte
 var root14 = from_html(`<!--
+@lucide/svelte v1.16.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMTIgNXYxNCIgLz4KICA8cGF0aCBkPSJtMTkgMTItNyA3LTctNyIgLz4KPC9zdmc+Cg==) - https://lucide.dev/icons/arrow-down
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Arrow_down($$anchor, $$props) {
+  let props = rest_props($$props, ["$$slots", "$$events", "$$legacy"]);
+  const iconNode = [
+    ["path", { d: "M12 5v14" }],
+    ["path", { d: "m19 12-7 7-7-7" }]
+  ];
+  var fragment = root14();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "arrow-down" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var arrow_down_default = Arrow_down;
+// node_modules/@lucide/svelte/dist/icons/arrow-down-to-line.svelte
+var root15 = from_html(`<!--
+@lucide/svelte v1.16.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMTIgMTdWMyIgLz4KICA8cGF0aCBkPSJtNiAxMSA2IDYgNi02IiAvPgogIDxwYXRoIGQ9Ik0xOSAyMUg1IiAvPgo8L3N2Zz4K) - https://lucide.dev/icons/arrow-down-to-line
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Arrow_down_to_line($$anchor, $$props) {
+  let props = rest_props($$props, ["$$slots", "$$events", "$$legacy"]);
+  const iconNode = [
+    ["path", { d: "M12 17V3" }],
+    ["path", { d: "m6 11 6 6 6-6" }],
+    ["path", { d: "M19 21H5" }]
+  ];
+  var fragment = root15();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "arrow-down-to-line" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var arrow_down_to_line_default = Arrow_down_to_line;
+// node_modules/@lucide/svelte/dist/icons/arrow-up.svelte
+var root16 = from_html(`<!--
+@lucide/svelte v1.16.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJtNSAxMiA3LTcgNyA3IiAvPgogIDxwYXRoIGQ9Ik0xMiAxOVY1IiAvPgo8L3N2Zz4K) - https://lucide.dev/icons/arrow-up
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Arrow_up($$anchor, $$props) {
+  let props = rest_props($$props, ["$$slots", "$$events", "$$legacy"]);
+  const iconNode = [
+    ["path", { d: "m5 12 7-7 7 7" }],
+    ["path", { d: "M12 19V5" }]
+  ];
+  var fragment = root16();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "arrow-up" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var arrow_up_default = Arrow_up;
+// node_modules/@lucide/svelte/dist/icons/arrow-up-to-line.svelte
+var root17 = from_html(`<!--
+@lucide/svelte v1.16.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNNSAzaDE0IiAvPgogIDxwYXRoIGQ9Im0xOCAxMy02LTYtNiA2IiAvPgogIDxwYXRoIGQ9Ik0xMiA3djE0IiAvPgo8L3N2Zz4K) - https://lucide.dev/icons/arrow-up-to-line
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Arrow_up_to_line($$anchor, $$props) {
+  let props = rest_props($$props, ["$$slots", "$$events", "$$legacy"]);
+  const iconNode = [
+    ["path", { d: "M5 3h14" }],
+    ["path", { d: "m18 13-6-6-6 6" }],
+    ["path", { d: "M12 7v14" }]
+  ];
+  var fragment = root17();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "arrow-up-to-line" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var arrow_up_to_line_default = Arrow_up_to_line;
+// node_modules/@lucide/svelte/dist/icons/shield-check.svelte
+var root18 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -8318,7 +8512,7 @@ function Shield_check($$anchor, $$props) {
     ],
     ["path", { d: "m9 12 2 2 4-4" }]
   ];
-  var fragment = root14();
+  var fragment = root18();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -8332,7 +8526,7 @@ function Shield_check($$anchor, $$props) {
 if (undefined) {}
 var shield_check_default = Shield_check;
 // node_modules/@lucide/svelte/dist/icons/shield-x.svelte
-var root15 = from_html(`<!--
+var root19 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -8364,7 +8558,7 @@ function Shield_x($$anchor, $$props) {
     ["path", { d: "m14.5 9.5-5 5" }],
     ["path", { d: "m9.5 9.5 5 5" }]
   ];
-  var fragment = root15();
+  var fragment = root19();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -8403,18 +8597,31 @@ var root_82 = from_html(`
           `, 1);
 var root_72 = from_html(`
         
+        
+        
         <li class="group grid w-full grid-cols-[1fr_auto] gap-x-4 gap-y-2 py-5">
           <p class="min-w-0 text-sm font-medium"> </p>
           <div class="relative flex shrink-0 items-center">
-            <div class="absolute right-full mr-2 flex gap-1 text-neutral-400 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 dark:text-neutral-500">
-              <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 hover:text-neutral-900 dark:hover:text-neutral-100">
+            <div class="absolute right-full mr-2 flex gap-0.5 text-neutral-400 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 dark:text-neutral-500">
+              <button type="button">
                 <!>
               </button>
-              <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 hover:text-red-500">
+              <button type="button">
+                <!>
+              </button>
+              <button type="button">
+                <!>
+              </button>
+              <button type="button">
+                <!>
+              </button>
+              <button type="button">
+                <!>
+              </button>
+              <button type="button">
                 <!>
               </button>
             </div>
-            <time class="text-xs text-neutral-400 dark:text-neutral-500"> </time>
           </div>
           <p class="col-span-2 flex items-start gap-1.5 text-sm leading-5 text-neutral-400 dark:text-neutral-500">
             <span class="inline-flex h-5 shrink-0 items-center text-neutral-500 dark:text-neutral-400">
@@ -8436,7 +8643,7 @@ var root_62 = from_html(`
       <!>
     </ul>
   `, 1);
-var root16 = from_html(`
+var root20 = from_html(`
 
 <section class="mb-10">
   <form class="space-y-3">
@@ -8459,7 +8666,9 @@ var root16 = from_html(`
 function FiltersManager($$anchor, $$props) {
   push($$props, true);
   const iconProps = { size: 16, strokeWidth: 1.5, "aria-hidden": true };
+  const reorderIconProps = { size: 14, strokeWidth: 1.5, "aria-hidden": true };
   const fieldIconProps = { size: 14, strokeWidth: 1.5, "aria-hidden": true };
+  const actionButtonClass = "inline-flex cursor-pointer items-center justify-center rounded-md p-1 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-neutral-400 dark:hover:text-neutral-100 dark:disabled:hover:text-neutral-500";
   const inputClass = "w-full border-0 border-b border-neutral-200 bg-transparent py-2 text-sm outline-none placeholder:text-neutral-300 focus:border-neutral-900 dark:border-neutral-700 dark:placeholder:text-neutral-600 dark:focus:border-neutral-100";
   const textareaClass = "min-h-48 resize-y " + inputClass;
   let filters = state(proxy([]));
@@ -8471,7 +8680,6 @@ function FiltersManager($$anchor, $$props) {
   let formError = state("");
   let listError = state("");
   let loading = state(true);
-  let now2 = state(proxy(Date.now()));
   const isEditing = user_derived(() => get2(editId) !== null);
   function previewKeywords(value) {
     const trimmed = value.trim();
@@ -8548,15 +8756,20 @@ function FiltersManager($$anchor, $$props) {
       set(listError, e instanceof Error ? e.message : t("filters.deleteFailed"), true);
     }
   }
+  async function handleReorder(id, action2) {
+    set(listError, "");
+    try {
+      set(filters, await reorderFilter(id, action2), true);
+    } catch (e) {
+      set(listError, e instanceof Error ? e.message : t("filters.reorderFailed"), true);
+      await loadFilters();
+    }
+  }
   onMount(() => {
     loadFilters();
-    const timer = setInterval(() => {
-      set(now2, Date.now(), true);
-    }, 60000);
-    return () => clearInterval(timer);
   });
   next();
-  var fragment = root16();
+  var fragment = root20();
   var section = sibling(first_child(fragment));
   var form = sibling(child(section));
   var input = sibling(child(form));
@@ -8653,8 +8866,10 @@ function FiltersManager($$anchor, $$props) {
       var fragment_6 = root_62();
       var ul = sibling(first_child(fragment_6));
       var node_3 = sibling(child(ul));
-      each(node_3, 17, () => get2(filters), (filter) => filter.id, ($$anchor3, filter) => {
+      each(node_3, 19, () => get2(filters), (filter) => filter.id, ($$anchor3, filter, index2) => {
         const promptPreview = user_derived(() => previewPrompt(get2(filter).prompt));
+        const isFirst = user_derived(() => get2(index2) === 0);
+        const isLast = user_derived(() => get2(index2) === get2(filters).length - 1);
         next();
         var fragment_7 = root_72();
         var li = sibling(first_child(fragment_7));
@@ -8664,56 +8879,79 @@ function FiltersManager($$anchor, $$props) {
         var div_1 = sibling(p_4, 2);
         var div_2 = sibling(child(div_1));
         var button_2 = sibling(child(div_2));
+        set_class(button_2, 1, clsx2(actionButtonClass));
         var node_4 = sibling(child(button_2));
         pencil_default(node_4, spread_props(() => iconProps));
         next();
         reset(button_2);
         var button_3 = sibling(button_2, 2);
+        set_class(button_3, 1, actionButtonClass + " hover:text-red-500 disabled:hover:text-neutral-400 dark:disabled:hover:text-neutral-500");
         var node_5 = sibling(child(button_3));
         trash_2_default(node_5, spread_props(() => iconProps));
         next();
         reset(button_3);
+        var button_4 = sibling(button_3, 2);
+        set_class(button_4, 1, clsx2(actionButtonClass));
+        var node_6 = sibling(child(button_4));
+        arrow_up_to_line_default(node_6, spread_props(() => reorderIconProps));
+        next();
+        reset(button_4);
+        var button_5 = sibling(button_4, 2);
+        set_class(button_5, 1, clsx2(actionButtonClass));
+        var node_7 = sibling(child(button_5));
+        arrow_up_default(node_7, spread_props(() => reorderIconProps));
+        next();
+        reset(button_5);
+        var button_6 = sibling(button_5, 2);
+        set_class(button_6, 1, clsx2(actionButtonClass));
+        var node_8 = sibling(child(button_6));
+        arrow_down_default(node_8, spread_props(() => reorderIconProps));
+        next();
+        reset(button_6);
+        var button_7 = sibling(button_6, 2);
+        set_class(button_7, 1, clsx2(actionButtonClass));
+        var node_9 = sibling(child(button_7));
+        arrow_down_to_line_default(node_9, spread_props(() => reorderIconProps));
+        next();
+        reset(button_7);
         next();
         reset(div_2);
-        var time = sibling(div_2, 2);
-        var text_8 = child(time);
-        reset(time);
         next();
         reset(div_1);
         var p_5 = sibling(div_1, 2);
         var span = sibling(child(p_5));
-        var node_6 = sibling(child(span));
-        shield_check_default(node_6, spread_props(() => fieldIconProps));
+        var node_10 = sibling(child(span));
+        shield_check_default(node_10, spread_props(() => fieldIconProps));
         next();
         reset(span);
         var span_1 = sibling(span, 2);
-        var text_9 = child(span_1);
+        var text_8 = child(span_1);
         reset(span_1);
         next();
         reset(p_5);
         var p_6 = sibling(p_5, 2);
         var span_2 = sibling(child(p_6));
-        var node_7 = sibling(child(span_2));
-        shield_x_default(node_7, spread_props(() => fieldIconProps));
+        var node_11 = sibling(child(span_2));
+        shield_x_default(node_11, spread_props(() => fieldIconProps));
         next();
         reset(span_2);
         var span_3 = sibling(span_2, 2);
-        var text_10 = child(span_3);
+        var text_9 = child(span_3);
         reset(span_3);
         next();
         reset(p_6);
-        var node_8 = sibling(p_6, 2);
+        var node_12 = sibling(p_6, 2);
         {
           var consequent_5 = ($$anchor4) => {
             var fragment_8 = root_82();
             var p_7 = sibling(first_child(fragment_8));
             var span_4 = sibling(child(p_7));
-            var node_9 = sibling(child(span_4));
-            lightbulb_default(node_9, spread_props(() => fieldIconProps));
+            var node_13 = sibling(child(span_4));
+            lightbulb_default(node_13, spread_props(() => fieldIconProps));
             next();
             reset(span_4);
             var span_5 = sibling(span_4, 2);
-            var text_11 = child(span_5);
+            var text_10 = child(span_5);
             reset(span_5);
             next();
             reset(p_7);
@@ -8722,7 +8960,7 @@ function FiltersManager($$anchor, $$props) {
               set_attribute2(span_4, "aria-label", $0);
               set_attribute2(span_4, "title", $1);
               set_attribute2(span_5, "title", $2);
-              set_text(text_11, `
+              set_text(text_10, `
                 ${get2(promptPreview) ?? ""}
               `);
             }, [
@@ -8732,7 +8970,7 @@ function FiltersManager($$anchor, $$props) {
             ]);
             append($$anchor4, fragment_8);
           };
-          if_block(node_8, ($$render) => {
+          if_block(node_12, ($$render) => {
             if (get2(promptPreview))
               $$render(consequent_5);
           });
@@ -8740,36 +8978,49 @@ function FiltersManager($$anchor, $$props) {
         next();
         reset(li);
         next();
-        template_effect(($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) => {
+        template_effect(($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) => {
           set_text(text_7, get2(filter).name);
           set_attribute2(button_2, "aria-label", $0);
           set_attribute2(button_2, "title", $1);
           set_attribute2(button_3, "aria-label", $2);
           set_attribute2(button_3, "title", $3);
-          set_attribute2(time, "datetime", get2(filter).updated_at);
-          set_attribute2(time, "title", $4);
+          set_attribute2(button_4, "aria-label", $4);
+          set_attribute2(button_4, "title", $5);
+          button_4.disabled = get2(isFirst);
+          set_attribute2(button_5, "aria-label", $6);
+          set_attribute2(button_5, "title", $7);
+          button_5.disabled = get2(isFirst);
+          set_attribute2(button_6, "aria-label", $8);
+          set_attribute2(button_6, "title", $9);
+          button_6.disabled = get2(isLast);
+          set_attribute2(button_7, "aria-label", $10);
+          set_attribute2(button_7, "title", $11);
+          button_7.disabled = get2(isLast);
+          set_attribute2(span, "aria-label", $12);
+          set_attribute2(span, "title", $13);
+          set_attribute2(span_1, "title", $14);
           set_text(text_8, `
-              ${$5 ?? ""}
+              ${$15 ?? ""}
             `);
-          set_attribute2(span, "aria-label", $6);
-          set_attribute2(span, "title", $7);
-          set_attribute2(span_1, "title", $8);
+          set_attribute2(span_2, "aria-label", $16);
+          set_attribute2(span_2, "title", $17);
+          set_attribute2(span_3, "title", $18);
           set_text(text_9, `
-              ${$9 ?? ""}
-            `);
-          set_attribute2(span_2, "aria-label", $10);
-          set_attribute2(span_2, "title", $11);
-          set_attribute2(span_3, "title", $12);
-          set_text(text_10, `
-              ${$13 ?? ""}
+              ${$19 ?? ""}
             `);
         }, [
           () => t("filters.edit"),
           () => t("filters.edit"),
           () => t("filters.delete"),
           () => t("filters.delete"),
-          () => t("filters.updatedAt"),
-          () => formatTime(get2(filter).updated_at, get2(now2)),
+          () => t("filters.moveTop"),
+          () => t("filters.moveTop"),
+          () => t("filters.moveUp"),
+          () => t("filters.moveUp"),
+          () => t("filters.moveDown"),
+          () => t("filters.moveDown"),
+          () => t("filters.moveBottom"),
+          () => t("filters.moveBottom"),
           () => t("filters.whitelist"),
           () => t("filters.whitelist"),
           () => get2(filter).whitelist.trim() || undefined,
@@ -8781,6 +9032,10 @@ function FiltersManager($$anchor, $$props) {
         ]);
         delegated("click", button_2, () => startEdit(get2(filter)));
         delegated("click", button_3, () => handleDelete(get2(filter).id));
+        delegated("click", button_4, () => handleReorder(get2(filter).id, "top"));
+        delegated("click", button_5, () => handleReorder(get2(filter).id, "up"));
+        delegated("click", button_6, () => handleReorder(get2(filter).id, "down"));
+        delegated("click", button_7, () => handleReorder(get2(filter).id, "bottom"));
         append($$anchor3, fragment_7);
       });
       next();
@@ -9001,6 +9256,49 @@ function resolveSelectedFilterId(storedId, filters) {
   return filters.some((f) => f.id === storedId) ? storedId : null;
 }
 
+// web/src/lib/filter-accepted.ts
+var STORAGE_KEY5 = "nanoflux-filter-accepted";
+function filterAcceptedKey(itemId, filterId) {
+  return `${itemId}:${filterId}`;
+}
+function readFilterAcceptedKeys() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY5);
+    if (!raw)
+      return new Set;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed))
+      return new Set;
+    return new Set(parsed.filter((key2) => typeof key2 === "string"));
+  } catch {
+    return new Set;
+  }
+}
+function persistFilterAcceptedKeys(keys) {
+  try {
+    if (keys.size === 0) {
+      localStorage.removeItem(STORAGE_KEY5);
+    } else {
+      localStorage.setItem(STORAGE_KEY5, JSON.stringify([...keys]));
+    }
+  } catch {}
+}
+function markFilterAccepted(itemId, filterId) {
+  const keys = readFilterAcceptedKeys();
+  keys.add(filterAcceptedKey(itemId, filterId));
+  persistFilterAcceptedKeys(keys);
+  return keys;
+}
+function clearFilterAccepted(itemId, filterId) {
+  const keys = readFilterAcceptedKeys();
+  keys.delete(filterAcceptedKey(itemId, filterId));
+  persistFilterAcceptedKeys(keys);
+  return keys;
+}
+function isFilterAccepted(keys, itemId, filterId) {
+  return keys.has(filterAcceptedKey(itemId, filterId));
+}
+
 // web/src/components/HighlightedText.svelte
 var root_26 = from_html(`
     <mark class="rounded-sm bg-amber-200/80 px-0.5 font-[inherit] text-inherit dark:bg-amber-500/35"> </mark>
@@ -9008,14 +9306,14 @@ var root_26 = from_html(`
 var root_17 = from_html(`
   <!>
 `, 1);
-var root17 = from_html(`
+var root21 = from_html(`
 
 <!>`, 1);
 function HighlightedText($$anchor, $$props) {
   push($$props, true);
   const segments = user_derived(() => splitByKeywords($$props.text, $$props.keywords));
   next();
-  var fragment = root17();
+  var fragment = root21();
   var node = sibling(first_child(fragment));
   each(node, 17, () => get2(segments), index, ($$anchor2, segment) => {
     next();
@@ -9055,7 +9353,7 @@ if (undefined) {}
 var HighlightedText_default = HighlightedText;
 
 // node_modules/@lucide/svelte/dist/icons/check-check.svelte
-var root18 = from_html(`<!--
+var root22 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -9081,7 +9379,7 @@ function Check_check($$anchor, $$props) {
     ["path", { d: "M18 6 7 17l-5-5" }],
     ["path", { d: "m22 10-7.5 7.5L13 16" }]
   ];
-  var fragment = root18();
+  var fragment = root22();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -9095,7 +9393,7 @@ function Check_check($$anchor, $$props) {
 if (undefined) {}
 var check_check_default = Check_check;
 // web/src/components/buttons/MarkAllReadButton.svelte
-var root19 = from_html(`
+var root23 = from_html(`
 
 <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
   <!>
@@ -9105,7 +9403,7 @@ function MarkAllReadButton($$anchor, $$props) {
   const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
   const label = user_derived(() => t("items.markAllRead"));
   next();
-  var fragment = root19();
+  var fragment = root23();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   check_check_default(node, spread_props(() => iconProps));
@@ -9121,6 +9419,148 @@ function MarkAllReadButton($$anchor, $$props) {
 }
 if (undefined) {}
 var MarkAllReadButton_default = MarkAllReadButton;
+delegate(["click"]);
+
+// node_modules/@lucide/svelte/dist/icons/thumbs-down.svelte
+var root24 = from_html(`<!--
+@lucide/svelte v1.16.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNOSAxOC4xMiAxMCAxNEg0LjE3YTIgMiAwIDAgMS0xLjkyLTIuNTZsMi4zMy04QTIgMiAwIDAgMSA2LjUgMkgyMGEyIDIgMCAwIDEgMiAydjhhMiAyIDAgMCAxLTIgMmgtMi43NmEyIDIgMCAwIDAtMS43OSAxLjExTDEyIDIyYTMuMTMgMy4xMyAwIDAgMS0zLTMuODhaIiAvPgogIDxwYXRoIGQ9Ik0xNyAxNFYyIiAvPgo8L3N2Zz4K) - https://lucide.dev/icons/thumbs-down
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Thumbs_down($$anchor, $$props) {
+  let props = rest_props($$props, ["$$slots", "$$events", "$$legacy"]);
+  const iconNode = [
+    [
+      "path",
+      {
+        d: "M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"
+      }
+    ],
+    ["path", { d: "M17 14V2" }]
+  ];
+  var fragment = root24();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "thumbs-down" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var thumbs_down_default = Thumbs_down;
+// node_modules/@lucide/svelte/dist/icons/thumbs-up.svelte
+var root25 = from_html(`<!--
+@lucide/svelte v1.16.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMTUgNS44OCAxNCAxMGg1LjgzYTIgMiAwIDAgMSAxLjkyIDIuNTZsLTIuMzMgOEEyIDIgMCAwIDEgMTcuNSAyMkg0YTIgMiAwIDAgMS0yLTJ2LThhMiAyIDAgMCAxIDItMmgyLjc2YTIgMiAwIDAgMCAxLjc5LTEuMTFMMTIgMmEzLjEzIDMuMTMgMCAwIDEgMyAzLjg4WiIgLz4KICA8cGF0aCBkPSJNNyAxMHYxMiIgLz4KPC9zdmc+Cg==) - https://lucide.dev/icons/thumbs-up
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Thumbs_up($$anchor, $$props) {
+  let props = rest_props($$props, ["$$slots", "$$events", "$$legacy"]);
+  const iconNode = [
+    [
+      "path",
+      {
+        d: "M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"
+      }
+    ],
+    ["path", { d: "M7 10v12" }]
+  ];
+  var fragment = root25();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "thumbs-up" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var thumbs_up_default = Thumbs_up;
+// web/src/components/buttons/FilterVerdictButtons.svelte
+var root26 = from_html(`
+
+<div class="flex shrink-0 gap-1">
+  <button type="button">
+    <!>
+  </button>
+  <button type="button">
+    <!>
+  </button>
+</div>`, 1);
+function FilterVerdictButtons($$anchor, $$props) {
+  push($$props, true);
+  let accepted = prop($$props, "accepted", 3, false);
+  const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
+  const buttonClass = "inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100";
+  const acceptLabel = user_derived(() => t("items.filterAccept"));
+  const rejectLabel = user_derived(() => t("items.filterReject"));
+  const acceptClass = user_derived(() => accepted() ? "text-neutral-900 dark:text-neutral-100" : "");
+  next();
+  var fragment = root26();
+  var div = sibling(first_child(fragment));
+  var button = sibling(child(div));
+  var node = sibling(child(button));
+  thumbs_up_default(node, spread_props(() => iconProps));
+  next();
+  reset(button);
+  var button_1 = sibling(button, 2);
+  set_class(button_1, 1, clsx2(buttonClass));
+  var node_1 = sibling(child(button_1));
+  thumbs_down_default(node_1, spread_props(() => iconProps));
+  next();
+  reset(button_1);
+  next();
+  reset(div);
+  template_effect(() => {
+    set_class(button, 1, `inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100 ${get2(acceptClass) ?? ""}`);
+    set_attribute2(button, "aria-label", get2(acceptLabel));
+    set_attribute2(button, "aria-pressed", accepted());
+    set_attribute2(button, "title", get2(acceptLabel));
+    set_attribute2(button_1, "aria-label", get2(rejectLabel));
+    set_attribute2(button_1, "title", get2(rejectLabel));
+  });
+  delegated("click", button, () => void $$props.onAccept());
+  delegated("click", button_1, () => void $$props.onReject());
+  append($$anchor, fragment);
+  pop();
+}
+if (undefined) {}
+var FilterVerdictButtons_default = FilterVerdictButtons;
 delegate(["click"]);
 
 // web/src/components/ItemList.svelte
@@ -9144,39 +9584,45 @@ var root_73 = from_html(`
               <!>
             </p>
           `, 1);
-var root_10 = from_html(`<span>, </span>`);
-var root_123 = from_html(`
-                        <span class="block font-medium text-neutral-700 dark:text-neutral-200"> </span>
-                        <span> </span>
-                      `, 1);
+var root_11 = from_html(`<span>, </span>`);
 var root_133 = from_html(`
-                        <span> </span>
-                        <span> </span>
-                      `, 1);
-var root_11 = from_html(`
-                  <span class="group/filter relative inline cursor-help underline decoration-dotted decoration-neutral-300 underline-offset-2 dark:decoration-neutral-600" tabindex="0"> <span role="tooltip">
-                      <!>
-                      <!>
-                    </span>
-                  </span>
-                `, 1);
+                            <span class="block font-medium text-neutral-700 dark:text-neutral-200"> </span>
+                            <span> </span>
+                          `, 1);
 var root_143 = from_html(`
-                  <span> </span>
-                `, 1);
+                            <span> </span>
+                            <span> </span>
+                          `, 1);
+var root_123 = from_html(`
+                      <span class="group/filter relative inline cursor-help underline decoration-dotted decoration-neutral-300 underline-offset-2 dark:decoration-neutral-600" tabindex="0"> <span role="tooltip">
+                          <!>
+                          <!>
+                        </span>
+                      </span>
+                    `, 1);
+var root_152 = from_html(`
+                      <span> </span>
+                    `, 1);
+var root_10 = from_html(`
+                    
+                    
+                    
+                    <!>
+                    <!>
+                  `, 1);
 var root_92 = from_html(`
-                
-                
-                
-                <!>
+                  <!>
+                `, 1);
+var root_172 = from_html(`
                 <!>
               `, 1);
 var root_83 = from_html(`
-            <div class="mt-1.5 text-xs text-neutral-400 dark:text-neutral-500">
+            <div class="mt-1.5 flex items-center justify-between gap-2">
+              <div class="min-w-0 flex-1 text-xs text-neutral-400 dark:text-neutral-500">
+                <!>
+              </div>
               <!>
             </div>
-          `, 1);
-var root_152 = from_html(`
-            <p class="mt-1.5 text-xs text-neutral-400 dark:text-neutral-500"> </p>
           `, 1);
 var root_63 = from_html(`
       
@@ -9201,13 +9647,13 @@ var root_54 = from_html(`
     <!>
   </ul>
 `, 1);
-var root_162 = from_html(`
+var root_182 = from_html(`
   <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root_172 = from_html(`
+var root_19 = from_html(`
   <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root20 = from_html(`
+var root27 = from_html(`
 
 <div>
   <!>
@@ -9244,7 +9690,9 @@ function ItemList($$anchor, $$props) {
   let streamReady = state(false);
   let loadGeneration = 0;
   let now2 = state(proxy(Date.now()));
+  let filterAcceptedKeys = state(proxy(readFilterAcceptedKeys()));
   const filterIsRead = user_derived(() => get2(filter) === "unread" ? 0 : undefined);
+  const showFilterVerdictActions = user_derived(() => Boolean(get2(selectedFilterId) && get2(selectedFilterId) !== UNMATCHED_FILTER_ID));
   function filterTabClass(active) {
     return active ? "text-neutral-900 underline underline-offset-4 decoration-neutral-900 dark:text-neutral-100 dark:decoration-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300";
   }
@@ -9372,6 +9820,33 @@ function ItemList($$anchor, $$props) {
       }
     });
   }
+  async function handleFilterAccept(item) {
+    const filterId = get2(selectedFilterId);
+    if (!filterId || filterId === UNMATCHED_FILTER_ID)
+      return;
+    set(filterAcceptedKeys, markFilterAccepted(item.id, filterId), true);
+    try {
+      await setItemFilterVerdict(item.id, filterId, "accept");
+    } catch {
+      set(filterAcceptedKeys, clearFilterAccepted(item.id, filterId), true);
+    }
+  }
+  function applyRejectedItem(item) {
+    set(items, get2(items).filter((n) => n.id !== item.id), true);
+  }
+  async function handleFilterReject(item) {
+    const filterId = get2(selectedFilterId);
+    if (!filterId || filterId === UNMATCHED_FILTER_ID)
+      return;
+    const previous = item;
+    set(filterAcceptedKeys, clearFilterAccepted(item.id, filterId), true);
+    applyRejectedItem(item);
+    try {
+      await setItemFilterVerdict(item.id, filterId, "reject");
+    } catch {
+      set(items, [...get2(items), previous].sort(compareItem), true);
+    }
+  }
   async function markAllRead() {
     if (get2(items).length === 0)
       return;
@@ -9426,7 +9901,7 @@ function ItemList($$anchor, $$props) {
   });
   var $$exports = { markAllRead };
   next();
-  var fragment = root20();
+  var fragment = root27();
   var div = sibling(first_child(fragment));
   var node = sibling(child(div));
   {
@@ -9573,137 +10048,171 @@ function ItemList($$anchor, $$props) {
         }
         var node_8 = sibling(node_6, 2);
         {
-          var consequent_8 = ($$anchor4) => {
+          var consequent_11 = ($$anchor4) => {
             var fragment_8 = root_83();
             var div_5 = sibling(first_child(fragment_8));
-            var node_9 = sibling(child(div_5));
-            each(node_9, 19, () => get2(filterDisplay).passedFilters, (entry) => entry.id, ($$anchor5, entry, index2) => {
-              const name = user_derived(() => get2(filterNameById).get(get2(entry).id) ?? get2(entry).id);
-              const keywords = user_derived(() => parseMatchedKeywords(get2(entry).keywords));
-              const reason = user_derived(() => get2(entry).reason?.trim() || null);
-              next();
-              var fragment_9 = root_92();
-              var node_10 = sibling(first_child(fragment_9));
-              {
-                var consequent_4 = ($$anchor6) => {
-                  var span_1 = root_10();
-                  append($$anchor6, span_1);
-                };
-                if_block(node_10, ($$render) => {
-                  if (get2(index2) > 0)
-                    $$render(consequent_4);
-                });
-              }
-              var node_11 = sibling(node_10, 2);
-              {
-                var consequent_7 = ($$anchor6) => {
-                  var fragment_10 = root_11();
-                  var span_2 = sibling(first_child(fragment_10));
-                  var text_8 = child(span_2);
-                  var span_3 = sibling(text_8);
-                  set_class(span_3, 1, clsx2(filterTooltipClass));
-                  var node_12 = sibling(child(span_3));
+            var div_6 = sibling(child(div_5));
+            var node_9 = sibling(child(div_6));
+            {
+              var consequent_8 = ($$anchor5) => {
+                var fragment_9 = root_92();
+                var node_10 = sibling(first_child(fragment_9));
+                each(node_10, 19, () => get2(filterDisplay).passedFilters, (entry) => entry.id, ($$anchor6, entry, index2) => {
+                  const name = user_derived(() => get2(filterNameById).get(get2(entry).id) ?? get2(entry).id);
+                  const keywords = user_derived(() => parseMatchedKeywords(get2(entry).keywords));
+                  const reason = user_derived(() => get2(entry).reason?.trim() || null);
+                  next();
+                  var fragment_10 = root_10();
+                  var node_11 = sibling(first_child(fragment_10));
                   {
-                    var consequent_5 = ($$anchor7) => {
+                    var consequent_4 = ($$anchor7) => {
+                      var span_1 = root_11();
+                      append($$anchor7, span_1);
+                    };
+                    if_block(node_11, ($$render) => {
+                      if (get2(index2) > 0)
+                        $$render(consequent_4);
+                    });
+                  }
+                  var node_12 = sibling(node_11, 2);
+                  {
+                    var consequent_7 = ($$anchor7) => {
                       var fragment_11 = root_123();
-                      var span_4 = sibling(first_child(fragment_11));
-                      var text_9 = child(span_4);
-                      reset(span_4);
-                      var span_5 = sibling(span_4, 2);
-                      var text_10 = child(span_5, true);
-                      reset(span_5);
+                      var span_2 = sibling(first_child(fragment_11));
+                      var text_8 = child(span_2);
+                      var span_3 = sibling(text_8);
+                      set_class(span_3, 1, clsx2(filterTooltipClass));
+                      var node_13 = sibling(child(span_3));
+                      {
+                        var consequent_5 = ($$anchor8) => {
+                          var fragment_12 = root_133();
+                          var span_4 = sibling(first_child(fragment_12));
+                          var text_9 = child(span_4);
+                          reset(span_4);
+                          var span_5 = sibling(span_4, 2);
+                          var text_10 = child(span_5, true);
+                          reset(span_5);
+                          next();
+                          template_effect(($0, $1) => {
+                            set_text(text_9, `
+                              ${$0 ?? ""}
+                            `);
+                            set_text(text_10, $1);
+                          }, [
+                            () => t("items.matchedKeywords"),
+                            () => get2(keywords).join(", ")
+                          ]);
+                          append($$anchor8, fragment_12);
+                        };
+                        if_block(node_13, ($$render) => {
+                          if (get2(keywords).length > 0)
+                            $$render(consequent_5);
+                        });
+                      }
+                      var node_14 = sibling(node_13, 2);
+                      {
+                        var consequent_6 = ($$anchor8) => {
+                          var fragment_13 = root_143();
+                          var span_6 = sibling(first_child(fragment_13));
+                          var text_11 = child(span_6);
+                          reset(span_6);
+                          var span_7 = sibling(span_6, 2);
+                          var text_12 = child(span_7, true);
+                          reset(span_7);
+                          next();
+                          template_effect(($0) => {
+                            set_class(span_6, 1, `block font-medium text-neutral-700 dark:text-neutral-200 ${get2(keywords).length > 0 ? "mt-1" : ""}`);
+                            set_text(text_11, `
+                              ${$0 ?? ""}
+                            `);
+                            set_text(text_12, get2(reason));
+                          }, [() => t("items.passReason")]);
+                          append($$anchor8, fragment_13);
+                        };
+                        if_block(node_14, ($$render) => {
+                          if (get2(reason))
+                            $$render(consequent_6);
+                        });
+                      }
                       next();
-                      template_effect(($0, $1) => {
-                        set_text(text_9, `
-                          ${$0 ?? ""}
-                        `);
-                        set_text(text_10, $1);
-                      }, [
-                        () => t("items.matchedKeywords"),
-                        () => get2(keywords).join(", ")
-                      ]);
+                      reset(span_3);
+                      next();
+                      reset(span_2);
+                      next();
+                      template_effect(() => set_text(text_8, `
+                        ${get2(name) ?? ""}
+                        `));
                       append($$anchor7, fragment_11);
                     };
-                    if_block(node_12, ($$render) => {
-                      if (get2(keywords).length > 0)
-                        $$render(consequent_5);
-                    });
-                  }
-                  var node_13 = sibling(node_12, 2);
-                  {
-                    var consequent_6 = ($$anchor7) => {
-                      var fragment_12 = root_133();
-                      var span_6 = sibling(first_child(fragment_12));
-                      var text_11 = child(span_6);
-                      reset(span_6);
-                      var span_7 = sibling(span_6, 2);
-                      var text_12 = child(span_7, true);
-                      reset(span_7);
+                    var alternate = ($$anchor7) => {
+                      var fragment_14 = root_152();
+                      var span_8 = sibling(first_child(fragment_14));
+                      var text_13 = child(span_8, true);
+                      reset(span_8);
                       next();
-                      template_effect(($0) => {
-                        set_class(span_6, 1, `block font-medium text-neutral-700 dark:text-neutral-200 ${get2(keywords).length > 0 ? "mt-1" : ""}`);
-                        set_text(text_11, `
-                          ${$0 ?? ""}
-                        `);
-                        set_text(text_12, get2(reason));
-                      }, [() => t("items.passReason")]);
-                      append($$anchor7, fragment_12);
+                      template_effect(() => set_text(text_13, get2(name)));
+                      append($$anchor7, fragment_14);
                     };
-                    if_block(node_13, ($$render) => {
-                      if (get2(reason))
-                        $$render(consequent_6);
+                    if_block(node_12, ($$render) => {
+                      if (get2(keywords).length > 0 || get2(reason))
+                        $$render(consequent_7);
+                      else
+                        $$render(alternate, -1);
                     });
                   }
                   next();
-                  reset(span_3);
-                  next();
-                  reset(span_2);
-                  next();
-                  template_effect(() => set_text(text_8, `
-                    ${get2(name) ?? ""}
-                    `));
                   append($$anchor6, fragment_10);
-                };
-                var alternate = ($$anchor6) => {
-                  var fragment_13 = root_143();
-                  var span_8 = sibling(first_child(fragment_13));
-                  var text_13 = child(span_8, true);
-                  reset(span_8);
-                  next();
-                  template_effect(() => set_text(text_13, get2(name)));
-                  append($$anchor6, fragment_13);
-                };
-                if_block(node_11, ($$render) => {
-                  if (get2(keywords).length > 0 || get2(reason))
-                    $$render(consequent_7);
-                  else
-                    $$render(alternate, -1);
                 });
-              }
-              next();
-              append($$anchor5, fragment_9);
-            });
+                next();
+                append($$anchor5, fragment_9);
+              };
+              var consequent_9 = ($$anchor5) => {
+                var text_14 = text();
+                template_effect(() => set_text(text_14, `
+                  ${get2(filterDisplay).aiReason ?? ""}
+                `));
+                append($$anchor5, text_14);
+              };
+              if_block(node_9, ($$render) => {
+                if (get2(filterDisplay).passedFilters.length > 0)
+                  $$render(consequent_8);
+                else if (get2(filterDisplay).aiReason)
+                  $$render(consequent_9, 1);
+              });
+            }
+            next();
+            reset(div_6);
+            var node_15 = sibling(div_6, 2);
+            {
+              var consequent_10 = ($$anchor5) => {
+                var fragment_16 = root_172();
+                var node_16 = sibling(first_child(fragment_16));
+                {
+                  let $0 = user_derived(() => isFilterAccepted(get2(filterAcceptedKeys), get2(item).id, get2(selectedFilterId)));
+                  FilterVerdictButtons_default(node_16, {
+                    get accepted() {
+                      return get2($0);
+                    },
+                    onAccept: () => handleFilterAccept(get2(item)),
+                    onReject: () => handleFilterReject(get2(item))
+                  });
+                }
+                next();
+                append($$anchor5, fragment_16);
+              };
+              if_block(node_15, ($$render) => {
+                if (get2(showFilterVerdictActions))
+                  $$render(consequent_10);
+              });
+            }
             next();
             reset(div_5);
             next();
             append($$anchor4, fragment_8);
           };
-          var consequent_9 = ($$anchor4) => {
-            var fragment_14 = root_152();
-            var p_3 = sibling(first_child(fragment_14));
-            var text_14 = child(p_3);
-            reset(p_3);
-            next();
-            template_effect(() => set_text(text_14, `
-              ${get2(filterDisplay).aiReason ?? ""}
-            `));
-            append($$anchor4, fragment_14);
-          };
           if_block(node_8, ($$render) => {
-            if (get2(filterDisplay).passedFilters.length > 0)
-              $$render(consequent_8);
-            else if (get2(filterDisplay).aiReason)
-              $$render(consequent_9, 1);
+            if (get2(filterDisplay).passedFilters.length > 0 || get2(filterDisplay).aiReason || get2(showFilterVerdictActions))
+              $$render(consequent_11);
           });
         }
         next();
@@ -9737,39 +10246,39 @@ function ItemList($$anchor, $$props) {
         $$render(alternate_1, -1);
     });
   }
-  var node_14 = sibling(node_3, 2);
+  var node_17 = sibling(node_3, 2);
   {
-    var consequent_10 = ($$anchor2) => {
-      var fragment_15 = root_162();
-      var p_4 = sibling(first_child(fragment_15));
-      var text_15 = child(p_4);
-      reset(p_4);
+    var consequent_12 = ($$anchor2) => {
+      var fragment_17 = root_182();
+      var p_3 = sibling(first_child(fragment_17));
+      var text_15 = child(p_3);
+      reset(p_3);
       next();
       template_effect(($0) => set_text(text_15, `
     ${$0 ?? ""}
   `), [() => t("items.loading")]);
-      append($$anchor2, fragment_15);
+      append($$anchor2, fragment_17);
     };
-    var consequent_11 = ($$anchor2) => {
-      var fragment_16 = root_172();
-      var p_5 = sibling(first_child(fragment_16));
-      var text_16 = child(p_5);
-      reset(p_5);
+    var consequent_13 = ($$anchor2) => {
+      var fragment_18 = root_19();
+      var p_4 = sibling(first_child(fragment_18));
+      var text_16 = child(p_4);
+      reset(p_4);
       next();
       template_effect(($0) => set_text(text_16, `
     ${$0 ?? ""}
   `), [() => t("items.noMore")]);
-      append($$anchor2, fragment_16);
+      append($$anchor2, fragment_18);
     };
-    if_block(node_14, ($$render) => {
+    if_block(node_17, ($$render) => {
       if (get2(loading))
-        $$render(consequent_10);
+        $$render(consequent_12);
       else if (!get2(hasMore) && get2(items).length > 0)
-        $$render(consequent_11, 1);
+        $$render(consequent_13, 1);
     });
   }
-  var div_6 = sibling(node_14, 2);
-  bind_this(div_6, ($$value) => set(sentinel, $$value), () => get2(sentinel));
+  var div_7 = sibling(node_17, 2);
+  bind_this(div_7, ($$value) => set(sentinel, $$value), () => get2(sentinel));
   template_effect(($0, $1, $2) => {
     set_class(div, 1, `mb-6 flex items-center gap-4 ${get2(filters).length > 0 ? "justify-between" : "justify-end"}`);
     set_attribute2(div_3, "aria-label", $0);
@@ -9798,7 +10307,7 @@ var ItemList_default = ItemList;
 delegate(["click"]);
 
 // web/src/App.svelte
-var root_19 = from_html(`
+var root_110 = from_html(`
     <!>
   `, 1);
 var root_28 = from_html(`
@@ -9807,7 +10316,7 @@ var root_28 = from_html(`
 var root_35 = from_html(`
     <!>
   `, 1);
-var root21 = from_html(`
+var root28 = from_html(`
 
 <main class="mx-auto max-w-page px-5 py-16 font-sans">
   <!>
@@ -9817,14 +10326,14 @@ function App($$anchor) {
   const $route = () => store_get(route, "$route", $$stores);
   const [$$stores, $$cleanup] = setup_stores();
   next();
-  var fragment = root21();
+  var fragment = root28();
   var main = sibling(first_child(fragment));
   var node = sibling(child(main));
   Header_default(node, {});
   var node_1 = sibling(node, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root_19();
+      var fragment_1 = root_110();
       var node_2 = sibling(first_child(fragment_1));
       FeedsManager_default(node_2, {});
       next();

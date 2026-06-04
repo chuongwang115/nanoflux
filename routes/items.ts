@@ -4,6 +4,10 @@ import {
   markItemsRead,
   markItemRead,
 } from "../db/items";
+import {
+  acceptItemForFilter,
+  rejectItemForFilter,
+} from "../services/items/filter-verdict";
 import { DEFAULT_LIMIT, MAX_LIMIT } from "../db/schema";
 import { encodeCursor, parseTimeUnit } from "../db/utils";
 
@@ -118,7 +122,36 @@ function markItemReadHandler({ params }: {
   }
 }
 
+async function setItemFilterVerdictHandler({
+  params,
+  body,
+}: {
+  params: { id: string };
+  body: { filter_id?: string; verdict?: string };
+}) {
+  try {
+    const filterId = body.filter_id?.trim();
+    if (!filterId) {
+      return { code: 400, message: "Missing filter_id" };
+    }
+    if (body.verdict !== "accept" && body.verdict !== "reject") {
+      return { code: 400, message: "Invalid verdict" };
+    }
+    if (body.verdict === "accept") {
+      const data = await acceptItemForFilter(params.id, filterId);
+      return { code: 0, message: "ok", data };
+    }
+    const data = await rejectItemForFilter(params.id, filterId);
+    return { code: 0, message: "ok", data };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to set filter verdict";
+    return { code: 500, message };
+  }
+}
+
 export const routes = new Elysia({ prefix: "/api/items" })
   .get("/", getItemsHandler)
   .post("/read-all", markItemsReadHandler)
-  .post("/:id/read", markItemReadHandler);
+  .post("/:id/read", markItemReadHandler)
+  .post("/:id/filter-verdict", setItemFilterVerdictHandler);

@@ -3,6 +3,7 @@ import {
   desc,
   eq,
   gte,
+  inArray,
   isNotNull,
   isNull,
   lt,
@@ -129,6 +130,18 @@ export function getItems(options?: {
   }
 }
 
+export function getExistingGuids(guids: string[]): Set<string> {
+  if (guids.length === 0) return new Set();
+
+  const rows = db
+    .select({ guid: items.guid })
+    .from(items)
+    .where(inArray(items.guid, guids))
+    .all();
+
+  return new Set(rows.map((row) => row.guid));
+}
+
 export function addItems(
   feedId: string,
   newItems: {
@@ -151,10 +164,12 @@ export function addItems(
 
     const feed_title = feed.title;
     const hasFilters = getFilters().length > 0;
+    const existingGuids = getExistingGuids(newItems.map((item) => item.guid));
 
     let insertedItems = [];
 
     for (const newItem of newItems) {
+      if (existingGuids.has(newItem.guid)) continue;
 
       const id = newItemId();
       const { passed_filters } = newItem;
@@ -171,12 +186,13 @@ export function addItems(
           is_read: 0,
           passed_filters,
         })
-        .onConflictDoNothing({ target: [items.feed_id, items.guid] })
+        .onConflictDoNothing({ target: items.guid })
         .returning()
         .get();
 
 
       if (inserted) {
+        existingGuids.add(inserted.guid);
         insertedItems.push({
           ...inserted,
           filter_passed: isItemFilterPassed(inserted.passed_filters, hasFilters),
@@ -237,6 +253,46 @@ export function markItemRead(id: string): void {
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to mark item ${id} as read: ${detail}`);
+  }
+}
+
+export function getItemById(id: string): {
+  id: string;
+  title: string;
+  content: string | null;
+  passed_filters: string | null;
+  is_read: number;
+} | undefined {
+  try {
+    return db
+      .select({
+        id: items.id,
+        title: items.title,
+        content: items.content,
+        passed_filters: items.passed_filters,
+        is_read: items.is_read,
+      })
+      .from(items)
+      .where(eq(items.id, id))
+      .get();
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to get item ${id}: ${detail}`);
+  }
+}
+
+export function updateItemPassedFilters(
+  id: string,
+  passed_filters: string | null,
+): void {
+  try {
+    db.update(items)
+      .set({ passed_filters })
+      .where(eq(items.id, id))
+      .run();
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to update item ${id} passed filters: ${detail}`);
   }
 }
 

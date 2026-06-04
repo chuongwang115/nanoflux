@@ -7,6 +7,7 @@
     fetchItemsPage,
     markAllItemsRead,
     markItemRead,
+    setItemFilterVerdict,
     type Filter,
     type Item,
   } from "../lib/api";
@@ -23,8 +24,15 @@
     resolveSelectedFilterId,
     UNMATCHED_FILTER_ID,
   } from "../lib/selected-filter";
+  import {
+    clearFilterAccepted,
+    isFilterAccepted,
+    markFilterAccepted,
+    readFilterAcceptedKeys,
+  } from "../lib/filter-accepted";
   import HighlightedText from "./HighlightedText.svelte";
   import MarkAllReadButton from "./buttons/MarkAllReadButton.svelte";
+  import FilterVerdictButtons from "./buttons/FilterVerdictButtons.svelte";
 
   const filterTooltipClass =
     "pointer-events-none absolute bottom-full left-0 z-20 mb-1 w-max max-w-xs rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-xs leading-snug whitespace-normal text-neutral-600 opacity-0 shadow-sm transition-opacity group-hover/filter:opacity-100 group-focus-within/filter:opacity-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 [@media(hover:none)]:opacity-100";
@@ -52,8 +60,12 @@
   let loadGeneration = 0;
   /** Bumps every minute so relative timestamps (e.g. "18 min ago") stay current. */
   let now = $state(Date.now());
+  let filterAcceptedKeys = $state(readFilterAcceptedKeys());
 
   const filterIsRead = $derived(filter === "unread" ? (0 as const) : undefined);
+  const showFilterVerdictActions = $derived(
+    Boolean(selectedFilterId && selectedFilterId !== UNMATCHED_FILTER_ID),
+  );
 
   function filterTabClass(active: boolean): string {
     return active
@@ -202,6 +214,38 @@
         );
       }
     });
+  }
+
+  async function handleFilterAccept(item: Item) {
+    const filterId = selectedFilterId;
+    if (!filterId || filterId === UNMATCHED_FILTER_ID) return;
+
+    filterAcceptedKeys = markFilterAccepted(item.id, filterId);
+
+    try {
+      await setItemFilterVerdict(item.id, filterId, "accept");
+    } catch {
+      filterAcceptedKeys = clearFilterAccepted(item.id, filterId);
+    }
+  }
+
+  function applyRejectedItem(item: Item) {
+    items = items.filter((n) => n.id !== item.id);
+  }
+
+  async function handleFilterReject(item: Item) {
+    const filterId = selectedFilterId;
+    if (!filterId || filterId === UNMATCHED_FILTER_ID) return;
+
+    const previous = item;
+    filterAcceptedKeys = clearFilterAccepted(item.id, filterId);
+    applyRejectedItem(item);
+
+    try {
+      await setItemFilterVerdict(item.id, filterId, "reject");
+    } catch {
+      items = [...items, previous].sort(compareItem);
+    }
   }
 
   export async function markAllRead() {
@@ -372,54 +416,65 @@
               />
             </p>
           {/if}
-          {#if filterDisplay.passedFilters.length > 0}
-            <div
-              class="mt-1.5 text-xs text-neutral-400 dark:text-neutral-500"
-            >
-              {#each filterDisplay.passedFilters as entry, index (entry.id)}
-                {@const name = filterNameById.get(entry.id) ?? entry.id}
-                {@const keywords = parseMatchedKeywords(entry.keywords)}
-                {@const reason = entry.reason?.trim() || null}
-                {#if index > 0}<span>, </span>{/if}
-                {#if keywords.length > 0 || reason}
-                  <span
-                    class="group/filter relative inline cursor-help underline decoration-dotted decoration-neutral-300 underline-offset-2 dark:decoration-neutral-600"
-                    tabindex="0"
-                  >
-                    {name}
-                    <span role="tooltip" class={filterTooltipClass}>
-                      {#if keywords.length > 0}
-                        <span
-                          class="block font-medium text-neutral-700 dark:text-neutral-200"
-                        >
-                          {t("items.matchedKeywords")}
+          {#if filterDisplay.passedFilters.length > 0 || filterDisplay.aiReason || showFilterVerdictActions}
+            <div class="mt-1.5 flex items-center justify-between gap-2">
+              <div
+                class="min-w-0 flex-1 text-xs text-neutral-400 dark:text-neutral-500"
+              >
+                {#if filterDisplay.passedFilters.length > 0}
+                  {#each filterDisplay.passedFilters as entry, index (entry.id)}
+                    {@const name = filterNameById.get(entry.id) ?? entry.id}
+                    {@const keywords = parseMatchedKeywords(entry.keywords)}
+                    {@const reason = entry.reason?.trim() || null}
+                    {#if index > 0}<span>, </span>{/if}
+                    {#if keywords.length > 0 || reason}
+                      <span
+                        class="group/filter relative inline cursor-help underline decoration-dotted decoration-neutral-300 underline-offset-2 dark:decoration-neutral-600"
+                        tabindex="0"
+                      >
+                        {name}
+                        <span role="tooltip" class={filterTooltipClass}>
+                          {#if keywords.length > 0}
+                            <span
+                              class="block font-medium text-neutral-700 dark:text-neutral-200"
+                            >
+                              {t("items.matchedKeywords")}
+                            </span>
+                            <span>{keywords.join(", ")}</span>
+                          {/if}
+                          {#if reason}
+                            <span
+                              class="block font-medium text-neutral-700 dark:text-neutral-200 {keywords.length >
+                              0
+                                ? 'mt-1'
+                                : ''}"
+                            >
+                              {t("items.passReason")}
+                            </span>
+                            <span>{reason}</span>
+                          {/if}
                         </span>
-                        <span>{keywords.join(", ")}</span>
-                      {/if}
-                      {#if reason}
-                        <span
-                          class="block font-medium text-neutral-700 dark:text-neutral-200 {keywords.length >
-                          0
-                            ? 'mt-1'
-                            : ''}"
-                        >
-                          {t("items.passReason")}
-                        </span>
-                        <span>{reason}</span>
-                      {/if}
-                    </span>
-                  </span>
-                {:else}
-                  <span>{name}</span>
+                      </span>
+                    {:else}
+                      <span>{name}</span>
+                    {/if}
+                  {/each}
+                {:else if filterDisplay.aiReason}
+                  {filterDisplay.aiReason}
                 {/if}
-              {/each}
+              </div>
+              {#if showFilterVerdictActions}
+                <FilterVerdictButtons
+                  accepted={isFilterAccepted(
+                    filterAcceptedKeys,
+                    item.id,
+                    selectedFilterId!,
+                  )}
+                  onAccept={() => handleFilterAccept(item)}
+                  onReject={() => handleFilterReject(item)}
+                />
+              {/if}
             </div>
-          {:else if filterDisplay.aiReason}
-            <p
-              class="mt-1.5 text-xs text-neutral-400 dark:text-neutral-500"
-            >
-              {filterDisplay.aiReason}
-            </p>
           {/if}
         </article>
       </li>

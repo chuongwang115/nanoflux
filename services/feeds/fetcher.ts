@@ -1,5 +1,5 @@
 import Parser from "rss-parser";
-import { addItems } from "../../db/items";
+import { addItems, getExistingGuids } from "../../db/items";
 import { getDueFeeds, updateFeedFetchState } from "../../db/feeds";
 import type { Feed } from "../../db/schema";
 import { parseFeedGuids, serializeFeedGuids } from "../../db/utils";
@@ -92,7 +92,10 @@ export async function fetchFeed(feed: Feed): Promise<{
       .filter((item): item is NonNullable<typeof item> => item !== null);
 
     const knownGuids = parseFeedGuids(feed.last_guids);
-    const candidates = entries.filter((entry) => !knownGuids.has(entry.guid));
+    const globalGuids = getExistingGuids(entries.map((entry) => entry.guid));
+    const candidates = entries.filter(
+      (entry) => !knownGuids.has(entry.guid) && !globalGuids.has(entry.guid),
+    );
     const enriched = await enrichItemsContent(candidates);
     const filtered = await filterItems(enriched);
     const inserted = addItems(feed.id, filtered);

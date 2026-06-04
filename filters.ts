@@ -12,8 +12,6 @@ export type Filter = {
   whitelist: string;
   blacklist: string;
   prompt: string;
-  created_at: string;
-  updated_at: string;
 };
 
 export type FilterInput = {
@@ -22,6 +20,8 @@ export type FilterInput = {
   blacklist?: string;
   prompt?: string;
 };
+
+export type FilterReorderAction = "up" | "down" | "top" | "bottom";
 
 let filters: Filter[] = [];
 
@@ -61,7 +61,7 @@ async function writeFiltersFile(): Promise<void> {
   await writeFile(FILTERS_PATH, data, "utf-8");
 }
 
-function normalizeFilter(raw: Partial<Filter>, now: string): Filter {
+function normalizeFilter(raw: Partial<Filter>): Filter {
   const id =
     raw.id && isValidFilterId(raw.id) ? raw.id : allocateFilterId();
 
@@ -71,23 +71,21 @@ function normalizeFilter(raw: Partial<Filter>, now: string): Filter {
     whitelist: raw.whitelist ?? "",
     blacklist: raw.blacklist ?? "",
     prompt: raw.prompt ?? "",
-    created_at: raw.created_at ?? now,
-    updated_at: raw.updated_at ?? now,
   };
 }
 
 export async function loadFilters(): Promise<void> {
   try {
     const raw = await readFiltersFile();
-    const now = new Date().toISOString();
     filters = [];
-    const normalized = raw.map((entry) => normalizeFilter(entry, now));
+    const normalized = raw.map((entry) => normalizeFilter(entry));
     const needsPersist = raw.some(
       (entry, index) =>
         !entry.id ||
         !isValidFilterId(entry.id) ||
-        !entry.created_at ||
-        normalized[index]?.id !== entry.id,
+        normalized[index]?.id !== entry.id ||
+        "created_at" in entry ||
+        "updated_at" in entry,
     );
     filters = normalized;
     if (needsPersist) {
@@ -100,7 +98,7 @@ export async function loadFilters(): Promise<void> {
 }
 
 export function getFilters(): Filter[] {
-  return [...filters].sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+  return [...filters];
 }
 
 export function getFilter(id: string): Filter | null {
@@ -113,15 +111,12 @@ export async function createFilter(input: FilterInput): Promise<Filter> {
     throw new Error("Filter name is required");
   }
 
-  const now = new Date().toISOString();
   const created: Filter = {
     id: allocateFilterId(),
     name,
     whitelist: input.whitelist ?? "",
     blacklist: input.blacklist ?? "",
     prompt: input.prompt ?? "",
-    created_at: now,
-    updated_at: now,
   };
 
   filters.push(created);
@@ -153,7 +148,6 @@ export async function updateFilter(
     blacklist:
       input.blacklist !== undefined ? input.blacklist : existing.blacklist,
     prompt: input.prompt !== undefined ? input.prompt : existing.prompt,
-    updated_at: new Date().toISOString(),
   };
 
   filters[index] = updated;
@@ -170,4 +164,45 @@ export async function deleteFilter(id: string): Promise<boolean> {
   filters.splice(index, 1);
   await writeFiltersFile();
   return true;
+}
+
+function moveFilter(from: number, to: number): void {
+  if (from === to) return;
+  const [item] = filters.splice(from, 1);
+  if (!item) return;
+  filters.splice(to, 0, item);
+}
+
+export async function reorderFilter(
+  id: string,
+  action: FilterReorderAction,
+): Promise<Filter[]> {
+  const index = filters.findIndex((filter) => filter.id === id);
+  if (index === -1) {
+    throw new Error("Filter does not exist");
+  }
+
+  let target = index;
+  switch (action) {
+    case "up":
+      target = index - 1;
+      break;
+    case "down":
+      target = index + 1;
+      break;
+    case "top":
+      target = 0;
+      break;
+    case "bottom":
+      target = filters.length - 1;
+      break;
+  }
+
+  if (target < 0 || target >= filters.length || target === index) {
+    return getFilters();
+  }
+
+  moveFilter(index, target);
+  await writeFiltersFile();
+  return getFilters();
 }

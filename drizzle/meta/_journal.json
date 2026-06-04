@@ -78,6 +78,13 @@
       "when": 1780231000000,
       "tag": "0010_drop_legacy_filter_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1780232000000,
+      "tag": "0011_items_guid_unique",
+      "breakpoints": true
     }
   ]
 }

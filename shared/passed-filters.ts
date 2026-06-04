@@ -34,6 +34,15 @@ export function isItemFilterPassed(
   return Boolean(passedFilters?.trim());
 }
 
+/** Remove one filter entry from serialized `passed_filters`. */
+export function removePassedFilterEntry(
+  raw: string | null,
+  filterId: string,
+): string | null {
+  const entries = parsePassedFilters(raw).filter((entry) => entry.id !== filterId);
+  return serializePassedFilters(entries);
+}
+
 /** Parse `t_items.passed_filters` (JSON array or legacy comma-separated ids). */
 export function parsePassedFilters(raw: string | null): PassedFilterEntry[] {
   if (!raw?.trim()) return [];

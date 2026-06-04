@@ -225,14 +225,29 @@ export async function markItemRead(id: string) {
   assertApiOk(body);
 }
 
+export async function setItemFilterVerdict(
+  itemId: string,
+  filterId: string,
+  verdict: "accept" | "reject",
+) {
+  const body = await request<
+    ApiResult & {
+      data?: { passed_filters: string | null; is_read: number };
+    }
+  >(`/api/items/${itemId}/filter-verdict`, {
+    method: "POST",
+    body: JSON.stringify({ filter_id: filterId, verdict }),
+  });
+  assertApiOk(body);
+  return body.data;
+}
+
 export type Filter = {
   id: string;
   name: string;
   whitelist: string;
   blacklist: string;
   prompt: string;
-  created_at: string;
-  updated_at: string;
 };
 
 type FiltersApiResult = {
@@ -302,5 +317,20 @@ export function deleteFilter(id: string) {
     method: "POST",
   }).then((body) => {
     assertApiOk(body);
+  });
+}
+
+export type FilterReorderAction = "up" | "down" | "top" | "bottom";
+
+export function reorderFilter(id: string, action: FilterReorderAction) {
+  return request<FiltersApiResult>(`/api/filters/${id}/reorder`, {
+    method: "POST",
+    body: JSON.stringify({ action }),
+  }).then((body) => {
+    assertApiOk(body);
+    if (!body.data) {
+      throw new Error(body.message || "Failed to reorder filters");
+    }
+    return body.data.filters;
   });
 }

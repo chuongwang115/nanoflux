@@ -164,9 +164,7 @@ Example:
     "name": "资管",
     "whitelist": "基金,券商,证券,保险",
     "blacklist": "早间新闻精选,投资避雷针",
-    "prompt": "Keep only news directly related to asset management regulation, product launches, or institutional fund flows.",
-    "created_at": "2026-06-03T01:50:05.851Z",
-    "updated_at": "2026-06-03T01:50:05.851Z"
+    "prompt": "Keep only news directly related to asset management regulation, product launches, or institutional fund flows."
   }
 ]
 ```

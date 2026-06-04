@@ -1,6 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import Lightbulb from "@lucide/svelte/icons/lightbulb";
+  import ArrowDown from "@lucide/svelte/icons/arrow-down";
+  import ArrowDownToLine from "@lucide/svelte/icons/arrow-down-to-line";
+  import ArrowUp from "@lucide/svelte/icons/arrow-up";
+  import ArrowUpToLine from "@lucide/svelte/icons/arrow-up-to-line";
   import Pencil from "@lucide/svelte/icons/pencil";
   import ShieldCheck from "@lucide/svelte/icons/shield-check";
   import ShieldX from "@lucide/svelte/icons/shield-x";
@@ -9,14 +13,19 @@
     createFilter,
     deleteFilter,
     fetchFilters,
+    reorderFilter,
     updateFilter,
     type Filter,
+    type FilterReorderAction,
   } from "../lib/api";
   import { t } from "../lib/locale.svelte";
-  import { formatTime, normalizeCommas } from "../lib/utils";
+  import { normalizeCommas } from "../lib/utils";
 
   const iconProps = { size: 16, strokeWidth: 1.5, "aria-hidden": true as const };
+  const reorderIconProps = { size: 14, strokeWidth: 1.5, "aria-hidden": true as const };
   const fieldIconProps = { size: 14, strokeWidth: 1.5, "aria-hidden": true as const };
+  const actionButtonClass =
+    "inline-flex cursor-pointer items-center justify-center rounded-md p-1 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-neutral-400 dark:hover:text-neutral-100 dark:disabled:hover:text-neutral-500";
   const inputClass =
     "w-full border-0 border-b border-neutral-200 bg-transparent py-2 text-sm outline-none placeholder:text-neutral-300 focus:border-neutral-900 dark:border-neutral-700 dark:placeholder:text-neutral-600 dark:focus:border-neutral-100";
   const textareaClass = "min-h-48 resize-y " + inputClass;
@@ -30,8 +39,6 @@
   let formError = $state("");
   let listError = $state("");
   let loading = $state(true);
-  /** Bumps every minute so relative timestamps stay current. */
-  let now = $state(Date.now());
 
   const isEditing = $derived(editId !== null);
 
@@ -120,12 +127,18 @@
     }
   }
 
+  async function handleReorder(id: string, action: FilterReorderAction) {
+    listError = "";
+    try {
+      filters = await reorderFilter(id, action);
+    } catch (e) {
+      listError = e instanceof Error ? e.message : t("filters.reorderFailed");
+      await loadFilters();
+    }
+  }
+
   onMount(() => {
     void loadFilters();
-    const timer = setInterval(() => {
-      now = Date.now();
-    }, 60_000);
-    return () => clearInterval(timer);
   });
 </script>
 
@@ -192,17 +205,19 @@
     <p class="text-sm text-neutral-300 dark:text-neutral-600">{t("filters.noFilters")}</p>
   {:else}
     <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
-      {#each filters as filter (filter.id)}
+      {#each filters as filter, index (filter.id)}
         {@const promptPreview = previewPrompt(filter.prompt)}
+        {@const isFirst = index === 0}
+        {@const isLast = index === filters.length - 1}
         <li class="group grid w-full grid-cols-[1fr_auto] gap-x-4 gap-y-2 py-5">
           <p class="min-w-0 text-sm font-medium">{filter.name}</p>
           <div class="relative flex shrink-0 items-center">
             <div
-              class="absolute right-full mr-2 flex gap-1 text-neutral-400 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 dark:text-neutral-500"
+              class="absolute right-full mr-2 flex gap-0.5 text-neutral-400 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 dark:text-neutral-500"
             >
               <button
                 type="button"
-                class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 hover:text-neutral-900 dark:hover:text-neutral-100"
+                class={actionButtonClass}
                 aria-label={t("filters.edit")}
                 title={t("filters.edit")}
                 onclick={() => startEdit(filter)}
@@ -211,21 +226,54 @@
               </button>
               <button
                 type="button"
-                class="inline-flex cursor-pointer items-center justify-center rounded-md p-1 hover:text-red-500"
+                class={actionButtonClass + " hover:text-red-500 disabled:hover:text-neutral-400 dark:disabled:hover:text-neutral-500"}
                 aria-label={t("filters.delete")}
                 title={t("filters.delete")}
                 onclick={() => handleDelete(filter.id)}
               >
                 <Trash2 {...iconProps} />
               </button>
+              <button
+                type="button"
+                class={actionButtonClass}
+                aria-label={t("filters.moveTop")}
+                title={t("filters.moveTop")}
+                disabled={isFirst}
+                onclick={() => handleReorder(filter.id, "top")}
+              >
+                <ArrowUpToLine {...reorderIconProps} />
+              </button>
+              <button
+                type="button"
+                class={actionButtonClass}
+                aria-label={t("filters.moveUp")}
+                title={t("filters.moveUp")}
+                disabled={isFirst}
+                onclick={() => handleReorder(filter.id, "up")}
+              >
+                <ArrowUp {...reorderIconProps} />
+              </button>
+              <button
+                type="button"
+                class={actionButtonClass}
+                aria-label={t("filters.moveDown")}
+                title={t("filters.moveDown")}
+                disabled={isLast}
+                onclick={() => handleReorder(filter.id, "down")}
+              >
+                <ArrowDown {...reorderIconProps} />
+              </button>
+              <button
+                type="button"
+                class={actionButtonClass}
+                aria-label={t("filters.moveBottom")}
+                title={t("filters.moveBottom")}
+                disabled={isLast}
+                onclick={() => handleReorder(filter.id, "bottom")}
+              >
+                <ArrowDownToLine {...reorderIconProps} />
+              </button>
             </div>
-            <time
-              datetime={filter.updated_at}
-              class="text-xs text-neutral-400 dark:text-neutral-500"
-              title={t("filters.updatedAt")}
-            >
-              {formatTime(filter.updated_at, now)}
-            </time>
           </div>
           <p
             class="col-span-2 flex items-start gap-1.5 text-sm leading-5 text-neutral-400 dark:text-neutral-500"

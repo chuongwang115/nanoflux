@@ -53,7 +53,7 @@ export const items = sqliteTable(
       .default(sql`(datetime('now'))`),
   },
   (table) => [
-    unique().on(table.feed_id, table.guid),
+    unique().on(table.guid),
     index("idx_items_published_at").on(table.published_at),
   ],
 );
