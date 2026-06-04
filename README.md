@@ -34,6 +34,7 @@ Built on [Bun](https://bun.sh), [Elysia](https://elysiajs.com), and [Svelte 5](h
   3. **AI relevance filter** (optional) — after passing the whitelist, items can be scored by an OpenAI-compatible chat model against that filter's prompt
 - New items are evaluated against **every** configured filter; an item is stored if it passes **at least one** filter. Per-filter results are saved in `passed_filters` (filter id, matched keywords, AI notes).
 - Home list: **Unread** / **All** tabs, optional filter chips to narrow by filter, plus an **Unmatched** chip for items that failed every filter
+- **Filter feedback** — when a specific filter chip is selected, each item shows Accept / Reject buttons to refine that filter's AI prompt based on your judgment (requires AI API configuration; see [Configuration](#configuration))
 - Infinite scroll with cursor-based pagination
 - Read tracking for individual items or all visible items (respecting the active filter selection)
 - Automatic cleanup of items older than 90 days
@@ -43,8 +44,8 @@ Built on [Bun](https://bun.sh), [Elysia](https://elysiajs.com), and [Svelte 5](h
 - Real-time updates via Server-Sent Events (SSE); in-memory list capped at 100 items to limit DOM size
 - Progressive Web App (installable, offline asset caching)
 - Bilingual UI (English / Chinese), light/dark theme, adjustable font size
-- Feed management page (`/feeds`) with auto-preview, create/edit/delete, and sortable list
-- Filters management page (`/filters`) for creating, editing, and deleting named filters
+- Feed management page (`/feeds`) with auto-preview, create/edit/delete, sortable list, and **OPML export** (download all feeds as `nanoflux.opml`)
+- Filters management page (`/filters`) for creating, editing, deleting, and reordering named filters
 
 **Integration & Networking**
 
@@ -131,6 +132,17 @@ When a filter's `prompt` is non-empty, items that pass that filter's blacklist a
 | `MODEL_NAME` | Model ID (e.g. `gpt-4o-mini`) |
 
 If a filter has a prompt but these variables are missing, the AI step for that filter is skipped and whitelist-passed items are kept. On API errors, items also fall back to passing through for that filter.
+
+### Filter feedback & prompt optimization (optional)
+
+When you select a filter chip on the home list, each item shows **Accept** and **Reject** buttons. These send the item to the same OpenAI-compatible API to rewrite that filter's `prompt`:
+
+| Action | Effect |
+| --- | --- |
+| **Accept** | Reinforces the filter — the AI rewrites the prompt so similar items are more likely to pass in the future |
+| **Reject** | Removes the item from that filter's `passed_filters` and rewrites the prompt so similar items are more likely to be excluded |
+
+The optimizer produces a full rewritten prompt (not an appended rule list). If the AI returns unchanged text or the API call fails, the filter prompt is left as-is. Requires `BASE_URL`, `API_KEY`, and `MODEL_NAME` to be configured.
 
 ### Proxy (optional)
 
@@ -243,6 +255,7 @@ All endpoints return JSON. When `HOST=127.0.0.1`, these routes are localhost-onl
 | Method | Path | Description |
 | --- | --- | --- |
 | `GET` | `/api/feeds` | Paginated feed list (cursor, limit, keyword, sort) |
+| `GET` | `/api/feeds/export.opml` | Download all feeds as OPML 2.0 (`Content-Disposition: nanoflux.opml`) |
 | `GET` | `/api/feeds/:id` | Get a feed by ID |
 | `POST` | `/api/feeds/meta` | Preview feed title and description |
 | `POST` | `/api/feeds/create` | Create a feed |
@@ -264,6 +277,7 @@ Query parameters for `GET /api/feeds`:
 | --- | --- | --- |
 | `GET` | `/api/items?cursor=&limit=` | Paginated news list (newest first) |
 | `POST` | `/api/items/:id/read` | Mark one item as read |
+| `POST` | `/api/items/:id/filter-verdict` | Accept or reject an item for a filter (body: `filter_id`, `verdict`: `accept` \| `reject`) |
 | `POST` | `/api/items/read-all` | Mark all items up to a timestamp as read |
 
 Each item includes `content` (RSS summary or scraped full text), `passed_filters` (JSON array of `{ id, keywords, reason }` for filters that passed), and `filter_passed` (derived: whether the item passed any filter when filters are configured).
@@ -282,6 +296,8 @@ Query parameters for `GET /api/items`:
 
 `POST /api/items/read-all` accepts the same `filter_passed` and `passed_filter_id` fields in the JSON body to scope bulk mark-read.
 
+`POST /api/items/:id/filter-verdict` returns `{ passed_filters, is_read, promptUpdated }`. `promptUpdated` is `true` when the filter's AI prompt was rewritten.
+
 ### Filters — `/api/filters`
 
 | Method | Path | Description |
@@ -290,6 +306,7 @@ Query parameters for `GET /api/items`:
 | `GET` | `/api/filters/:id` | Get one filter |
 | `POST` | `/api/filters/create` | Create a filter (`name`, optional `whitelist`, `blacklist`, `prompt`) |
 | `POST` | `/api/filters/:id` | Update a filter (partial body accepted) |
+| `POST` | `/api/filters/:id/reorder` | Reorder a filter (`action`: `up`, `down`, `top`, or `bottom`) |
 | `POST` | `/api/filters/:id/delete` | Delete a filter |
 
 ### Real-time — `/sse`
@@ -300,9 +317,9 @@ Connect with `EventSource` to receive `items` events when new articles arrive, p
 
 1. On startup and every minute (UTC cron), the scheduler loads feeds whose `next_fetched_at` is due.
 2. Each feed is fetched over HTTP with the `NanoFlux/1.0` user agent (15 s timeout) and parsed as RSS/Atom.
-3. Each entry gets a normalized GUID: MD5 hex of the article link (feeds that already provide an MD5 GUID are kept as-is). Per-feed known GUIDs are stored in the `last_guids` column so only entries not seen before are treated as new.
+3. Each entry gets a normalized GUID: MD5 hex of the article link (feeds that already provide an MD5 GUID are kept as-is). Per-feed known GUIDs are stored in the `last_guids` column; entries already seen by this feed or already present in the database (global GUID uniqueness) are skipped.
 4. For each new entry whose RSS summary is shorter than ~80 word tokens (counted with `Intl.Segmenter` for Chinese and English — roughly ~200 Chinese characters or ~80 English words), the article page is fetched (desktop browser user agent, 15 s timeout, up to 3 concurrent requests) and parsed with `@extractus/article-extractor` to fill in `content`. Already-known entries skip scraping.
-5. New items are deduplicated by `(feed_id, guid)`, evaluated through **each** configured filter (blacklist → whitelist → optional AI per filter), and inserted into SQLite with `passed_filters` listing every filter that accepted the item (or `null` if none passed).
+5. New items are deduplicated globally by `guid` (same article from different feeds is stored once), evaluated through **each** configured filter (blacklist → whitelist → optional AI per filter), and inserted into SQLite with `passed_filters` listing every filter that accepted the item (or `null` if none passed).
 6. All newly inserted items are broadcast to connected SSE clients; the web UI applies the selected filter chip and read tab client-side.
 7. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear.
 8. Daily at 01:00 UTC, items older than 90 days are deleted.
@@ -316,9 +333,11 @@ Connect with `EventSource` to receive `items` events when new articles arrive, p
 ├── mcp/              MCP server and tools
 ├── sse/              Server-Sent Events streaming
 ├── services/
-│   ├── feeds/        Feed fetching and adaptive polling intervals
+│   ├── ai/           OpenAI-compatible chat client
+│   ├── feeds/        Feed fetching, adaptive polling intervals, and OPML export
 │   ├── content/      Full-text article extraction
-│   ├── filters/      Blacklist, whitelist, and AI relevance filters
+│   ├── filters/      Blacklist, whitelist, AI relevance, and prompt feedback
+│   ├── items/        Item-level filter verdict (accept / reject)
 │   ├── rss.ts        RSS/Atom HTTP fetch and parse
 │   ├── google-news.ts Live Google News search
 │   ├── http-fetcher.ts Shared HTTP client (proxy-aware)

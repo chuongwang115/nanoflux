@@ -190,6 +190,24 @@ export function deleteFeed(id: string) {
   });
 }
 
+export async function downloadFeedsOpml(): Promise<void> {
+  const res = await fetch("/api/feeds/export.opml");
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `Export failed (${res.status})`);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  try {
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "nanoflux.opml";
+    anchor.click();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 export async function markAllItemsRead(
   until: string,
   options?: {

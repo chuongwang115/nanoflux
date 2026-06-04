@@ -1,10 +1,12 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import Download from "@lucide/svelte/icons/download";
   import Pencil from "@lucide/svelte/icons/pencil";
   import Trash2 from "@lucide/svelte/icons/trash-2";
   import {
     createFeed,
     deleteFeed,
+    downloadFeedsOpml,
     fetchFeedsPage,
     previewFeed,
     updateFeed,
@@ -36,6 +38,7 @@
   let previewRequest = 0;
   let sentinel = $state<HTMLDivElement | null>(null);
   let sort = $state<FeedSort>("updated_desc");
+  let exportingOpml = $state(false);
   /** Bumps every minute so relative timestamps stay current. */
   let now = $state(Date.now());
 
@@ -222,6 +225,19 @@
     await loadFeeds();
   }
 
+  async function handleExportOpml() {
+    if (exportingOpml) return;
+    listError = "";
+    exportingOpml = true;
+    try {
+      await downloadFeedsOpml();
+    } catch (e) {
+      listError = e instanceof Error ? e.message : t("feeds.exportOpmlFailed");
+    } finally {
+      exportingOpml = false;
+    }
+  }
+
   onMount(() => {
     void loadFeeds();
     const timer = setInterval(() => {
@@ -300,11 +316,23 @@
     >
       {t("feeds.feedList")}
     </h2>
-    <div
-      class="flex gap-3 text-xs"
-      role="group"
-      aria-label={t("feeds.sortBy")}
-    >
+    <div class="flex flex-wrap items-center gap-3 text-xs">
+      <button
+        type="button"
+        class="inline-flex items-center gap-1 text-neutral-400 transition-colors hover:text-neutral-600 disabled:opacity-50 dark:hover:text-neutral-300"
+        disabled={exportingOpml}
+        aria-label={t("feeds.exportOpml")}
+        title={t("feeds.exportOpml")}
+        onclick={() => void handleExportOpml()}
+      >
+        <Download {...iconProps} />
+        {exportingOpml ? t("feeds.exportingOpml") : t("feeds.exportOpml")}
+      </button>
+      <div
+        class="flex gap-3"
+        role="group"
+        aria-label={t("feeds.sortBy")}
+      >
       <button
         type="button"
         class="transition-colors {sort === 'updated_desc'
@@ -325,6 +353,7 @@
       >
         {t("feeds.sortByPublished")}
       </button>
+      </div>
     </div>
   </div>
   {#if listError}

@@ -5,12 +5,14 @@ import {
   deleteFeed,
   getFeed,
   getFeeds,
+  getAllFeeds,
   feedCursorSortTime,
   type FeedSort,
 } from "../db/feeds";
 import { encodeCursor } from "../db/utils";
 import { DEFAULT_LIMIT, MAX_LIMIT } from "../db/schema";
 import { fetchFeedMetadata } from "../services/feeds/fetcher";
+import { feedsToOpml } from "../services/feeds/opml";
 
 const FEED_SORTS = new Set<FeedSort>([
   "updated_desc",
@@ -140,8 +142,25 @@ function deleteFeedHandler({ params }: { params: { id: string; }; }) {
   }
 }
 
+function exportOpmlHandler() {
+  try {
+    const opml = feedsToOpml(getAllFeeds());
+    return new Response(opml, {
+      headers: {
+        "Content-Type": "application/xml; charset=utf-8",
+        "Content-Disposition": 'attachment; filename="nanoflux.opml"',
+      },
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to export OPML";
+    return new Response(message, { status: 500 });
+  }
+}
+
 export const routes = new Elysia({ prefix: "/api/feeds" })
   .get("/", getFeedsHandler)
+  .get("/export.opml", exportOpmlHandler)
   .post("/create", createFeedHandler)
   .get("/:id", getFeedHandler)
   .post("/:id", updateFeedHandler)

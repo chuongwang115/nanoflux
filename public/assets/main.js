@@ -6627,6 +6627,9 @@ var messages = {
     "feeds.parseFailed": "解析失败",
     "feeds.saveFailed": "保存失败",
     "feeds.deleteFailed": "删除失败",
+    "feeds.exportOpml": "导出 OPML",
+    "feeds.exportingOpml": "导出中…",
+    "feeds.exportOpmlFailed": "导出失败",
     "filters.title": "Filter 管理",
     "filters.back": "返回",
     "filters.name": "名称",
@@ -6713,6 +6716,9 @@ var messages = {
     "feeds.parseFailed": "Failed to parse feed",
     "feeds.saveFailed": "Failed to save",
     "feeds.deleteFailed": "Failed to delete",
+    "feeds.exportOpml": "Export OPML",
+    "feeds.exportingOpml": "Exporting…",
+    "feeds.exportOpmlFailed": "Export failed",
     "filters.title": "Filter management",
     "filters.back": "Back",
     "filters.name": "Name",
@@ -7365,8 +7371,49 @@ if (undefined) {}
 var Header_default = Header;
 delegate(["click"]);
 
-// node_modules/@lucide/svelte/dist/icons/pencil.svelte
+// node_modules/@lucide/svelte/dist/icons/download.svelte
 var root10 = from_html(`<!--
+@lucide/svelte v1.16.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMTIgMTVWMyIgLz4KICA8cGF0aCBkPSJNMjEgMTV2NGEyIDIgMCAwIDEtMiAySDVhMiAyIDAgMCAxLTItMnYtNCIgLz4KICA8cGF0aCBkPSJtNyAxMCA1IDUgNS01IiAvPgo8L3N2Zz4K) - https://lucide.dev/icons/download
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Download($$anchor, $$props) {
+  let props = rest_props($$props, ["$$slots", "$$events", "$$legacy"]);
+  const iconNode = [
+    ["path", { d: "M12 15V3" }],
+    ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }],
+    ["path", { d: "m7 10 5 5 5-5" }]
+  ];
+  var fragment = root10();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "download" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var download_default = Download;
+// node_modules/@lucide/svelte/dist/icons/pencil.svelte
+var root11 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -7397,7 +7444,7 @@ function Pencil($$anchor, $$props) {
     ],
     ["path", { d: "m15 5 4 4" }]
   ];
-  var fragment = root10();
+  var fragment = root11();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -7411,7 +7458,7 @@ function Pencil($$anchor, $$props) {
 if (undefined) {}
 var pencil_default = Pencil;
 // node_modules/@lucide/svelte/dist/icons/trash-2.svelte
-var root11 = from_html(`<!--
+var root12 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -7440,7 +7487,7 @@ function Trash_2($$anchor, $$props) {
     ["path", { d: "M3 6h18" }],
     ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" }]
   ];
-  var fragment = root11();
+  var fragment = root12();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -7542,6 +7589,23 @@ function deleteFeed(id) {
   return request(`/api/feeds/${id}/delete`, {
     method: "POST"
   });
+}
+async function downloadFeedsOpml() {
+  const res = await fetch("/api/feeds/export.opml");
+  if (!res.ok) {
+    const text2 = await res.text().catch(() => "");
+    throw new Error(text2 || `Export failed (${res.status})`);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  try {
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "nanoflux.opml";
+    anchor.click();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 async function markAllItemsRead(until, options) {
   if (!until) {
@@ -7715,7 +7779,7 @@ var root_8 = from_html(`
     <!>
     <div class="h-1" aria-hidden="true"></div>
   `, 1);
-var root12 = from_html(`
+var root13 = from_html(`
 
 <section class="mb-10">
   <form class="space-y-3">
@@ -7734,9 +7798,13 @@ var root12 = from_html(`
 <section>
   <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
     <h2 class="text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </h2>
-    <div class="flex gap-3 text-xs" role="group">
+    <div class="flex flex-wrap items-center gap-3 text-xs">
+      <button type="button" class="inline-flex items-center gap-1 text-neutral-400 transition-colors hover:text-neutral-600 disabled:opacity-50 dark:hover:text-neutral-300">
+        <!> </button>
+      <div class="flex gap-3" role="group">
       <button type="button"> </button>
       <button type="button"> </button>
+      </div>
     </div>
   </div>
   <!>
@@ -7764,6 +7832,7 @@ function FeedsManager($$anchor, $$props) {
   let previewRequest = 0;
   let sentinel = state(null);
   let sort = state("updated_desc");
+  let exportingOpml = state(false);
   let now2 = state(proxy(Date.now()));
   const isEditing = user_derived(() => get2(editId) !== null);
   function isValidFeedUrl(value) {
@@ -7930,6 +7999,19 @@ function FeedsManager($$anchor, $$props) {
     set(loading, true);
     await loadFeeds();
   }
+  async function handleExportOpml() {
+    if (get2(exportingOpml))
+      return;
+    set(listError, "");
+    set(exportingOpml, true);
+    try {
+      await downloadFeedsOpml();
+    } catch (e) {
+      set(listError, e instanceof Error ? e.message : t("feeds.exportOpmlFailed"), true);
+    } finally {
+      set(exportingOpml, false);
+    }
+  }
   onMount(() => {
     loadFeeds();
     const timer = setInterval(() => {
@@ -7938,7 +8020,7 @@ function FeedsManager($$anchor, $$props) {
     return () => clearInterval(timer);
   });
   next();
-  var fragment = root12();
+  var fragment = root13();
   var section = sibling(first_child(fragment));
   var form = sibling(child(section));
   var input = sibling(child(form));
@@ -8031,87 +8113,95 @@ function FeedsManager($$anchor, $$props) {
   reset(h2);
   var div_2 = sibling(h2, 2);
   var button_2 = sibling(child(div_2));
-  var text_6 = child(button_2);
+  var node_3 = sibling(child(button_2));
+  download_default(node_3, spread_props(() => iconProps));
+  var text_6 = sibling(node_3);
   reset(button_2);
-  var button_3 = sibling(button_2, 2);
+  var div_3 = sibling(button_2, 2);
+  var button_3 = sibling(child(div_3));
   var text_7 = child(button_3);
   reset(button_3);
+  var button_4 = sibling(button_3, 2);
+  var text_8 = child(button_4);
+  reset(button_4);
+  next();
+  reset(div_3);
   next();
   reset(div_2);
   next();
   reset(div_1);
-  var node_3 = sibling(div_1, 2);
+  var node_4 = sibling(div_1, 2);
   {
     var consequent_4 = ($$anchor2) => {
       var fragment_5 = root_52();
       var p_3 = sibling(first_child(fragment_5));
-      var text_8 = child(p_3, true);
+      var text_9 = child(p_3, true);
       reset(p_3);
       next();
-      template_effect(() => set_text(text_8, get2(listError)));
+      template_effect(() => set_text(text_9, get2(listError)));
       append($$anchor2, fragment_5);
     };
     var consequent_5 = ($$anchor2) => {
       var fragment_6 = root_6();
       var p_4 = sibling(first_child(fragment_6));
-      var text_9 = child(p_4, true);
+      var text_10 = child(p_4, true);
       reset(p_4);
       next();
-      template_effect(($0) => set_text(text_9, $0), [() => t("items.loading")]);
+      template_effect(($0) => set_text(text_10, $0), [() => t("items.loading")]);
       append($$anchor2, fragment_6);
     };
     var consequent_6 = ($$anchor2) => {
       var fragment_7 = root_7();
       var p_5 = sibling(first_child(fragment_7));
-      var text_10 = child(p_5, true);
+      var text_11 = child(p_5, true);
       reset(p_5);
       next();
-      template_effect(($0) => set_text(text_10, $0), [() => t("feeds.noFeeds")]);
+      template_effect(($0) => set_text(text_11, $0), [() => t("feeds.noFeeds")]);
       append($$anchor2, fragment_7);
     };
     var alternate_1 = ($$anchor2) => {
       var fragment_8 = root_8();
       var ul = sibling(first_child(fragment_8));
-      var node_4 = sibling(child(ul));
-      each(node_4, 17, () => get2(feeds), (feed) => feed.id, ($$anchor3, feed) => {
+      var node_5 = sibling(child(ul));
+      each(node_5, 17, () => get2(feeds), (feed) => feed.id, ($$anchor3, feed) => {
         next();
         var fragment_9 = root_9();
         var li = sibling(first_child(fragment_9));
         var p_6 = sibling(child(li));
-        var text_11 = child(p_6, true);
+        var text_12 = child(p_6, true);
         reset(p_6);
-        var div_3 = sibling(p_6, 2);
-        var div_4 = sibling(child(div_3));
-        var button_4 = sibling(child(div_4));
-        var node_5 = sibling(child(button_4));
-        pencil_default(node_5, spread_props(() => iconProps));
-        next();
-        reset(button_4);
-        var button_5 = sibling(button_4, 2);
+        var div_4 = sibling(p_6, 2);
+        var div_5 = sibling(child(div_4));
+        var button_5 = sibling(child(div_5));
         var node_6 = sibling(child(button_5));
-        trash_2_default(node_6, spread_props(() => iconProps));
+        pencil_default(node_6, spread_props(() => iconProps));
         next();
         reset(button_5);
+        var button_6 = sibling(button_5, 2);
+        var node_7 = sibling(child(button_6));
+        trash_2_default(node_7, spread_props(() => iconProps));
         next();
-        reset(div_4);
-        var time = sibling(div_4, 2);
-        var node_7 = sibling(child(time));
+        reset(button_6);
+        next();
+        reset(div_5);
+        var time = sibling(div_5, 2);
+        var node_8 = sibling(child(time));
         {
           var consequent_7 = ($$anchor4) => {
-            var text_12 = text();
-            template_effect(($0) => set_text(text_12, `
-                  ${$0 ?? ""}
-                `), [() => formatTime(get2(feed).last_published_at, get2(now2))]);
-            append($$anchor4, text_12);
-          };
-          var alternate = ($$anchor4) => {
             var text_13 = text();
             template_effect(($0) => set_text(text_13, `
                   ${$0 ?? ""}
-                `), [() => t("feeds.noPublished")]);
+                `), [() => formatTime(get2(feed).last_published_at, get2(now2))]);
             append($$anchor4, text_13);
           };
-          if_block(node_7, ($$render) => {
+          var alternate = ($$anchor4) => {
+            var text_14 = text();
+            template_effect(($0) => set_text(text_14, `
+                  ${$0 ?? ""}
+                `), [() => t("feeds.noPublished")]);
+            append($$anchor4, text_14);
+          };
+          if_block(node_8, ($$render) => {
             if (get2(feed).last_published_at)
               $$render(consequent_7);
             else
@@ -8121,24 +8211,24 @@ function FeedsManager($$anchor, $$props) {
         next();
         reset(time);
         next();
-        reset(div_3);
-        var a = sibling(div_3, 2);
-        var text_14 = child(a);
+        reset(div_4);
+        var a = sibling(div_4, 2);
+        var text_15 = child(a);
         reset(a);
-        var node_8 = sibling(a, 2);
+        var node_9 = sibling(a, 2);
         {
           var consequent_8 = ($$anchor4) => {
             var fragment_12 = root_122();
             var p_7 = sibling(first_child(fragment_12));
-            var text_15 = child(p_7);
+            var text_16 = child(p_7);
             reset(p_7);
             next();
-            template_effect(() => set_text(text_15, `
+            template_effect(() => set_text(text_16, `
                 ${get2(feed).description ?? ""}
               `));
             append($$anchor4, fragment_12);
           };
-          if_block(node_8, ($$render) => {
+          if_block(node_9, ($$render) => {
             if (get2(feed).description)
               $$render(consequent_8);
           });
@@ -8147,15 +8237,15 @@ function FeedsManager($$anchor, $$props) {
         reset(li);
         next();
         template_effect(($0, $1, $2, $3, $4) => {
-          set_text(text_11, get2(feed).title);
-          set_attribute2(button_4, "aria-label", $0);
-          set_attribute2(button_4, "title", $1);
-          set_attribute2(button_5, "aria-label", $2);
-          set_attribute2(button_5, "title", $3);
+          set_text(text_12, get2(feed).title);
+          set_attribute2(button_5, "aria-label", $0);
+          set_attribute2(button_5, "title", $1);
+          set_attribute2(button_6, "aria-label", $2);
+          set_attribute2(button_6, "title", $3);
           set_attribute2(time, "datetime", get2(feed).last_published_at ?? undefined);
           set_attribute2(time, "title", $4);
           set_attribute2(a, "href", get2(feed).url);
-          set_text(text_14, `
+          set_text(text_15, `
               ${get2(feed).url ?? ""}
             `);
         }, [
@@ -8165,21 +8255,21 @@ function FeedsManager($$anchor, $$props) {
           () => t("feeds.delete"),
           () => t("feeds.lastPublished")
         ]);
-        delegated("click", button_4, () => startEdit(get2(feed)));
-        delegated("click", button_5, () => handleDelete(get2(feed).id));
+        delegated("click", button_5, () => startEdit(get2(feed)));
+        delegated("click", button_6, () => handleDelete(get2(feed).id));
         append($$anchor3, fragment_9);
       });
       next();
       reset(ul);
-      var node_9 = sibling(ul, 2);
+      var node_10 = sibling(ul, 2);
       {
         var consequent_9 = ($$anchor3) => {
           var fragment_13 = root_132();
           var p_8 = sibling(first_child(fragment_13));
-          var text_16 = child(p_8);
+          var text_17 = child(p_8);
           reset(p_8);
           next();
-          template_effect(($0) => set_text(text_16, `
+          template_effect(($0) => set_text(text_17, `
         ${$0 ?? ""}
       `), [() => t("feeds.loading")]);
           append($$anchor3, fragment_13);
@@ -8187,27 +8277,27 @@ function FeedsManager($$anchor, $$props) {
         var consequent_10 = ($$anchor3) => {
           var fragment_14 = root_142();
           var p_9 = sibling(first_child(fragment_14));
-          var text_17 = child(p_9);
+          var text_18 = child(p_9);
           reset(p_9);
           next();
-          template_effect(($0) => set_text(text_17, `
+          template_effect(($0) => set_text(text_18, `
         ${$0 ?? ""}
       `), [() => t("feeds.noMore")]);
           append($$anchor3, fragment_14);
         };
-        if_block(node_9, ($$render) => {
+        if_block(node_10, ($$render) => {
           if (get2(loadingMore))
             $$render(consequent_9);
           else if (!get2(hasMore) && get2(feeds).length > 0)
             $$render(consequent_10, 1);
         });
       }
-      var div_5 = sibling(node_9, 2);
-      bind_this(div_5, ($$value) => set(sentinel, $$value), () => get2(sentinel));
+      var div_6 = sibling(node_10, 2);
+      bind_this(div_6, ($$value) => set(sentinel, $$value), () => get2(sentinel));
       next();
       append($$anchor2, fragment_8);
     };
-    if_block(node_3, ($$render) => {
+    if_block(node_4, ($$render) => {
       if (get2(listError))
         $$render(consequent_4);
       else if (get2(loading))
@@ -8220,7 +8310,7 @@ function FeedsManager($$anchor, $$props) {
   }
   next();
   reset(section_1);
-  template_effect(($0, $1, $2, $3, $4, $5, $6) => {
+  template_effect(($0, $1, $2, $3, $4, $5, $6, $7, $8, $9) => {
     set_attribute2(input, "placeholder", $0);
     input_1.readOnly = get2(isEditing);
     classes = set_class(input_1, 1, "w-full border-0 border-b border-neutral-200 bg-transparent py-2 text-sm outline-none placeholder:text-neutral-300 focus:border-neutral-900 dark:border-neutral-700 dark:placeholder:text-neutral-600 dark:focus:border-neutral-100", null, classes, {
@@ -8235,22 +8325,31 @@ function FeedsManager($$anchor, $$props) {
     set_text(text_5, `
       ${$3 ?? ""}
     `);
-    set_attribute2(div_2, "aria-label", $4);
-    set_class(button_2, 1, `transition-colors ${get2(sort) === "updated_desc" ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"}`);
-    set_attribute2(button_2, "aria-pressed", get2(sort) === "updated_desc");
+    button_2.disabled = get2(exportingOpml);
+    set_attribute2(button_2, "aria-label", $4);
+    set_attribute2(button_2, "title", $5);
     set_text(text_6, `
-        ${$5 ?? ""}
-      `);
-    set_class(button_3, 1, `transition-colors ${get2(sort) === "published_desc" ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"}`);
-    set_attribute2(button_3, "aria-pressed", get2(sort) === "published_desc");
-    set_text(text_7, `
         ${$6 ?? ""}
+      `);
+    set_attribute2(div_3, "aria-label", $7);
+    set_class(button_3, 1, `transition-colors ${get2(sort) === "updated_desc" ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"}`);
+    set_attribute2(button_3, "aria-pressed", get2(sort) === "updated_desc");
+    set_text(text_7, `
+        ${$8 ?? ""}
+      `);
+    set_class(button_4, 1, `transition-colors ${get2(sort) === "published_desc" ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"}`);
+    set_attribute2(button_4, "aria-pressed", get2(sort) === "published_desc");
+    set_text(text_8, `
+        ${$9 ?? ""}
       `);
   }, [
     () => t("feeds.name"),
     () => t("feeds.descriptionOptional"),
     () => get2(isEditing) ? t("feeds.save") : t("feeds.addFeed"),
     () => t("feeds.feedList"),
+    () => t("feeds.exportOpml"),
+    () => t("feeds.exportOpml"),
+    () => get2(exportingOpml) ? t("feeds.exportingOpml") : t("feeds.exportOpml"),
     () => t("feeds.sortBy"),
     () => t("feeds.sortDefault"),
     () => t("feeds.sortByPublished")
@@ -8263,8 +8362,9 @@ function FeedsManager($$anchor, $$props) {
   bind_value(input_1, () => get2(url), ($$value) => set(url, $$value));
   delegated("input", input_2, () => set(descriptionTouched, true));
   bind_value(input_2, () => get2(description), ($$value) => set(description, $$value));
-  delegated("click", button_2, () => setSort("updated_desc"));
-  delegated("click", button_3, () => setSort("published_desc"));
+  delegated("click", button_2, () => void handleExportOpml());
+  delegated("click", button_3, () => setSort("updated_desc"));
+  delegated("click", button_4, () => setSort("published_desc"));
   append($$anchor, fragment);
   pop();
 }
@@ -8273,7 +8373,7 @@ var FeedsManager_default = FeedsManager;
 delegate(["input", "click"]);
 
 // node_modules/@lucide/svelte/dist/icons/lightbulb.svelte
-var root13 = from_html(`<!--
+var root14 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -8305,7 +8405,7 @@ function Lightbulb($$anchor, $$props) {
     ["path", { d: "M9 18h6" }],
     ["path", { d: "M10 22h4" }]
   ];
-  var fragment = root13();
+  var fragment = root14();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -8319,7 +8419,7 @@ function Lightbulb($$anchor, $$props) {
 if (undefined) {}
 var lightbulb_default = Lightbulb;
 // node_modules/@lucide/svelte/dist/icons/arrow-down.svelte
-var root14 = from_html(`<!--
+var root15 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -8345,7 +8445,7 @@ function Arrow_down($$anchor, $$props) {
     ["path", { d: "M12 5v14" }],
     ["path", { d: "m19 12-7 7-7-7" }]
   ];
-  var fragment = root14();
+  var fragment = root15();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -8359,7 +8459,7 @@ function Arrow_down($$anchor, $$props) {
 if (undefined) {}
 var arrow_down_default = Arrow_down;
 // node_modules/@lucide/svelte/dist/icons/arrow-down-to-line.svelte
-var root15 = from_html(`<!--
+var root16 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -8386,7 +8486,7 @@ function Arrow_down_to_line($$anchor, $$props) {
     ["path", { d: "m6 11 6 6 6-6" }],
     ["path", { d: "M19 21H5" }]
   ];
-  var fragment = root15();
+  var fragment = root16();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -8400,7 +8500,7 @@ function Arrow_down_to_line($$anchor, $$props) {
 if (undefined) {}
 var arrow_down_to_line_default = Arrow_down_to_line;
 // node_modules/@lucide/svelte/dist/icons/arrow-up.svelte
-var root16 = from_html(`<!--
+var root17 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -8426,7 +8526,7 @@ function Arrow_up($$anchor, $$props) {
     ["path", { d: "m5 12 7-7 7 7" }],
     ["path", { d: "M12 19V5" }]
   ];
-  var fragment = root16();
+  var fragment = root17();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -8440,7 +8540,7 @@ function Arrow_up($$anchor, $$props) {
 if (undefined) {}
 var arrow_up_default = Arrow_up;
 // node_modules/@lucide/svelte/dist/icons/arrow-up-to-line.svelte
-var root17 = from_html(`<!--
+var root18 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -8467,7 +8567,7 @@ function Arrow_up_to_line($$anchor, $$props) {
     ["path", { d: "m18 13-6-6-6 6" }],
     ["path", { d: "M12 7v14" }]
   ];
-  var fragment = root17();
+  var fragment = root18();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -8481,7 +8581,7 @@ function Arrow_up_to_line($$anchor, $$props) {
 if (undefined) {}
 var arrow_up_to_line_default = Arrow_up_to_line;
 // node_modules/@lucide/svelte/dist/icons/shield-check.svelte
-var root18 = from_html(`<!--
+var root19 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -8512,7 +8612,7 @@ function Shield_check($$anchor, $$props) {
     ],
     ["path", { d: "m9 12 2 2 4-4" }]
   ];
-  var fragment = root18();
+  var fragment = root19();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -8526,7 +8626,7 @@ function Shield_check($$anchor, $$props) {
 if (undefined) {}
 var shield_check_default = Shield_check;
 // node_modules/@lucide/svelte/dist/icons/shield-x.svelte
-var root19 = from_html(`<!--
+var root20 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -8558,7 +8658,7 @@ function Shield_x($$anchor, $$props) {
     ["path", { d: "m14.5 9.5-5 5" }],
     ["path", { d: "m9.5 9.5 5 5" }]
   ];
-  var fragment = root19();
+  var fragment = root20();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -8643,7 +8743,7 @@ var root_62 = from_html(`
       <!>
     </ul>
   `, 1);
-var root20 = from_html(`
+var root21 = from_html(`
 
 <section class="mb-10">
   <form class="space-y-3">
@@ -8769,7 +8869,7 @@ function FiltersManager($$anchor, $$props) {
     loadFilters();
   });
   next();
-  var fragment = root20();
+  var fragment = root21();
   var section = sibling(first_child(fragment));
   var form = sibling(child(section));
   var input = sibling(child(form));
@@ -9306,14 +9406,14 @@ var root_26 = from_html(`
 var root_17 = from_html(`
   <!>
 `, 1);
-var root21 = from_html(`
+var root22 = from_html(`
 
 <!>`, 1);
 function HighlightedText($$anchor, $$props) {
   push($$props, true);
   const segments = user_derived(() => splitByKeywords($$props.text, $$props.keywords));
   next();
-  var fragment = root21();
+  var fragment = root22();
   var node = sibling(first_child(fragment));
   each(node, 17, () => get2(segments), index, ($$anchor2, segment) => {
     next();
@@ -9353,7 +9453,7 @@ if (undefined) {}
 var HighlightedText_default = HighlightedText;
 
 // node_modules/@lucide/svelte/dist/icons/check-check.svelte
-var root22 = from_html(`<!--
+var root23 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -9379,7 +9479,7 @@ function Check_check($$anchor, $$props) {
     ["path", { d: "M18 6 7 17l-5-5" }],
     ["path", { d: "m22 10-7.5 7.5L13 16" }]
   ];
-  var fragment = root22();
+  var fragment = root23();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -9393,7 +9493,7 @@ function Check_check($$anchor, $$props) {
 if (undefined) {}
 var check_check_default = Check_check;
 // web/src/components/buttons/MarkAllReadButton.svelte
-var root23 = from_html(`
+var root24 = from_html(`
 
 <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
   <!>
@@ -9403,7 +9503,7 @@ function MarkAllReadButton($$anchor, $$props) {
   const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
   const label = user_derived(() => t("items.markAllRead"));
   next();
-  var fragment = root23();
+  var fragment = root24();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   check_check_default(node, spread_props(() => iconProps));
@@ -9422,7 +9522,7 @@ var MarkAllReadButton_default = MarkAllReadButton;
 delegate(["click"]);
 
 // node_modules/@lucide/svelte/dist/icons/thumbs-down.svelte
-var root24 = from_html(`<!--
+var root25 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -9453,7 +9553,7 @@ function Thumbs_down($$anchor, $$props) {
     ],
     ["path", { d: "M17 14V2" }]
   ];
-  var fragment = root24();
+  var fragment = root25();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -9467,7 +9567,7 @@ function Thumbs_down($$anchor, $$props) {
 if (undefined) {}
 var thumbs_down_default = Thumbs_down;
 // node_modules/@lucide/svelte/dist/icons/thumbs-up.svelte
-var root25 = from_html(`<!--
+var root26 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -9498,7 +9598,7 @@ function Thumbs_up($$anchor, $$props) {
     ],
     ["path", { d: "M7 10v12" }]
   ];
-  var fragment = root25();
+  var fragment = root26();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -9512,7 +9612,7 @@ function Thumbs_up($$anchor, $$props) {
 if (undefined) {}
 var thumbs_up_default = Thumbs_up;
 // web/src/components/buttons/FilterVerdictButtons.svelte
-var root26 = from_html(`
+var root27 = from_html(`
 
 <div class="flex shrink-0 gap-1">
   <button type="button">
@@ -9531,7 +9631,7 @@ function FilterVerdictButtons($$anchor, $$props) {
   const rejectLabel = user_derived(() => t("items.filterReject"));
   const acceptClass = user_derived(() => accepted() ? "text-neutral-900 dark:text-neutral-100" : "");
   next();
-  var fragment = root26();
+  var fragment = root27();
   var div = sibling(first_child(fragment));
   var button = sibling(child(div));
   var node = sibling(child(button));
@@ -9653,7 +9753,7 @@ var root_182 = from_html(`
 var root_19 = from_html(`
   <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root27 = from_html(`
+var root28 = from_html(`
 
 <div>
   <!>
@@ -9901,7 +10001,7 @@ function ItemList($$anchor, $$props) {
   });
   var $$exports = { markAllRead };
   next();
-  var fragment = root27();
+  var fragment = root28();
   var div = sibling(first_child(fragment));
   var node = sibling(child(div));
   {
@@ -10316,7 +10416,7 @@ var root_28 = from_html(`
 var root_35 = from_html(`
     <!>
   `, 1);
-var root28 = from_html(`
+var root29 = from_html(`
 
 <main class="mx-auto max-w-page px-5 py-16 font-sans">
   <!>
@@ -10326,7 +10426,7 @@ function App($$anchor) {
   const $route = () => store_get(route, "$route", $$stores);
   const [$$stores, $$cleanup] = setup_stores();
   next();
-  var fragment = root28();
+  var fragment = root29();
   var main = sibling(first_child(fragment));
   var node = sibling(child(main));
   Header_default(node, {});

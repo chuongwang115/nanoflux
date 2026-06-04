@@ -114,6 +114,19 @@ export function getFeeds(
   }
 }
 
+export function getAllFeeds(): Feed[] {
+  try {
+    return db
+      .select()
+      .from(feeds)
+      .orderBy(asc(feeds.title), asc(feeds.id))
+      .all();
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to get all feeds: ${detail}`);
+  }
+}
+
 export function getFeed(id: string): Feed | null {
 
   try {
