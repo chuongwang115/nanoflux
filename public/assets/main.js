@@ -6236,11 +6236,17 @@ enable_legacy_mode_flag();
 // web/src/lib/router.ts
 var scrollByRoute = new Map;
 var route = writable("/");
+var SUBPAGE_PATH_SUFFIXES = ["/feeds/", "/filters/", "/export/"];
+function isSubPagePath(path) {
+  return SUBPAGE_PATH_SUFFIXES.some((suffix) => path.endsWith(suffix));
+}
 function pathnameToRoute(pathname) {
   if (pathname.endsWith("/feeds"))
     return "/feeds";
   if (pathname.endsWith("/filters"))
     return "/filters";
+  if (pathname.endsWith("/export"))
+    return "/export";
   return "/";
 }
 function routeToRelativeHref(next2) {
@@ -6248,15 +6254,15 @@ function routeToRelativeHref(next2) {
     return "feeds";
   if (next2 === "/filters")
     return "filters";
-  const path = window.location.pathname;
-  if (path.endsWith("/feeds/") || path.endsWith("/filters/")) {
+  if (next2 === "/export")
+    return "export";
+  if (isSubPagePath(window.location.pathname)) {
     return "..";
   }
   return "./";
 }
 function homeHref() {
-  const path = window.location.pathname;
-  if (path.endsWith("/feeds/") || path.endsWith("/filters/")) {
+  if (isSubPagePath(window.location.pathname)) {
     return "..";
   }
   return "./";
@@ -6266,6 +6272,9 @@ function feedsHref() {
 }
 function filtersHref() {
   return "filters";
+}
+function exportHref() {
+  return "export";
 }
 function navigateToParent() {
   navigate("/");
@@ -6586,6 +6595,7 @@ var messages = {
     "items.latest": "最新资讯",
     "items.feeds": "Feed 管理",
     "items.filters": "Filter 管理",
+    "items.export": "导出",
     "items.noItems": "暂无资讯",
     "items.loading": "加载中…",
     "items.noMore": "没有更多了",
@@ -6653,6 +6663,17 @@ var messages = {
     "filters.saveFailed": "保存失败",
     "filters.deleteFailed": "删除失败",
     "filters.reorderFailed": "排序失败",
+    "export.title": "导出",
+    "export.back": "返回",
+    "export.hint": "选择起始与截止时间及过滤条件，将范围内的文章导出为 Excel 文件。",
+    "export.startTime": "起始时间",
+    "export.endTime": "截止时间",
+    "export.scope": "过滤条件",
+    "export.scopeAll": "全部文章",
+    "export.button": "导出 Excel",
+    "export.exporting": "导出中…",
+    "export.failed": "导出失败",
+    "export.invalidRange": "起始时间不能晚于截止时间",
     "theme.switchToLight": "切换到浅色模式",
     "theme.switchToDark": "切换到深色模式",
     "theme.lightMode": "浅色模式",
@@ -6675,6 +6696,7 @@ var messages = {
     "items.latest": "Latest",
     "items.feeds": "Feeds",
     "items.filters": "Filters",
+    "items.export": "Export",
     "items.noItems": "No news yet",
     "items.loading": "Loading…",
     "items.noMore": "No more news",
@@ -6742,6 +6764,17 @@ var messages = {
     "filters.saveFailed": "Failed to save",
     "filters.deleteFailed": "Failed to delete",
     "filters.reorderFailed": "Failed to reorder",
+    "export.title": "Export",
+    "export.back": "Back",
+    "export.hint": "Pick a start and end time and a filter, then export the matching articles to an Excel file.",
+    "export.startTime": "Start time",
+    "export.endTime": "End time",
+    "export.scope": "Filter",
+    "export.scopeAll": "All articles",
+    "export.button": "Export Excel",
+    "export.exporting": "Exporting…",
+    "export.failed": "Export failed",
+    "export.invalidRange": "Start time cannot be later than end time",
     "theme.switchToLight": "Switch to light mode",
     "theme.switchToDark": "Switch to dark mode",
     "theme.lightMode": "Light mode",
@@ -7124,8 +7157,21 @@ var root_4 = from_html(`
         </div>
       `, 1);
 var root_5 = from_html(`
+        <div>
+          <a class="inline-flex shrink-0 rounded-md p-1 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m12 19-7-7 7-7"></path>
+              <path d="M19 12H5"></path>
+            </svg>
+          </a>
+          <p> </p>
+        </div>
+      `, 1);
+var root_6 = from_html(`
         <nav>
           <span> </span>
+          <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
+          <a class="hover:text-neutral-900 dark:hover:text-neutral-100"> </a>
           <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
           <a class="hover:text-neutral-900 dark:hover:text-neutral-100"> </a>
           <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
@@ -7167,7 +7213,8 @@ function Header($$anchor, $$props) {
   let compact = state(proxy(initialCompact()));
   const isFeeds = user_derived(() => $route() === "/feeds");
   const isFilters = user_derived(() => $route() === "/filters");
-  const isSubPage = user_derived(() => get2(isFeeds) || get2(isFilters));
+  const isExport = user_derived(() => $route() === "/export");
+  const isSubPage = user_derived(() => get2(isFeeds) || get2(isFilters) || get2(isExport));
   const rowClass = user_derived(() => `transition-[gap] duration-300 ${get2(compact) ? "flex min-w-0 items-center justify-between gap-4" : ""}`);
   const subClass = user_derived(() => `flex min-h-[30px] min-w-0 items-center gap-2 text-sm text-neutral-400 dark:text-neutral-500 ${get2(compact) ? "shrink-0" : "mt-1"}`);
   const titleClass = "shrink-0 text-lg font-medium tracking-tight";
@@ -7289,34 +7336,70 @@ function Header($$anchor, $$props) {
       });
       append($$anchor2, fragment_4);
     };
-    var alternate_1 = ($$anchor2) => {
+    var consequent_3 = ($$anchor2) => {
       var fragment_5 = root_5();
-      var nav = sibling(first_child(fragment_5));
+      var div_4 = sibling(first_child(fragment_5));
+      var a_3 = sibling(child(div_4));
+      var event_handler_3 = user_derived(navClickParent);
+      var p_2 = sibling(a_3, 2);
+      var text_2 = child(p_2, true);
+      reset(p_2);
+      next();
+      reset(div_4);
+      next();
+      template_effect(($0, $1, $2, $3) => {
+        set_class(div_4, 1, `${get2(subClass) ?? ""} gap-3`);
+        set_attribute2(a_3, "href", $0);
+        set_attribute2(a_3, "aria-label", $1);
+        set_attribute2(a_3, "title", $2);
+        set_text(text_2, $3);
+      }, [
+        () => homeHref(),
+        () => t("export.back"),
+        () => t("export.back"),
+        () => t("export.title")
+      ]);
+      delegated("click", a_3, function(...$$args) {
+        get2(event_handler_3)?.apply(this, $$args);
+      });
+      append($$anchor2, fragment_5);
+    };
+    var alternate_1 = ($$anchor2) => {
+      var fragment_6 = root_6();
+      var nav = sibling(first_child(fragment_6));
       var span = sibling(child(nav));
-      var text_2 = child(span, true);
+      var text_3 = child(span, true);
       reset(span);
-      var a_3 = sibling(span, 4);
-      var event_handler_3 = user_derived(() => navClick("/feeds"));
-      var text_3 = child(a_3);
-      reset(a_3);
-      var a_4 = sibling(a_3, 4);
-      var event_handler_4 = user_derived(() => navClick("/filters"));
+      var a_4 = sibling(span, 4);
+      var event_handler_4 = user_derived(() => navClick("/feeds"));
       var text_4 = child(a_4);
       reset(a_4);
+      var a_5 = sibling(a_4, 4);
+      var event_handler_5 = user_derived(() => navClick("/filters"));
+      var text_5 = child(a_5);
+      reset(a_5);
+      var a_6 = sibling(a_5, 4);
+      var event_handler_6 = user_derived(() => navClick("/export"));
+      var text_6 = child(a_6);
+      reset(a_6);
       next();
       reset(nav);
       next();
-      template_effect(($0, $1, $2, $3, $4, $5) => {
+      template_effect(($0, $1, $2, $3, $4, $5, $6, $7) => {
         set_class(nav, 1, clsx2(get2(subClass)));
         set_attribute2(nav, "aria-label", $0);
-        set_text(text_2, $1);
-        set_attribute2(a_3, "href", $2);
-        set_text(text_3, `
+        set_text(text_3, $1);
+        set_attribute2(a_4, "href", $2);
+        set_text(text_4, `
             ${$3 ?? ""}
           `);
-        set_attribute2(a_4, "href", $4);
-        set_text(text_4, `
+        set_attribute2(a_5, "href", $4);
+        set_text(text_5, `
             ${$5 ?? ""}
+          `);
+        set_attribute2(a_6, "href", $6);
+        set_text(text_6, `
+            ${$7 ?? ""}
           `);
       }, [
         () => t("items.latest"),
@@ -7324,21 +7407,28 @@ function Header($$anchor, $$props) {
         () => feedsHref(),
         () => t("items.feeds"),
         () => filtersHref(),
-        () => t("items.filters")
+        () => t("items.filters"),
+        () => exportHref(),
+        () => t("items.export")
       ]);
-      delegated("click", a_3, function(...$$args) {
-        get2(event_handler_3)?.apply(this, $$args);
-      });
       delegated("click", a_4, function(...$$args) {
         get2(event_handler_4)?.apply(this, $$args);
       });
-      append($$anchor2, fragment_5);
+      delegated("click", a_5, function(...$$args) {
+        get2(event_handler_5)?.apply(this, $$args);
+      });
+      delegated("click", a_6, function(...$$args) {
+        get2(event_handler_6)?.apply(this, $$args);
+      });
+      append($$anchor2, fragment_6);
     };
     if_block(node_1, ($$render) => {
       if (get2(isFeeds))
         $$render(consequent_1);
       else if (get2(isFilters))
         $$render(consequent_2, 1);
+      else if (get2(isExport))
+        $$render(consequent_3, 2);
       else
         $$render(alternate_1, -1);
     });
@@ -7347,15 +7437,15 @@ function Header($$anchor, $$props) {
   reset(div_1);
   next();
   reset(div);
-  var div_4 = sibling(div, 2);
-  var node_2 = sibling(child(div_4));
+  var div_5 = sibling(div, 2);
+  var node_2 = sibling(child(div_5));
   FontSizeToggle_default(node_2, {});
   var node_3 = sibling(node_2, 2);
   LanguageToggle_default(node_3, {});
   var node_4 = sibling(node_3, 2);
   ThemeToggle_default(node_4, {});
   next();
-  reset(div_4);
+  reset(div_5);
   next();
   reset(header);
   template_effect(() => {
@@ -7607,6 +7697,35 @@ async function downloadFeedsOpml() {
     URL.revokeObjectURL(url);
   }
 }
+async function downloadItemsExcel(options) {
+  const params = new URLSearchParams;
+  if (options.since)
+    params.set("since", options.since);
+  if (options.until)
+    params.set("until", options.until);
+  if (options.filterPassed === 0 || options.filterPassed === 1) {
+    params.set("filter_passed", String(options.filterPassed));
+  }
+  if (options.passedFilterId)
+    params.set("passed_filter_id", options.passedFilterId);
+  params.set("tz_offset", String(new Date().getTimezoneOffset()));
+  params.set("lang", localeState.locale);
+  const res = await fetch(`/api/items/export.xlsx?${params}`);
+  if (!res.ok) {
+    const text2 = await res.text().catch(() => "");
+    throw new Error(text2 || `Export failed (${res.status})`);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  try {
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "nanoflux-export.xlsx";
+    anchor.click();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
 async function markAllItemsRead(until, options) {
   if (!until) {
     throw new Error("Missing until timestamp");
@@ -7737,7 +7856,7 @@ var root_42 = from_html(`
 var root_52 = from_html(`
     <p class="text-sm text-red-500"> </p>
   `, 1);
-var root_6 = from_html(`
+var root_62 = from_html(`
     <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
   `, 1);
 var root_7 = from_html(`
@@ -8142,7 +8261,7 @@ function FeedsManager($$anchor, $$props) {
       append($$anchor2, fragment_5);
     };
     var consequent_5 = ($$anchor2) => {
-      var fragment_6 = root_6();
+      var fragment_6 = root_62();
       var p_4 = sibling(first_child(fragment_6));
       var text_10 = child(p_4, true);
       reset(p_4);
@@ -8738,7 +8857,7 @@ var root_72 = from_html(`
           <!>
         </li>
       `, 1);
-var root_62 = from_html(`
+var root_63 = from_html(`
     <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
       <!>
     </ul>
@@ -8963,7 +9082,7 @@ function FiltersManager($$anchor, $$props) {
       append($$anchor2, fragment_5);
     };
     var alternate = ($$anchor2) => {
-      var fragment_6 = root_62();
+      var fragment_6 = root_63();
       var ul = sibling(first_child(fragment_6));
       var node_3 = sibling(child(ul));
       each(node_3, 19, () => get2(filters), (filter) => filter.id, ($$anchor3, filter, index2) => {
@@ -9187,6 +9306,232 @@ if (undefined) {}
 var FiltersManager_default = FiltersManager;
 delegate(["click"]);
 
+// web/src/components/ExportPage.svelte
+var root_17 = from_html(`
+        <button type="button"> </button>
+      `, 1);
+var root_26 = from_html(`
+    <p class="text-sm text-red-500"> </p>
+  `, 1);
+var root22 = from_html(`
+
+<section class="space-y-8">
+  <p class="text-sm text-neutral-400 dark:text-neutral-500"> </p>
+
+  <div class="grid gap-6 sm:grid-cols-2">
+    <label class="block space-y-2">
+      <span class="text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
+      <!-- lang="sv-SE" forces a 24-hour, ISO-style (yyyy-mm-dd HH:mm) picker. -->
+      <input type="datetime-local" lang="sv-SE"/>
+    </label>
+    <label class="block space-y-2">
+      <span class="text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
+      <input type="datetime-local" lang="sv-SE"/>
+    </label>
+  </div>
+
+  <div class="space-y-3">
+    <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm" role="group">
+      <button type="button"> </button>
+      <!>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-4">
+    <button type="button" class="inline-flex items-center gap-1.5 text-sm text-neutral-900 underline-offset-4 hover:underline disabled:opacity-50 dark:text-neutral-100">
+      <!> </button>
+  </div>
+
+  <!>
+</section>`, 1);
+function ExportPage($$anchor, $$props) {
+  push($$props, true);
+  const SCOPE_ALL = "__all__";
+  function toDatetimeLocal(date) {
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` + `T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+  const nowDate = new Date;
+  let filters = state(proxy([]));
+  let scope = state(SCOPE_ALL);
+  let start = state(proxy(toDatetimeLocal(new Date(nowDate.getTime() - 24 * 60 * 60 * 1000))));
+  let end = state(proxy(toDatetimeLocal(nowDate)));
+  let exporting = state(false);
+  let error = state("");
+  const inputClass = "w-full border-0 border-b border-neutral-200 bg-transparent py-2 text-sm outline-none placeholder:text-neutral-300 focus:border-neutral-900 dark:border-neutral-700 dark:placeholder:text-neutral-600 dark:focus:border-neutral-100";
+  function scopeButtonClass(active) {
+    return active ? "text-neutral-900 underline underline-offset-4 decoration-neutral-900 dark:text-neutral-100 dark:decoration-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300";
+  }
+  function toIso(local) {
+    if (!local)
+      return;
+    const ms = Date.parse(local);
+    if (Number.isNaN(ms))
+      return;
+    return new Date(ms).toISOString();
+  }
+  function scopeParams() {
+    if (get2(scope) === SCOPE_ALL)
+      return {};
+    return { passedFilterId: get2(scope) };
+  }
+  async function handleExport() {
+    if (get2(exporting))
+      return;
+    set(error, "");
+    const since = toIso(get2(start));
+    const until = toIso(get2(end));
+    if (since && until && since > until) {
+      set(error, t("export.invalidRange"), true);
+      return;
+    }
+    set(exporting, true);
+    try {
+      await downloadItemsExcel({ since, until, ...scopeParams() });
+    } catch (e) {
+      set(error, e instanceof Error ? e.message : t("export.failed"), true);
+    } finally {
+      set(exporting, false);
+    }
+  }
+  onMount(() => {
+    (async () => {
+      try {
+        set(filters, await fetchFilters(), true);
+      } catch {
+        set(filters, [], true);
+      }
+    })();
+  });
+  next();
+  var fragment = root22();
+  var section = sibling(first_child(fragment));
+  var p = sibling(child(section));
+  var text2 = child(p);
+  reset(p);
+  var div = sibling(p, 2);
+  var label = sibling(child(div));
+  var span = sibling(child(label));
+  var text_1 = child(span);
+  reset(span);
+  var node = sibling(span, 2);
+  var input = sibling(node, 2);
+  remove_input_defaults(input);
+  set_class(input, 1, clsx2(inputClass));
+  next();
+  reset(label);
+  var label_1 = sibling(label, 2);
+  var span_1 = sibling(child(label_1));
+  var text_2 = child(span_1);
+  reset(span_1);
+  var input_1 = sibling(span_1, 2);
+  remove_input_defaults(input_1);
+  set_class(input_1, 1, clsx2(inputClass));
+  next();
+  reset(label_1);
+  next();
+  reset(div);
+  var div_1 = sibling(div, 2);
+  var span_2 = sibling(child(div_1));
+  var text_3 = child(span_2);
+  reset(span_2);
+  var div_2 = sibling(span_2, 2);
+  var button = sibling(child(div_2));
+  var text_4 = child(button);
+  reset(button);
+  var node_1 = sibling(button, 2);
+  each(node_1, 17, () => get2(filters), (f) => f.id, ($$anchor2, f) => {
+    next();
+    var fragment_1 = root_17();
+    var button_1 = sibling(first_child(fragment_1));
+    var text_5 = child(button_1);
+    reset(button_1);
+    next();
+    template_effect(($0) => {
+      set_class(button_1, 1, `transition-colors ${$0 ?? ""}`);
+      set_attribute2(button_1, "aria-pressed", get2(scope) === get2(f).id);
+      set_text(text_5, `
+          ${get2(f).name ?? ""}
+        `);
+    }, [() => scopeButtonClass(get2(scope) === get2(f).id)]);
+    delegated("click", button_1, () => set(scope, get2(f).id, true));
+    append($$anchor2, fragment_1);
+  });
+  next();
+  reset(div_2);
+  next();
+  reset(div_1);
+  var div_3 = sibling(div_1, 2);
+  var button_2 = sibling(child(div_3));
+  var node_2 = sibling(child(button_2));
+  download_default(node_2, { size: 16, strokeWidth: 1.5, "aria-hidden": true });
+  var text_6 = sibling(node_2);
+  reset(button_2);
+  next();
+  reset(div_3);
+  var node_3 = sibling(div_3, 2);
+  {
+    var consequent = ($$anchor2) => {
+      var fragment_2 = root_26();
+      var p_1 = sibling(first_child(fragment_2));
+      var text_7 = child(p_1, true);
+      reset(p_1);
+      next();
+      template_effect(() => set_text(text_7, get2(error)));
+      append($$anchor2, fragment_2);
+    };
+    if_block(node_3, ($$render) => {
+      if (get2(error))
+        $$render(consequent);
+    });
+  }
+  next();
+  reset(section);
+  template_effect(($0, $1, $2, $3, $4, $5, $6, $7) => {
+    set_text(text2, `
+    ${$0 ?? ""}
+  `);
+    set_text(text_1, `
+        ${$1 ?? ""}
+      `);
+    set_text(text_2, `
+        ${$2 ?? ""}
+      `);
+    set_text(text_3, `
+      ${$3 ?? ""}
+    `);
+    set_attribute2(div_2, "aria-label", $4);
+    set_class(button, 1, `transition-colors ${$5 ?? ""}`);
+    set_attribute2(button, "aria-pressed", get2(scope) === SCOPE_ALL);
+    set_text(text_4, `
+        ${$6 ?? ""}
+      `);
+    button_2.disabled = get2(exporting);
+    set_text(text_6, `
+      ${$7 ?? ""}
+    `);
+  }, [
+    () => t("export.hint"),
+    () => t("export.startTime"),
+    () => t("export.endTime"),
+    () => t("export.scope"),
+    () => t("export.scope"),
+    () => scopeButtonClass(get2(scope) === SCOPE_ALL),
+    () => t("export.scopeAll"),
+    () => get2(exporting) ? t("export.exporting") : t("export.button")
+  ]);
+  bind_value(input, () => get2(start), ($$value) => set(start, $$value));
+  bind_value(input_1, () => get2(end), ($$value) => set(end, $$value));
+  delegated("click", button, () => set(scope, SCOPE_ALL));
+  delegated("click", button_2, () => void handleExport());
+  append($$anchor, fragment);
+  pop();
+}
+if (undefined) {}
+var ExportPage_default = ExportPage;
+delegate(["click"]);
+
 // web/src/lib/item-stream.ts
 var listeners2 = new Set;
 var es = null;
@@ -9400,28 +9745,28 @@ function isFilterAccepted(keys, itemId, filterId) {
 }
 
 // web/src/components/HighlightedText.svelte
-var root_26 = from_html(`
+var root_27 = from_html(`
     <mark class="rounded-sm bg-amber-200/80 px-0.5 font-[inherit] text-inherit dark:bg-amber-500/35"> </mark>
   `, 1);
-var root_17 = from_html(`
+var root_18 = from_html(`
   <!>
 `, 1);
-var root22 = from_html(`
+var root23 = from_html(`
 
 <!>`, 1);
 function HighlightedText($$anchor, $$props) {
   push($$props, true);
   const segments = user_derived(() => splitByKeywords($$props.text, $$props.keywords));
   next();
-  var fragment = root22();
+  var fragment = root23();
   var node = sibling(first_child(fragment));
   each(node, 17, () => get2(segments), index, ($$anchor2, segment) => {
     next();
-    var fragment_1 = root_17();
+    var fragment_1 = root_18();
     var node_1 = sibling(first_child(fragment_1));
     {
       var consequent = ($$anchor3) => {
-        var fragment_2 = root_26();
+        var fragment_2 = root_27();
         var mark = sibling(first_child(fragment_2));
         var text_1 = child(mark, true);
         reset(mark);
@@ -9453,7 +9798,7 @@ if (undefined) {}
 var HighlightedText_default = HighlightedText;
 
 // node_modules/@lucide/svelte/dist/icons/check-check.svelte
-var root23 = from_html(`<!--
+var root24 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -9479,7 +9824,7 @@ function Check_check($$anchor, $$props) {
     ["path", { d: "M18 6 7 17l-5-5" }],
     ["path", { d: "m22 10-7.5 7.5L13 16" }]
   ];
-  var fragment = root23();
+  var fragment = root24();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -9493,7 +9838,7 @@ function Check_check($$anchor, $$props) {
 if (undefined) {}
 var check_check_default = Check_check;
 // web/src/components/buttons/MarkAllReadButton.svelte
-var root24 = from_html(`
+var root25 = from_html(`
 
 <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
   <!>
@@ -9503,7 +9848,7 @@ function MarkAllReadButton($$anchor, $$props) {
   const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
   const label = user_derived(() => t("items.markAllRead"));
   next();
-  var fragment = root24();
+  var fragment = root25();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   check_check_default(node, spread_props(() => iconProps));
@@ -9522,7 +9867,7 @@ var MarkAllReadButton_default = MarkAllReadButton;
 delegate(["click"]);
 
 // node_modules/@lucide/svelte/dist/icons/thumbs-down.svelte
-var root25 = from_html(`<!--
+var root26 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -9553,7 +9898,7 @@ function Thumbs_down($$anchor, $$props) {
     ],
     ["path", { d: "M17 14V2" }]
   ];
-  var fragment = root25();
+  var fragment = root26();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -9567,7 +9912,7 @@ function Thumbs_down($$anchor, $$props) {
 if (undefined) {}
 var thumbs_down_default = Thumbs_down;
 // node_modules/@lucide/svelte/dist/icons/thumbs-up.svelte
-var root26 = from_html(`<!--
+var root27 = from_html(`<!--
 @lucide/svelte v1.16.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -9598,7 +9943,7 @@ function Thumbs_up($$anchor, $$props) {
     ],
     ["path", { d: "M7 10v12" }]
   ];
-  var fragment = root26();
+  var fragment = root27();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -9612,7 +9957,7 @@ function Thumbs_up($$anchor, $$props) {
 if (undefined) {}
 var thumbs_up_default = Thumbs_up;
 // web/src/components/buttons/FilterVerdictButtons.svelte
-var root27 = from_html(`
+var root28 = from_html(`
 
 <div class="flex shrink-0 gap-1">
   <button type="button">
@@ -9631,7 +9976,7 @@ function FilterVerdictButtons($$anchor, $$props) {
   const rejectLabel = user_derived(() => t("items.filterReject"));
   const acceptClass = user_derived(() => accepted() ? "text-neutral-900 dark:text-neutral-100" : "");
   next();
-  var fragment = root27();
+  var fragment = root28();
   var div = sibling(first_child(fragment));
   var button = sibling(child(div));
   var node = sibling(child(button));
@@ -9664,10 +10009,10 @@ var FilterVerdictButtons_default = FilterVerdictButtons;
 delegate(["click"]);
 
 // web/src/components/ItemList.svelte
-var root_27 = from_html(`
+var root_28 = from_html(`
         <button type="button"> </button>
       `, 1);
-var root_18 = from_html(`
+var root_19 = from_html(`
     <div class="flex min-w-0 flex-wrap items-center gap-3 text-xs" role="group">
       <!>
       <button type="button"> </button>
@@ -9724,7 +10069,7 @@ var root_83 = from_html(`
               <!>
             </div>
           `, 1);
-var root_63 = from_html(`
+var root_64 = from_html(`
       
       
       <li class="py-5">
@@ -9750,10 +10095,10 @@ var root_54 = from_html(`
 var root_182 = from_html(`
   <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root_19 = from_html(`
+var root_192 = from_html(`
   <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root28 = from_html(`
+var root29 = from_html(`
 
 <div>
   <!>
@@ -10001,17 +10346,17 @@ function ItemList($$anchor, $$props) {
   });
   var $$exports = { markAllRead };
   next();
-  var fragment = root28();
+  var fragment = root29();
   var div = sibling(first_child(fragment));
   var node = sibling(child(div));
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root_18();
+      var fragment_1 = root_19();
       var div_1 = sibling(first_child(fragment_1));
       var node_1 = sibling(child(div_1));
       each(node_1, 17, () => get2(filters), (f) => f.id, ($$anchor3, f) => {
         next();
-        var fragment_2 = root_27();
+        var fragment_2 = root_28();
         var button = sibling(first_child(fragment_2));
         var text2 = child(button);
         reset(button);
@@ -10098,7 +10443,7 @@ function ItemList($$anchor, $$props) {
         const filterDisplay = user_derived(() => getItemFilterDisplay(get2(item), get2(filterNameById)));
         const contentPreview = user_derived(() => getMatchedContentPreview(get2(item).content, get2(filterDisplay).keywords));
         next();
-        var fragment_6 = root_63();
+        var fragment_6 = root_64();
         var li = sibling(first_child(fragment_6));
         var article = sibling(child(li));
         var div_4 = sibling(child(article));
@@ -10360,7 +10705,7 @@ function ItemList($$anchor, $$props) {
       append($$anchor2, fragment_17);
     };
     var consequent_13 = ($$anchor2) => {
-      var fragment_18 = root_19();
+      var fragment_18 = root_192();
       var p_4 = sibling(first_child(fragment_18));
       var text_16 = child(p_4);
       reset(p_4);
@@ -10410,13 +10755,16 @@ delegate(["click"]);
 var root_110 = from_html(`
     <!>
   `, 1);
-var root_28 = from_html(`
+var root_29 = from_html(`
     <!>
   `, 1);
 var root_35 = from_html(`
     <!>
   `, 1);
-var root29 = from_html(`
+var root_45 = from_html(`
+    <!>
+  `, 1);
+var root30 = from_html(`
 
 <main class="mx-auto max-w-page px-5 py-16 font-sans">
   <!>
@@ -10426,7 +10774,7 @@ function App($$anchor) {
   const $route = () => store_get(route, "$route", $$stores);
   const [$$stores, $$cleanup] = setup_stores();
   next();
-  var fragment = root29();
+  var fragment = root30();
   var main = sibling(first_child(fragment));
   var node = sibling(child(main));
   Header_default(node, {});
@@ -10440,24 +10788,33 @@ function App($$anchor) {
       append($$anchor2, fragment_1);
     };
     var consequent_1 = ($$anchor2) => {
-      var fragment_2 = root_28();
+      var fragment_2 = root_29();
       var node_3 = sibling(first_child(fragment_2));
       FiltersManager_default(node_3, {});
       next();
       append($$anchor2, fragment_2);
     };
-    var alternate = ($$anchor2) => {
+    var consequent_2 = ($$anchor2) => {
       var fragment_3 = root_35();
       var node_4 = sibling(first_child(fragment_3));
-      ItemList_default(node_4, {});
+      ExportPage_default(node_4, {});
       next();
       append($$anchor2, fragment_3);
+    };
+    var alternate = ($$anchor2) => {
+      var fragment_4 = root_45();
+      var node_5 = sibling(first_child(fragment_4));
+      ItemList_default(node_5, {});
+      next();
+      append($$anchor2, fragment_4);
     };
     if_block(node_1, ($$render) => {
       if ($route() === "/feeds")
         $$render(consequent);
       else if ($route() === "/filters")
         $$render(consequent_1, 1);
+      else if ($route() === "/export")
+        $$render(consequent_2, 2);
       else
         $$render(alternate, -1);
     });

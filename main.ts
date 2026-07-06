@@ -51,6 +51,7 @@ const publicRoutes = new Elysia()
   .get("/", indexHtml)
   .get("/feeds", indexHtml)
   .get("/filters", indexHtml)
+  .get("/export", indexHtml)
   .get("/manifest.webmanifest", ({ query, set }) => {
     set.headers["content-type"] = "application/manifest+json; charset=utf-8";
     return JSON.stringify(buildWebManifest(manifestLocale(query)));

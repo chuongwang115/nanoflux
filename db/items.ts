@@ -130,6 +130,39 @@ export function getItems(options?: {
   }
 }
 
+export function getItemsForExport(options: {
+  since?: string;
+  until?: string;
+  filterPassed?: number;
+  passedFilterId?: string;
+}): { published_at: string; title: string; content: string | null; link: string }[] {
+  try {
+    const sinceFilter = options.since
+      ? gte(items.published_at, options.since)
+      : undefined;
+    const untilFilter = options.until
+      ? lte(items.published_at, options.until)
+      : undefined;
+    const passedFilter = buildPassedFilter(options.filterPassed);
+    const passedFilterIdFilter = buildPassedFilterIdFilter(options.passedFilterId);
+
+    return db
+      .select({
+        published_at: items.published_at,
+        title: items.title,
+        content: items.content,
+        link: items.link,
+      })
+      .from(items)
+      .where(and(sinceFilter, untilFilter, passedFilter, passedFilterIdFilter))
+      .orderBy(desc(items.published_at), desc(items.id))
+      .all();
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to export items: ${detail}`);
+  }
+}
+
 export function getExistingGuids(guids: string[]): Set<string> {
   if (guids.length === 0) return new Set();
 

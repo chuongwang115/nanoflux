@@ -2,7 +2,7 @@
 
 declare const BUILD_PRECACHE: string[];
 
-const CACHE_NAME = "nanoflux-v2";
+const CACHE_NAME = "nanoflux-v3";
 const SHELL_URLS = ["/", "/feeds"];
 const PRECACHE_URLS: string[] = [
   ...SHELL_URLS,

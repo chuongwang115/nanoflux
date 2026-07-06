@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import {
+    exportHref,
     feedsHref,
     filtersHref,
     homeHref,
@@ -32,7 +33,8 @@
 
   const isFeeds = $derived($route === "/feeds");
   const isFilters = $derived($route === "/filters");
-  const isSubPage = $derived(isFeeds || isFilters);
+  const isExport = $derived($route === "/export");
+  const isSubPage = $derived(isFeeds || isFilters || isExport);
 
   const rowClass = $derived(
     `transition-[gap] duration-300 ${compact ? "flex min-w-0 items-center justify-between gap-4" : ""}`,
@@ -150,6 +152,33 @@
           </a>
           <p>{t("filters.title")}</p>
         </div>
+      {:else if isExport}
+        <div class="{subClass} gap-3">
+          <a
+            href={homeHref()}
+            onclick={navClickParent()}
+            class="inline-flex shrink-0 rounded-md p-1 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
+            aria-label={t("export.back")}
+            title={t("export.back")}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m12 19-7-7 7-7" />
+              <path d="M19 12H5" />
+            </svg>
+          </a>
+          <p>{t("export.title")}</p>
+        </div>
       {:else}
         <nav class={subClass} aria-label={t("items.latest")}>
           <span>{t("items.latest")}</span>
@@ -168,6 +197,14 @@
             class="hover:text-neutral-900 dark:hover:text-neutral-100"
           >
             {t("items.filters")}
+          </a>
+          <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
+          <a
+            href={exportHref()}
+            onclick={navClick("/export")}
+            class="hover:text-neutral-900 dark:hover:text-neutral-100"
+          >
+            {t("items.export")}
           </a>
         </nav>
       {/if}

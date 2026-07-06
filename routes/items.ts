@@ -4,6 +4,7 @@ import {
   markItemsRead,
   markItemRead,
 } from "../db/items";
+import { buildItemsExport, type ExportLocale } from "../services/export/items-export";
 import {
   acceptItemForFilter,
   rejectItemForFilter,
@@ -88,6 +89,54 @@ function getItemsHandler({ query }: {
   }
 }
 
+function parseTzOffset(raw: unknown): number {
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function parseExportLocale(raw: unknown): ExportLocale {
+  return raw === "en" ? "en" : "zh";
+}
+
+function exportItemsHandler({ query }: {
+  query?: {
+    since?: string;
+    until?: string;
+    filter_passed?: number;
+    passed_filter_id?: string;
+    tz_offset?: number;
+    lang?: string;
+  };
+}) {
+  try {
+    const filterPassed = parseFilterPassed(query?.filter_passed);
+    const passedFilterId = query?.passed_filter_id?.trim() || undefined;
+    const since = query?.since?.trim() || undefined;
+    const until = query?.until?.trim() || undefined;
+
+    const xlsx = buildItemsExport({
+      since,
+      until,
+      filterPassed,
+      passedFilterId,
+      tzOffsetMin: parseTzOffset(query?.tz_offset),
+      locale: parseExportLocale(query?.lang),
+    });
+
+    return new Response(xlsx, {
+      headers: {
+        "Content-Type":
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": 'attachment; filename="nanoflux-export.xlsx"',
+      },
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to export items";
+    return new Response(message, { status: 500 });
+  }
+}
+
 function markItemsReadHandler({ body }: {
   body: {
     until?: string;
@@ -152,6 +201,7 @@ async function setItemFilterVerdictHandler({
 
 export const routes = new Elysia({ prefix: "/api/items" })
   .get("/", getItemsHandler)
+  .get("/export.xlsx", exportItemsHandler)
   .post("/read-all", markItemsReadHandler)
   .post("/:id/read", markItemReadHandler)
   .post("/:id/filter-verdict", setItemFilterVerdictHandler);

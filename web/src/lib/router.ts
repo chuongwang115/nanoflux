@@ -1,23 +1,30 @@
 import { get, writable } from "svelte/store";
 
 /** Logical routes (not URL pathnames). */
-export type AppRoute = "/" | "/feeds" | "/filters";
+export type AppRoute = "/" | "/feeds" | "/filters" | "/export";
 
 const scrollByRoute = new Map<string, number>();
 
 export const route = writable<AppRoute>("/");
 
+const SUBPAGE_PATH_SUFFIXES = ["/feeds/", "/filters/", "/export/"];
+
+function isSubPagePath(path: string): boolean {
+  return SUBPAGE_PATH_SUFFIXES.some((suffix) => path.endsWith(suffix));
+}
+
 function pathnameToRoute(pathname: string): AppRoute {
   if (pathname.endsWith("/feeds")) return "/feeds";
   if (pathname.endsWith("/filters")) return "/filters";
+  if (pathname.endsWith("/export")) return "/export";
   return "/";
 }
 
 function routeToRelativeHref(next: AppRoute): string {
   if (next === "/feeds") return "feeds";
   if (next === "/filters") return "filters";
-  const path = window.location.pathname;
-  if (path.endsWith("/feeds/") || path.endsWith("/filters/")) {
+  if (next === "/export") return "export";
+  if (isSubPagePath(window.location.pathname)) {
     return "..";
   }
   return "./";
@@ -25,8 +32,7 @@ function routeToRelativeHref(next: AppRoute): string {
 
 /** Relative link to the app home (sibling of the feeds segment). */
 export function homeHref(): string {
-  const path = window.location.pathname;
-  if (path.endsWith("/feeds/") || path.endsWith("/filters/")) {
+  if (isSubPagePath(window.location.pathname)) {
     return "..";
   }
   return "./";
@@ -40,6 +46,11 @@ export function feedsHref(): string {
 /** Relative link to the filters page. */
 export function filtersHref(): string {
   return "filters";
+}
+
+/** Relative link to the export page. */
+export function exportHref(): string {
+  return "export";
 }
 
 export function navigateToParent() {

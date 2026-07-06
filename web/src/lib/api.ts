@@ -1,3 +1,5 @@
+import { localeState } from "./locale.svelte";
+
 export type FeedSort = "updated_desc" | "published_desc" | "published_asc";
 
 export type Feed = {
@@ -202,6 +204,39 @@ export async function downloadFeedsOpml(): Promise<void> {
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = "nanoflux.opml";
+    anchor.click();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+export async function downloadItemsExcel(options: {
+  since?: string;
+  until?: string;
+  filterPassed?: 0 | 1;
+  passedFilterId?: string;
+}): Promise<void> {
+  const params = new URLSearchParams();
+  if (options.since) params.set("since", options.since);
+  if (options.until) params.set("until", options.until);
+  if (options.filterPassed === 0 || options.filterPassed === 1) {
+    params.set("filter_passed", String(options.filterPassed));
+  }
+  if (options.passedFilterId) params.set("passed_filter_id", options.passedFilterId);
+  params.set("tz_offset", String(new Date().getTimezoneOffset()));
+  params.set("lang", localeState.locale);
+
+  const res = await fetch(`/api/items/export.xlsx?${params}`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `Export failed (${res.status})`);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  try {
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "nanoflux-export.xlsx";
     anchor.click();
   } finally {
     URL.revokeObjectURL(url);
