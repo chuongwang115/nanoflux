@@ -3,6 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import { registerGetCurrentTime } from "./tools/get-current-time";
 import { registerAddFeed } from "./tools/add-feed";
+import { registerAddFeedByKeyword } from "./tools/add-feed-by-keyword";
 import { registerUpdateFeed } from "./tools/update-feed";
 import { registerDeleteFeed } from "./tools/delete-feed";
 import { registerSearchFeeds } from "./tools/search-feeds";
@@ -14,6 +15,7 @@ import { registerSearchGoogleNews } from "./tools/search-google-news";
 export function registerMcpTools(server: McpServer): void {
   registerGetCurrentTime(server);
   registerAddFeed(server);
+  registerAddFeedByKeyword(server);
   registerUpdateFeed(server);
   registerDeleteFeed(server);
   registerSearchFeeds(server);

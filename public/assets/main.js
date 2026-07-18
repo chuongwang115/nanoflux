@@ -6618,6 +6618,11 @@ var messages = {
     "feeds.name": "名称",
     "feeds.descriptionOptional": "描述（可选）",
     "feeds.addFeed": "添加 Feed",
+    "feeds.keyword": "关键词",
+    "feeds.keywordTitle": "按关键词添加",
+    "feeds.keywordPlaceholder": "输入搜索关键词",
+    "feeds.keywordConfirm": "确定",
+    "feeds.keywordEmpty": "请输入关键词",
     "feeds.save": "保存",
     "feeds.cancel": "取消",
     "feeds.parsing": "正在从 Feed 解析名称与摘要…",
@@ -6719,6 +6724,11 @@ var messages = {
     "feeds.name": "Name",
     "feeds.descriptionOptional": "Description (optional)",
     "feeds.addFeed": "Add feed",
+    "feeds.keyword": "Keyword",
+    "feeds.keywordTitle": "Add by keyword",
+    "feeds.keywordPlaceholder": "Enter a search keyword",
+    "feeds.keywordConfirm": "Confirm",
+    "feeds.keywordEmpty": "Please enter a keyword",
     "feeds.save": "Save",
     "feeds.cancel": "Cancel",
     "feeds.parsing": "Fetching title and summary from feed…",
@@ -7845,27 +7855,48 @@ var root_15 = from_html(`
         <button type="button" class="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"> </button>
       `, 1);
 var root_24 = from_html(`
+        <button type="button" class="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"> </button>
+      `, 1);
+var root_32 = from_html(`
     <p class="mt-3 text-sm text-neutral-400 dark:text-neutral-500"> </p>
   `, 1);
-var root_32 = from_html(`
+var root_42 = from_html(`
     <p class="mt-3 text-sm text-amber-600 dark:text-amber-500"> </p>
   `, 1);
-var root_42 = from_html(`
+var root_52 = from_html(`
     <p class="mt-3 text-sm text-red-500"> </p>
   `, 1);
-var root_52 = from_html(`
+var root_7 = from_html(`
+          <p class="text-sm text-red-500"> </p>
+        `, 1);
+var root_62 = from_html(`
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" role="presentation">
+    <div role="dialog" aria-modal="true" aria-labelledby="keyword-dialog-title" class="w-full max-w-sm border border-neutral-200 bg-white p-5 shadow-sm dark:border-neutral-700 dark:bg-neutral-900" tabindex="-1">
+      <h3 id="keyword-dialog-title" class="text-sm font-medium text-neutral-900 dark:text-neutral-100"> </h3>
+      <form class="mt-4 space-y-4">
+        <input type="text" class="w-full border-0 border-b border-neutral-200 bg-transparent py-2 text-sm outline-none placeholder:text-neutral-300 focus:border-neutral-900 dark:border-neutral-700 dark:placeholder:text-neutral-600 dark:focus:border-neutral-100"/>
+        <!>
+        <div class="flex gap-4">
+          <button type="submit" class="text-sm text-neutral-900 underline-offset-4 hover:underline dark:text-neutral-100"> </button>
+          <button type="button" class="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"> </button>
+        </div>
+      </form>
+    </div>
+  </div>
+`, 1);
+var root_8 = from_html(`
     <p class="text-sm text-red-500"> </p>
   `, 1);
-var root_62 = from_html(`
+var root_9 = from_html(`
     <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
   `, 1);
-var root_7 = from_html(`
+var root_10 = from_html(`
     <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
   `, 1);
-var root_122 = from_html(`
+var root_152 = from_html(`
               <p class="col-span-2 text-sm text-neutral-400 dark:text-neutral-500"> </p>
             `, 1);
-var root_9 = from_html(`
+var root_122 = from_html(`
         <li class="group grid w-full grid-cols-[1fr_auto] gap-x-4 gap-y-2 py-5">
             <p class="min-w-0 text-sm font-medium"> </p>
             <div class="relative flex shrink-0 items-center">
@@ -7885,13 +7916,13 @@ var root_9 = from_html(`
             <!>
         </li>
       `, 1);
-var root_132 = from_html(`
+var root_16 = from_html(`
       <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
     `, 1);
-var root_142 = from_html(`
+var root_17 = from_html(`
       <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
     `, 1);
-var root_8 = from_html(`
+var root_11 = from_html(`
     <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
       <!>
     </ul>
@@ -7908,11 +7939,14 @@ var root13 = from_html(`
     <div class="flex gap-4 pt-2">
       <button type="submit" class="text-sm text-neutral-900 underline-offset-4 hover:underline dark:text-neutral-100"> </button>
       <!>
+      <!>
     </div>
   </form>
   <!>
   <!>
 </section>
+
+<!>
 
 <section>
   <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -7953,7 +7987,44 @@ function FeedsManager($$anchor, $$props) {
   let sort = state("updated_desc");
   let exportingOpml = state(false);
   let now2 = state(proxy(Date.now()));
+  let keywordDialogOpen = state(false);
+  let keywordInput = state("");
+  let keywordError = state("");
+  let keywordInputEl = state(null);
   const isEditing = user_derived(() => get2(editId) !== null);
+  function googleNewsLanguage(keyword) {
+    return /[\u4e00-\u9fff]/.test(keyword) ? "zh-CN" : "en-US";
+  }
+  function buildKeywordFeedUrl(keyword) {
+    const trimmed = keyword.trim();
+    const q = encodeURIComponent(trimmed).replace(/%20/g, "+");
+    return `https://news.google.com/rss/search?q=${q}+when:3d&hl=${googleNewsLanguage(trimmed)}`;
+  }
+  async function openKeywordDialog() {
+    set(keywordInput, "");
+    set(keywordError, "");
+    set(keywordDialogOpen, true);
+    await tick();
+    get2(keywordInputEl)?.focus();
+  }
+  function closeKeywordDialog() {
+    set(keywordDialogOpen, false);
+    set(keywordInput, "");
+    set(keywordError, "");
+  }
+  function applyKeywordFeed() {
+    const keyword = get2(keywordInput).trim();
+    if (!keyword) {
+      set(keywordError, t("feeds.keywordEmpty"), true);
+      return;
+    }
+    resetForm();
+    set(url, buildKeywordFeedUrl(keyword), true);
+    set(title, keyword, true);
+    set(titleTouched, true);
+    closeKeywordDialog();
+    runPreview(get2(url));
+  }
   function isValidFeedUrl(value) {
     try {
       const u = new URL(value.trim());
@@ -8163,166 +8234,268 @@ function FeedsManager($$anchor, $$props) {
       next();
       template_effect(($0) => set_text(text_1, `
           ${$0 ?? ""}
-        `), [() => t("feeds.cancel")]);
-      delegated("click", button_1, resetForm);
+        `), [() => t("feeds.keyword")]);
+      delegated("click", button_1, openKeywordDialog);
       append($$anchor2, fragment_1);
     };
     if_block(node, ($$render) => {
-      if (get2(isEditing))
+      if (!get2(isEditing))
         $$render(consequent);
+    });
+  }
+  var node_1 = sibling(node, 2);
+  {
+    var consequent_1 = ($$anchor2) => {
+      var fragment_2 = root_24();
+      var button_2 = sibling(first_child(fragment_2));
+      var text_2 = child(button_2);
+      reset(button_2);
+      next();
+      template_effect(($0) => set_text(text_2, `
+          ${$0 ?? ""}
+        `), [() => t("feeds.cancel")]);
+      delegated("click", button_2, resetForm);
+      append($$anchor2, fragment_2);
+    };
+    if_block(node_1, ($$render) => {
+      if (get2(isEditing))
+        $$render(consequent_1);
     });
   }
   next();
   reset(div);
   next();
   reset(form);
-  var node_1 = sibling(form, 2);
+  var node_2 = sibling(form, 2);
   {
-    var consequent_1 = ($$anchor2) => {
-      var fragment_2 = root_24();
-      var p = sibling(first_child(fragment_2));
-      var text_2 = child(p);
-      reset(p);
-      next();
-      template_effect(($0) => set_text(text_2, `
-      ${$0 ?? ""}
-    `), [() => t("feeds.parsing")]);
-      append($$anchor2, fragment_2);
-    };
     var consequent_2 = ($$anchor2) => {
       var fragment_3 = root_32();
-      var p_1 = sibling(first_child(fragment_3));
-      var text_3 = child(p_1);
-      reset(p_1);
+      var p = sibling(first_child(fragment_3));
+      var text_3 = child(p);
+      reset(p);
       next();
-      template_effect(() => set_text(text_3, `
-      ${get2(previewError) ?? ""}
-    `));
+      template_effect(($0) => set_text(text_3, `
+      ${$0 ?? ""}
+    `), [() => t("feeds.parsing")]);
       append($$anchor2, fragment_3);
     };
-    if_block(node_1, ($$render) => {
-      if (get2(previewing))
-        $$render(consequent_1);
-      else if (get2(previewError))
-        $$render(consequent_2, 1);
-    });
-  }
-  var node_2 = sibling(node_1, 2);
-  {
     var consequent_3 = ($$anchor2) => {
       var fragment_4 = root_42();
-      var p_2 = sibling(first_child(fragment_4));
-      var text_4 = child(p_2, true);
-      reset(p_2);
+      var p_1 = sibling(first_child(fragment_4));
+      var text_4 = child(p_1);
+      reset(p_1);
       next();
-      template_effect(() => set_text(text_4, get2(formError)));
+      template_effect(() => set_text(text_4, `
+      ${get2(previewError) ?? ""}
+    `));
       append($$anchor2, fragment_4);
     };
     if_block(node_2, ($$render) => {
+      if (get2(previewing))
+        $$render(consequent_2);
+      else if (get2(previewError))
+        $$render(consequent_3, 1);
+    });
+  }
+  var node_3 = sibling(node_2, 2);
+  {
+    var consequent_4 = ($$anchor2) => {
+      var fragment_5 = root_52();
+      var p_2 = sibling(first_child(fragment_5));
+      var text_5 = child(p_2, true);
+      reset(p_2);
+      next();
+      template_effect(() => set_text(text_5, get2(formError)));
+      append($$anchor2, fragment_5);
+    };
+    if_block(node_3, ($$render) => {
       if (get2(formError))
-        $$render(consequent_3);
+        $$render(consequent_4);
     });
   }
   next();
   reset(section);
-  var section_1 = sibling(section, 2);
-  var div_1 = sibling(child(section_1));
-  var h2 = sibling(child(div_1));
-  var text_5 = child(h2);
-  reset(h2);
-  var div_2 = sibling(h2, 2);
-  var button_2 = sibling(child(div_2));
-  var node_3 = sibling(child(button_2));
-  download_default(node_3, spread_props(() => iconProps));
-  var text_6 = sibling(node_3);
-  reset(button_2);
-  var div_3 = sibling(button_2, 2);
-  var button_3 = sibling(child(div_3));
-  var text_7 = child(button_3);
-  reset(button_3);
-  var button_4 = sibling(button_3, 2);
-  var text_8 = child(button_4);
-  reset(button_4);
-  next();
-  reset(div_3);
-  next();
-  reset(div_2);
-  next();
-  reset(div_1);
-  var node_4 = sibling(div_1, 2);
+  var node_4 = sibling(section, 2);
   {
-    var consequent_4 = ($$anchor2) => {
-      var fragment_5 = root_52();
-      var p_3 = sibling(first_child(fragment_5));
-      var text_9 = child(p_3, true);
-      reset(p_3);
-      next();
-      template_effect(() => set_text(text_9, get2(listError)));
-      append($$anchor2, fragment_5);
-    };
-    var consequent_5 = ($$anchor2) => {
+    var consequent_6 = ($$anchor2) => {
       var fragment_6 = root_62();
-      var p_4 = sibling(first_child(fragment_6));
-      var text_10 = child(p_4, true);
-      reset(p_4);
+      var div_1 = sibling(first_child(fragment_6));
+      var div_2 = sibling(child(div_1));
+      var h3 = sibling(child(div_2));
+      var text_6 = child(h3);
+      reset(h3);
+      var form_1 = sibling(h3, 2);
+      var input_3 = sibling(child(form_1));
+      remove_input_defaults(input_3);
+      bind_this(input_3, ($$value) => set(keywordInputEl, $$value), () => get2(keywordInputEl));
+      var node_5 = sibling(input_3, 2);
+      {
+        var consequent_5 = ($$anchor3) => {
+          var fragment_7 = root_7();
+          var p_3 = sibling(first_child(fragment_7));
+          var text_7 = child(p_3, true);
+          reset(p_3);
+          next();
+          template_effect(() => set_text(text_7, get2(keywordError)));
+          append($$anchor3, fragment_7);
+        };
+        if_block(node_5, ($$render) => {
+          if (get2(keywordError))
+            $$render(consequent_5);
+        });
+      }
+      var div_3 = sibling(node_5, 2);
+      var button_3 = sibling(child(div_3));
+      var text_8 = child(button_3);
+      reset(button_3);
+      var button_4 = sibling(button_3, 2);
+      var text_9 = child(button_4);
+      reset(button_4);
       next();
-      template_effect(($0) => set_text(text_10, $0), [() => t("items.loading")]);
+      reset(div_3);
+      next();
+      reset(form_1);
+      next();
+      reset(div_2);
+      next();
+      reset(div_1);
+      next();
+      template_effect(($0, $1, $2, $3) => {
+        set_text(text_6, `
+        ${$0 ?? ""}
+      `);
+        set_attribute2(input_3, "placeholder", $1);
+        set_text(text_8, `
+            ${$2 ?? ""}
+          `);
+        set_text(text_9, `
+            ${$3 ?? ""}
+          `);
+      }, [
+        () => t("feeds.keywordTitle"),
+        () => t("feeds.keywordPlaceholder"),
+        () => t("feeds.keywordConfirm"),
+        () => t("feeds.cancel")
+      ]);
+      delegated("click", div_1, (e) => {
+        if (e.target === e.currentTarget)
+          closeKeywordDialog();
+      });
+      delegated("keydown", div_1, (e) => {
+        if (e.key === "Escape")
+          closeKeywordDialog();
+      });
+      event("submit", form_1, (e) => {
+        e.preventDefault();
+        applyKeywordFeed();
+      });
+      bind_value(input_3, () => get2(keywordInput), ($$value) => set(keywordInput, $$value));
+      delegated("click", button_4, closeKeywordDialog);
       append($$anchor2, fragment_6);
     };
-    var consequent_6 = ($$anchor2) => {
-      var fragment_7 = root_7();
-      var p_5 = sibling(first_child(fragment_7));
-      var text_11 = child(p_5, true);
+    if_block(node_4, ($$render) => {
+      if (get2(keywordDialogOpen))
+        $$render(consequent_6);
+    });
+  }
+  var section_1 = sibling(node_4, 2);
+  var div_4 = sibling(child(section_1));
+  var h2 = sibling(child(div_4));
+  var text_10 = child(h2);
+  reset(h2);
+  var div_5 = sibling(h2, 2);
+  var button_5 = sibling(child(div_5));
+  var node_6 = sibling(child(button_5));
+  download_default(node_6, spread_props(() => iconProps));
+  var text_11 = sibling(node_6);
+  reset(button_5);
+  var div_6 = sibling(button_5, 2);
+  var button_6 = sibling(child(div_6));
+  var text_12 = child(button_6);
+  reset(button_6);
+  var button_7 = sibling(button_6, 2);
+  var text_13 = child(button_7);
+  reset(button_7);
+  next();
+  reset(div_6);
+  next();
+  reset(div_5);
+  next();
+  reset(div_4);
+  var node_7 = sibling(div_4, 2);
+  {
+    var consequent_7 = ($$anchor2) => {
+      var fragment_8 = root_8();
+      var p_4 = sibling(first_child(fragment_8));
+      var text_14 = child(p_4, true);
+      reset(p_4);
+      next();
+      template_effect(() => set_text(text_14, get2(listError)));
+      append($$anchor2, fragment_8);
+    };
+    var consequent_8 = ($$anchor2) => {
+      var fragment_9 = root_9();
+      var p_5 = sibling(first_child(fragment_9));
+      var text_15 = child(p_5, true);
       reset(p_5);
       next();
-      template_effect(($0) => set_text(text_11, $0), [() => t("feeds.noFeeds")]);
-      append($$anchor2, fragment_7);
+      template_effect(($0) => set_text(text_15, $0), [() => t("items.loading")]);
+      append($$anchor2, fragment_9);
+    };
+    var consequent_9 = ($$anchor2) => {
+      var fragment_10 = root_10();
+      var p_6 = sibling(first_child(fragment_10));
+      var text_16 = child(p_6, true);
+      reset(p_6);
+      next();
+      template_effect(($0) => set_text(text_16, $0), [() => t("feeds.noFeeds")]);
+      append($$anchor2, fragment_10);
     };
     var alternate_1 = ($$anchor2) => {
-      var fragment_8 = root_8();
-      var ul = sibling(first_child(fragment_8));
-      var node_5 = sibling(child(ul));
-      each(node_5, 17, () => get2(feeds), (feed) => feed.id, ($$anchor3, feed) => {
+      var fragment_11 = root_11();
+      var ul = sibling(first_child(fragment_11));
+      var node_8 = sibling(child(ul));
+      each(node_8, 17, () => get2(feeds), (feed) => feed.id, ($$anchor3, feed) => {
         next();
-        var fragment_9 = root_9();
-        var li = sibling(first_child(fragment_9));
-        var p_6 = sibling(child(li));
-        var text_12 = child(p_6, true);
-        reset(p_6);
-        var div_4 = sibling(p_6, 2);
-        var div_5 = sibling(child(div_4));
-        var button_5 = sibling(child(div_5));
-        var node_6 = sibling(child(button_5));
-        pencil_default(node_6, spread_props(() => iconProps));
+        var fragment_12 = root_122();
+        var li = sibling(first_child(fragment_12));
+        var p_7 = sibling(child(li));
+        var text_17 = child(p_7, true);
+        reset(p_7);
+        var div_7 = sibling(p_7, 2);
+        var div_8 = sibling(child(div_7));
+        var button_8 = sibling(child(div_8));
+        var node_9 = sibling(child(button_8));
+        pencil_default(node_9, spread_props(() => iconProps));
         next();
-        reset(button_5);
-        var button_6 = sibling(button_5, 2);
-        var node_7 = sibling(child(button_6));
-        trash_2_default(node_7, spread_props(() => iconProps));
+        reset(button_8);
+        var button_9 = sibling(button_8, 2);
+        var node_10 = sibling(child(button_9));
+        trash_2_default(node_10, spread_props(() => iconProps));
         next();
-        reset(button_6);
+        reset(button_9);
         next();
-        reset(div_5);
-        var time = sibling(div_5, 2);
-        var node_8 = sibling(child(time));
+        reset(div_8);
+        var time = sibling(div_8, 2);
+        var node_11 = sibling(child(time));
         {
-          var consequent_7 = ($$anchor4) => {
-            var text_13 = text();
-            template_effect(($0) => set_text(text_13, `
+          var consequent_10 = ($$anchor4) => {
+            var text_18 = text();
+            template_effect(($0) => set_text(text_18, `
                   ${$0 ?? ""}
                 `), [() => formatTime(get2(feed).last_published_at, get2(now2))]);
-            append($$anchor4, text_13);
+            append($$anchor4, text_18);
           };
           var alternate = ($$anchor4) => {
-            var text_14 = text();
-            template_effect(($0) => set_text(text_14, `
+            var text_19 = text();
+            template_effect(($0) => set_text(text_19, `
                   ${$0 ?? ""}
                 `), [() => t("feeds.noPublished")]);
-            append($$anchor4, text_14);
+            append($$anchor4, text_19);
           };
-          if_block(node_8, ($$render) => {
+          if_block(node_11, ($$render) => {
             if (get2(feed).last_published_at)
-              $$render(consequent_7);
+              $$render(consequent_10);
             else
               $$render(alternate, -1);
           });
@@ -8330,41 +8503,41 @@ function FeedsManager($$anchor, $$props) {
         next();
         reset(time);
         next();
-        reset(div_4);
-        var a = sibling(div_4, 2);
-        var text_15 = child(a);
+        reset(div_7);
+        var a = sibling(div_7, 2);
+        var text_20 = child(a);
         reset(a);
-        var node_9 = sibling(a, 2);
+        var node_12 = sibling(a, 2);
         {
-          var consequent_8 = ($$anchor4) => {
-            var fragment_12 = root_122();
-            var p_7 = sibling(first_child(fragment_12));
-            var text_16 = child(p_7);
-            reset(p_7);
+          var consequent_11 = ($$anchor4) => {
+            var fragment_15 = root_152();
+            var p_8 = sibling(first_child(fragment_15));
+            var text_21 = child(p_8);
+            reset(p_8);
             next();
-            template_effect(() => set_text(text_16, `
+            template_effect(() => set_text(text_21, `
                 ${get2(feed).description ?? ""}
               `));
-            append($$anchor4, fragment_12);
+            append($$anchor4, fragment_15);
           };
-          if_block(node_9, ($$render) => {
+          if_block(node_12, ($$render) => {
             if (get2(feed).description)
-              $$render(consequent_8);
+              $$render(consequent_11);
           });
         }
         next();
         reset(li);
         next();
         template_effect(($0, $1, $2, $3, $4) => {
-          set_text(text_12, get2(feed).title);
-          set_attribute2(button_5, "aria-label", $0);
-          set_attribute2(button_5, "title", $1);
-          set_attribute2(button_6, "aria-label", $2);
-          set_attribute2(button_6, "title", $3);
+          set_text(text_17, get2(feed).title);
+          set_attribute2(button_8, "aria-label", $0);
+          set_attribute2(button_8, "title", $1);
+          set_attribute2(button_9, "aria-label", $2);
+          set_attribute2(button_9, "title", $3);
           set_attribute2(time, "datetime", get2(feed).last_published_at ?? undefined);
           set_attribute2(time, "title", $4);
           set_attribute2(a, "href", get2(feed).url);
-          set_text(text_15, `
+          set_text(text_20, `
               ${get2(feed).url ?? ""}
             `);
         }, [
@@ -8374,55 +8547,55 @@ function FeedsManager($$anchor, $$props) {
           () => t("feeds.delete"),
           () => t("feeds.lastPublished")
         ]);
-        delegated("click", button_5, () => startEdit(get2(feed)));
-        delegated("click", button_6, () => handleDelete(get2(feed).id));
-        append($$anchor3, fragment_9);
+        delegated("click", button_8, () => startEdit(get2(feed)));
+        delegated("click", button_9, () => handleDelete(get2(feed).id));
+        append($$anchor3, fragment_12);
       });
       next();
       reset(ul);
-      var node_10 = sibling(ul, 2);
+      var node_13 = sibling(ul, 2);
       {
-        var consequent_9 = ($$anchor3) => {
-          var fragment_13 = root_132();
-          var p_8 = sibling(first_child(fragment_13));
-          var text_17 = child(p_8);
-          reset(p_8);
-          next();
-          template_effect(($0) => set_text(text_17, `
-        ${$0 ?? ""}
-      `), [() => t("feeds.loading")]);
-          append($$anchor3, fragment_13);
-        };
-        var consequent_10 = ($$anchor3) => {
-          var fragment_14 = root_142();
-          var p_9 = sibling(first_child(fragment_14));
-          var text_18 = child(p_9);
+        var consequent_12 = ($$anchor3) => {
+          var fragment_16 = root_16();
+          var p_9 = sibling(first_child(fragment_16));
+          var text_22 = child(p_9);
           reset(p_9);
           next();
-          template_effect(($0) => set_text(text_18, `
+          template_effect(($0) => set_text(text_22, `
+        ${$0 ?? ""}
+      `), [() => t("feeds.loading")]);
+          append($$anchor3, fragment_16);
+        };
+        var consequent_13 = ($$anchor3) => {
+          var fragment_17 = root_17();
+          var p_10 = sibling(first_child(fragment_17));
+          var text_23 = child(p_10);
+          reset(p_10);
+          next();
+          template_effect(($0) => set_text(text_23, `
         ${$0 ?? ""}
       `), [() => t("feeds.noMore")]);
-          append($$anchor3, fragment_14);
+          append($$anchor3, fragment_17);
         };
-        if_block(node_10, ($$render) => {
+        if_block(node_13, ($$render) => {
           if (get2(loadingMore))
-            $$render(consequent_9);
+            $$render(consequent_12);
           else if (!get2(hasMore) && get2(feeds).length > 0)
-            $$render(consequent_10, 1);
+            $$render(consequent_13, 1);
         });
       }
-      var div_6 = sibling(node_10, 2);
-      bind_this(div_6, ($$value) => set(sentinel, $$value), () => get2(sentinel));
+      var div_9 = sibling(node_13, 2);
+      bind_this(div_9, ($$value) => set(sentinel, $$value), () => get2(sentinel));
       next();
-      append($$anchor2, fragment_8);
+      append($$anchor2, fragment_11);
     };
-    if_block(node_4, ($$render) => {
+    if_block(node_7, ($$render) => {
       if (get2(listError))
-        $$render(consequent_4);
+        $$render(consequent_7);
       else if (get2(loading))
-        $$render(consequent_5, 1);
+        $$render(consequent_8, 1);
       else if (get2(feeds).length === 0)
-        $$render(consequent_6, 2);
+        $$render(consequent_9, 2);
       else
         $$render(alternate_1, -1);
     });
@@ -8441,24 +8614,24 @@ function FeedsManager($$anchor, $$props) {
     set_text(text2, `
         ${$2 ?? ""}
       `);
-    set_text(text_5, `
+    set_text(text_10, `
       ${$3 ?? ""}
     `);
-    button_2.disabled = get2(exportingOpml);
-    set_attribute2(button_2, "aria-label", $4);
-    set_attribute2(button_2, "title", $5);
-    set_text(text_6, `
+    button_5.disabled = get2(exportingOpml);
+    set_attribute2(button_5, "aria-label", $4);
+    set_attribute2(button_5, "title", $5);
+    set_text(text_11, `
         ${$6 ?? ""}
       `);
-    set_attribute2(div_3, "aria-label", $7);
-    set_class(button_3, 1, `transition-colors ${get2(sort) === "updated_desc" ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"}`);
-    set_attribute2(button_3, "aria-pressed", get2(sort) === "updated_desc");
-    set_text(text_7, `
+    set_attribute2(div_6, "aria-label", $7);
+    set_class(button_6, 1, `transition-colors ${get2(sort) === "updated_desc" ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"}`);
+    set_attribute2(button_6, "aria-pressed", get2(sort) === "updated_desc");
+    set_text(text_12, `
         ${$8 ?? ""}
       `);
-    set_class(button_4, 1, `transition-colors ${get2(sort) === "published_desc" ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"}`);
-    set_attribute2(button_4, "aria-pressed", get2(sort) === "published_desc");
-    set_text(text_8, `
+    set_class(button_7, 1, `transition-colors ${get2(sort) === "published_desc" ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"}`);
+    set_attribute2(button_7, "aria-pressed", get2(sort) === "published_desc");
+    set_text(text_13, `
         ${$9 ?? ""}
       `);
   }, [
@@ -8481,15 +8654,15 @@ function FeedsManager($$anchor, $$props) {
   bind_value(input_1, () => get2(url), ($$value) => set(url, $$value));
   delegated("input", input_2, () => set(descriptionTouched, true));
   bind_value(input_2, () => get2(description), ($$value) => set(description, $$value));
-  delegated("click", button_2, () => void handleExportOpml());
-  delegated("click", button_3, () => setSort("updated_desc"));
-  delegated("click", button_4, () => setSort("published_desc"));
+  delegated("click", button_5, () => void handleExportOpml());
+  delegated("click", button_6, () => setSort("updated_desc"));
+  delegated("click", button_7, () => setSort("published_desc"));
   append($$anchor, fragment);
   pop();
 }
 if (undefined) {}
 var FeedsManager_default = FeedsManager;
-delegate(["input", "click"]);
+delegate(["input", "click", "keydown"]);
 
 // node_modules/@lucide/svelte/dist/icons/lightbulb.svelte
 var root14 = from_html(`<!--
@@ -8791,7 +8964,7 @@ function Shield_x($$anchor, $$props) {
 if (undefined) {}
 var shield_x_default = Shield_x;
 // web/src/components/FiltersManager.svelte
-var root_16 = from_html(`
+var root_18 = from_html(`
         <button type="button" class="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"> </button>
       `, 1);
 var root_25 = from_html(`
@@ -9010,7 +9183,7 @@ function FiltersManager($$anchor, $$props) {
   var node = sibling(button, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root_16();
+      var fragment_1 = root_18();
       var button_1 = sibling(first_child(fragment_1));
       var text_1 = child(button_1);
       reset(button_1);
@@ -9307,7 +9480,7 @@ var FiltersManager_default = FiltersManager;
 delegate(["click"]);
 
 // web/src/components/ExportPage.svelte
-var root_17 = from_html(`
+var root_110 = from_html(`
         <button type="button"> </button>
       `, 1);
 var root_26 = from_html(`
@@ -9443,7 +9616,7 @@ function ExportPage($$anchor, $$props) {
   var node_1 = sibling(button, 2);
   each(node_1, 17, () => get2(filters), (f) => f.id, ($$anchor2, f) => {
     next();
-    var fragment_1 = root_17();
+    var fragment_1 = root_110();
     var button_1 = sibling(first_child(fragment_1));
     var text_5 = child(button_1);
     reset(button_1);
@@ -9748,7 +9921,7 @@ function isFilterAccepted(keys, itemId, filterId) {
 var root_27 = from_html(`
     <mark class="rounded-sm bg-amber-200/80 px-0.5 font-[inherit] text-inherit dark:bg-amber-500/35"> </mark>
   `, 1);
-var root_18 = from_html(`
+var root_111 = from_html(`
   <!>
 `, 1);
 var root23 = from_html(`
@@ -9762,7 +9935,7 @@ function HighlightedText($$anchor, $$props) {
   var node = sibling(first_child(fragment));
   each(node, 17, () => get2(segments), index, ($$anchor2, segment) => {
     next();
-    var fragment_1 = root_18();
+    var fragment_1 = root_111();
     var node_1 = sibling(first_child(fragment_1));
     {
       var consequent = ($$anchor3) => {
@@ -10012,7 +10185,7 @@ delegate(["click"]);
 var root_28 = from_html(`
         <button type="button"> </button>
       `, 1);
-var root_19 = from_html(`
+var root_112 = from_html(`
     <div class="flex min-w-0 flex-wrap items-center gap-3 text-xs" role="group">
       <!>
       <button type="button"> </button>
@@ -10029,12 +10202,12 @@ var root_73 = from_html(`
               <!>
             </p>
           `, 1);
-var root_11 = from_html(`<span>, </span>`);
-var root_133 = from_html(`
+var root_113 = from_html(`<span>, </span>`);
+var root_132 = from_html(`
                             <span class="block font-medium text-neutral-700 dark:text-neutral-200"> </span>
                             <span> </span>
                           `, 1);
-var root_143 = from_html(`
+var root_142 = from_html(`
                             <span> </span>
                             <span> </span>
                           `, 1);
@@ -10045,10 +10218,10 @@ var root_123 = from_html(`
                         </span>
                       </span>
                     `, 1);
-var root_152 = from_html(`
+var root_153 = from_html(`
                       <span> </span>
                     `, 1);
-var root_10 = from_html(`
+var root_102 = from_html(`
                     
                     
                     
@@ -10095,7 +10268,7 @@ var root_54 = from_html(`
 var root_182 = from_html(`
   <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root_192 = from_html(`
+var root_19 = from_html(`
   <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
 var root29 = from_html(`
@@ -10351,7 +10524,7 @@ function ItemList($$anchor, $$props) {
   var node = sibling(child(div));
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root_19();
+      var fragment_1 = root_112();
       var div_1 = sibling(first_child(fragment_1));
       var node_1 = sibling(child(div_1));
       each(node_1, 17, () => get2(filters), (f) => f.id, ($$anchor3, f) => {
@@ -10507,11 +10680,11 @@ function ItemList($$anchor, $$props) {
                   const keywords = user_derived(() => parseMatchedKeywords(get2(entry).keywords));
                   const reason = user_derived(() => get2(entry).reason?.trim() || null);
                   next();
-                  var fragment_10 = root_10();
+                  var fragment_10 = root_102();
                   var node_11 = sibling(first_child(fragment_10));
                   {
                     var consequent_4 = ($$anchor7) => {
-                      var span_1 = root_11();
+                      var span_1 = root_113();
                       append($$anchor7, span_1);
                     };
                     if_block(node_11, ($$render) => {
@@ -10530,7 +10703,7 @@ function ItemList($$anchor, $$props) {
                       var node_13 = sibling(child(span_3));
                       {
                         var consequent_5 = ($$anchor8) => {
-                          var fragment_12 = root_133();
+                          var fragment_12 = root_132();
                           var span_4 = sibling(first_child(fragment_12));
                           var text_9 = child(span_4);
                           reset(span_4);
@@ -10557,7 +10730,7 @@ function ItemList($$anchor, $$props) {
                       var node_14 = sibling(node_13, 2);
                       {
                         var consequent_6 = ($$anchor8) => {
-                          var fragment_13 = root_143();
+                          var fragment_13 = root_142();
                           var span_6 = sibling(first_child(fragment_13));
                           var text_11 = child(span_6);
                           reset(span_6);
@@ -10590,7 +10763,7 @@ function ItemList($$anchor, $$props) {
                       append($$anchor7, fragment_11);
                     };
                     var alternate = ($$anchor7) => {
-                      var fragment_14 = root_152();
+                      var fragment_14 = root_153();
                       var span_8 = sibling(first_child(fragment_14));
                       var text_13 = child(span_8, true);
                       reset(span_8);
@@ -10705,7 +10878,7 @@ function ItemList($$anchor, $$props) {
       append($$anchor2, fragment_17);
     };
     var consequent_13 = ($$anchor2) => {
-      var fragment_18 = root_192();
+      var fragment_18 = root_19();
       var p_4 = sibling(first_child(fragment_18));
       var text_16 = child(p_4);
       reset(p_4);
@@ -10752,7 +10925,7 @@ var ItemList_default = ItemList;
 delegate(["click"]);
 
 // web/src/App.svelte
-var root_110 = from_html(`
+var root_114 = from_html(`
     <!>
   `, 1);
 var root_29 = from_html(`
@@ -10781,7 +10954,7 @@ function App($$anchor) {
   var node_1 = sibling(node, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root_110();
+      var fragment_1 = root_114();
       var node_2 = sibling(first_child(fragment_1));
       FeedsManager_default(node_2, {});
       next();

@@ -340,27 +340,43 @@ async function requestViaSocks(
     timeout: timeoutMs,
   });
 
-  const fail = (error: Error) => {
-    socket.destroy();
-    throw error;
-  };
+  // Abort callbacks must reject (not throw): a sync throw from the event
+  // listener is uncaught and crashes the process.
+  return await new Promise<ParsedHttpResponse>((resolve, reject) => {
+    let settled = false;
+    let unbindAbort = () => {};
 
-  const unbindAbort = bindAbort(signal, () => fail(abortError(signal)));
-  if (signal?.aborted) fail(abortError(signal));
+    const fail = (error: Error) => {
+      if (settled) return;
+      settled = true;
+      unbindAbort();
+      socket.destroy();
+      reject(error);
+    };
 
-  try {
-    const transport = isHttps
-      ? await connectTls(socket, target.hostname, signal)
-      : socket;
+    unbindAbort = bindAbort(signal, () => fail(abortError(signal)));
+    if (settled) return;
 
-    const body = resolveRequestBody(init.body);
-    const bodyLength = body?.length ?? 0;
-    transport.write(buildRawRequestHead(target, init, bodyLength));
-    if (body && bodyLength > 0) transport.write(body);
-    return await readHttpResponse(transport, timeoutMs, signal);
-  } finally {
-    unbindAbort();
-  }
+    void (async () => {
+      try {
+        const transport = isHttps
+          ? await connectTls(socket, target.hostname, signal)
+          : socket;
+
+        const body = resolveRequestBody(init.body);
+        const bodyLength = body?.length ?? 0;
+        transport.write(buildRawRequestHead(target, init, bodyLength));
+        if (body && bodyLength > 0) transport.write(body);
+        const parsed = await readHttpResponse(transport, timeoutMs, signal);
+        if (settled) return;
+        settled = true;
+        unbindAbort();
+        resolve(parsed);
+      } catch (error) {
+        fail(error instanceof Error ? error : new Error(String(error)));
+      }
+    })();
+  });
 }
 
 function toResponse(parsed: ParsedHttpResponse): Response {

@@ -44,8 +44,9 @@ Built on [Bun](https://bun.sh), [Elysia](https://elysiajs.com), and [Svelte 5](h
 - Real-time updates via Server-Sent Events (SSE); in-memory list capped at 100 items to limit DOM size
 - Progressive Web App (installable, offline asset caching)
 - Bilingual UI (English / Chinese), light/dark theme, adjustable font size
-- Feed management page (`/feeds`) with auto-preview, create/edit/delete, sortable list, and **OPML export** (download all feeds as `nanoflux.opml`)
+- Feed management page (`/feeds`) with auto-preview, create/edit/delete, sortable list, **add by keyword** (creates a Google News RSS feed for the last 3 days; language inferred from the keyword), and **OPML export** (download all feeds as `nanoflux.opml`)
 - Filters management page (`/filters`) for creating, editing, deleting, and reordering named filters
+- Export page (`/export`) — pick a time range and optional filter scope, then download matching articles as an Excel file (`nanoflux-export.xlsx`)
 
 **Integration & Networking**
 
@@ -237,6 +238,7 @@ News query tools return stored items from the database. Each item includes `pass
 | Tool | Description |
 | --- | --- |
 | `add_feed` | Add an RSS feed (metadata auto-fetched when omitted) |
+| `add_feed_by_keyword` | Create a Google News RSS feed from a keyword only (last 3 days; `hl` inferred from keyword) |
 | `update_feed` | Update feed title, URL, or description |
 | `delete_feed` | Remove a feed |
 | `search_feeds` | Search feeds by keyword in title |
@@ -248,7 +250,7 @@ News query tools return stored items from the database. Each item includes `pass
 
 ## REST API
 
-All endpoints return JSON. When `HOST=127.0.0.1`, these routes are localhost-only.
+Endpoints return JSON unless noted otherwise (e.g. OPML / Excel downloads). When `HOST=127.0.0.1`, these routes are localhost-only.
 
 ### Feeds — `/api/feeds`
 
@@ -276,6 +278,7 @@ Query parameters for `GET /api/feeds`:
 | Method | Path | Description |
 | --- | --- | --- |
 | `GET` | `/api/items?cursor=&limit=` | Paginated news list (newest first) |
+| `GET` | `/api/items/export.xlsx` | Download matching items as Excel (`Content-Disposition: nanoflux-export.xlsx`) |
 | `POST` | `/api/items/:id/read` | Mark one item as read |
 | `POST` | `/api/items/:id/filter-verdict` | Accept or reject an item for a filter (body: `filter_id`, `verdict`: `accept` \| `reject`) |
 | `POST` | `/api/items/read-all` | Mark all items up to a timestamp as read |
@@ -293,6 +296,18 @@ Query parameters for `GET /api/items`:
 | `is_read` | `0` or `1` — filter by read state (the UI **Unread** tab uses `is_read=0`) |
 | `since`, `until` | Absolute ISO 8601 time bounds |
 | `unit`, `count` | Relative window (e.g. `unit=hour&count=2` for the last 2 hours) |
+
+Query parameters for `GET /api/items/export.xlsx`:
+
+| Parameter | Description |
+| --- | --- |
+| `since`, `until` | Absolute ISO 8601 time bounds (optional) |
+| `filter_passed` | Same meaning as for `GET /api/items` |
+| `passed_filter_id` | Restrict to items that passed a specific filter id |
+| `tz_offset` | Client timezone offset in minutes (for formatting published times in the sheet; default `0`) |
+| `lang` | Sheet header language: `zh` (default) or `en` |
+
+Exported columns: published time, title, content, and original link.
 
 `POST /api/items/read-all` accepts the same `filter_passed` and `passed_filter_id` fields in the JSON body to scope bulk mark-read.
 
@@ -335,6 +350,7 @@ Connect with `EventSource` to receive `items` events when new articles arrive, p
 ├── services/
 │   ├── ai/           OpenAI-compatible chat client
 │   ├── feeds/        Feed fetching, adaptive polling intervals, and OPML export
+│   ├── export/       Excel (.xlsx) article export
 │   ├── content/      Full-text article extraction
 │   ├── filters/      Blacklist, whitelist, AI relevance, and prompt feedback
 │   ├── items/        Item-level filter verdict (accept / reject)

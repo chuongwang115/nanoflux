@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import Download from "@lucide/svelte/icons/download";
   import Pencil from "@lucide/svelte/icons/pencil";
   import Trash2 from "@lucide/svelte/icons/trash-2";
@@ -41,8 +41,51 @@
   let exportingOpml = $state(false);
   /** Bumps every minute so relative timestamps stay current. */
   let now = $state(Date.now());
+  let keywordDialogOpen = $state(false);
+  let keywordInput = $state("");
+  let keywordError = $state("");
+  let keywordInputEl = $state<HTMLInputElement | null>(null);
 
   const isEditing = $derived(editId !== null);
+
+  function googleNewsLanguage(keyword: string): string {
+    return /[\u4e00-\u9fff]/.test(keyword) ? "zh-CN" : "en-US";
+  }
+
+  function buildKeywordFeedUrl(keyword: string): string {
+    const trimmed = keyword.trim();
+    const q = encodeURIComponent(trimmed).replace(/%20/g, "+");
+    return `https://news.google.com/rss/search?q=${q}+when:3d&hl=${googleNewsLanguage(trimmed)}`;
+  }
+
+  async function openKeywordDialog() {
+    keywordInput = "";
+    keywordError = "";
+    keywordDialogOpen = true;
+    await tick();
+    keywordInputEl?.focus();
+  }
+
+  function closeKeywordDialog() {
+    keywordDialogOpen = false;
+    keywordInput = "";
+    keywordError = "";
+  }
+
+  function applyKeywordFeed() {
+    const keyword = keywordInput.trim();
+    if (!keyword) {
+      keywordError = t("feeds.keywordEmpty");
+      return;
+    }
+
+    resetForm();
+    url = buildKeywordFeedUrl(keyword);
+    title = keyword;
+    titleTouched = true;
+    closeKeywordDialog();
+    void runPreview(url);
+  }
 
   function isValidFeedUrl(value: string): boolean {
     try {
@@ -284,6 +327,15 @@
       >
         {isEditing ? t("feeds.save") : t("feeds.addFeed")}
       </button>
+      {#if !isEditing}
+        <button
+          type="button"
+          class="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+          onclick={openKeywordDialog}
+        >
+          {t("feeds.keyword")}
+        </button>
+      {/if}
       {#if isEditing}
         <button
           type="button"
@@ -308,6 +360,67 @@
     <p class="mt-3 text-sm text-red-500">{formError}</p>
   {/if}
 </section>
+
+{#if keywordDialogOpen}
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+    role="presentation"
+    onclick={(e) => {
+      if (e.target === e.currentTarget) closeKeywordDialog();
+    }}
+    onkeydown={(e) => {
+      if (e.key === "Escape") closeKeywordDialog();
+    }}
+  >
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="keyword-dialog-title"
+      class="w-full max-w-sm border border-neutral-200 bg-white p-5 shadow-sm dark:border-neutral-700 dark:bg-neutral-900"
+      tabindex="-1"
+    >
+      <h3
+        id="keyword-dialog-title"
+        class="text-sm font-medium text-neutral-900 dark:text-neutral-100"
+      >
+        {t("feeds.keywordTitle")}
+      </h3>
+      <form
+        class="mt-4 space-y-4"
+        onsubmit={(e) => {
+          e.preventDefault();
+          applyKeywordFeed();
+        }}
+      >
+        <input
+          bind:this={keywordInputEl}
+          type="text"
+          bind:value={keywordInput}
+          placeholder={t("feeds.keywordPlaceholder")}
+          class="w-full border-0 border-b border-neutral-200 bg-transparent py-2 text-sm outline-none placeholder:text-neutral-300 focus:border-neutral-900 dark:border-neutral-700 dark:placeholder:text-neutral-600 dark:focus:border-neutral-100"
+        />
+        {#if keywordError}
+          <p class="text-sm text-red-500">{keywordError}</p>
+        {/if}
+        <div class="flex gap-4">
+          <button
+            type="submit"
+            class="text-sm text-neutral-900 underline-offset-4 hover:underline dark:text-neutral-100"
+          >
+            {t("feeds.keywordConfirm")}
+          </button>
+          <button
+            type="button"
+            class="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+            onclick={closeKeywordDialog}
+          >
+            {t("feeds.cancel")}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+{/if}
 
 <section>
   <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
