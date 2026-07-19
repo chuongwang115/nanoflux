@@ -38,7 +38,8 @@ const brotliAsync = promisify(zlib.brotliDecompress);
 type ParsedHttpResponse = {
   status: number;
   headers: Record<string, string>;
-  body: string;
+  /** Raw decompressed body bytes — charset decoding happens at the call site. */
+  body: Buffer;
 };
 
 type ReadableSocket = NodeJS.ReadableStream & {
@@ -216,7 +217,7 @@ async function parseHttpResponse(raw: Buffer): Promise<ParsedHttpResponse> {
     delete headers["content-length"];
   }
 
-  return { status, headers, body: body.toString("utf8") };
+  return { status, headers, body };
 }
 
 async function readHttpResponse(

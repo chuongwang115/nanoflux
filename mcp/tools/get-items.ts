@@ -9,7 +9,7 @@ export function registerGetItems(server: McpServer): void {
     "get_news",
     {
       description:
-        "Fetch news in a time range. Use since/until (ISO 8601 bounds) or unit/count (relative window: minutes, hours, or days back from now). When hasMore is true, call again with nextCursor as cursor and the same time range (after a relative query, use resolved_since/resolved_until as since/until).",
+        "Fetch news in a time range. Use since/until (ISO 8601 bounds) or unit/count (relative window: minute, hour, or day back from now). When hasMore is true, call again with nextCursor as cursor and the same time range (after a relative query, use resolved_since/resolved_until as since/until).",
       inputSchema: {
         since: z
           .string()
@@ -22,7 +22,7 @@ export function registerGetItems(server: McpServer): void {
         unit: z
           .string()
           .optional()
-          .describe("Time unit; use with count for a relative range from now"),
+          .describe("Time unit: minute, hour, or day; use with count for a relative range from now"),
         count: z
           .number()
           .int()

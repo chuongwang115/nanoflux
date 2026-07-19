@@ -1,6 +1,8 @@
 import { extractFromHtml } from "@extractus/article-extractor";
+import { decodeHtmlBytes } from "../../utils/encoding";
 import { countContentTokens } from "../../utils/text";
-import { stripHtml } from "../../utils/html";
+import { stripHtml, stripSrcsetAttributes } from "../../utils/html";
+import { resolveArticleUrl } from "../google-news";
 import { httpGet } from "../http-fetcher";
 
 /** Unified token threshold; roughly ~200 Chinese chars / 80 English words. */
@@ -26,7 +28,8 @@ export function needsFullContentScrape(content: string | null | undefined): bool
 
 export async function fetchArticleContent(url: string): Promise<string | null> {
   try {
-    const response = await httpGet(url, {
+    const articleUrl = await resolveArticleUrl(url);
+    const response = await httpGet(articleUrl, {
       headers: {
         "User-Agent": BROWSER_USER_AGENT,
         Accept:
@@ -37,8 +40,11 @@ export async function fetchArticleContent(url: string): Promise<string | null> {
     });
     if (!response.ok) return null;
 
-    const html = await response.text();
-    const article = await extractFromHtml(html, url, {
+    const bytes = Buffer.from(await response.arrayBuffer());
+    const html = stripSrcsetAttributes(
+      decodeHtmlBytes(bytes, response.headers.get("content-type")),
+    );
+    const article = await extractFromHtml(html, articleUrl, {
       contentLengthThreshold: FULL_CONTENT_MIN_TOKENS,
     });
     if (!article?.content) return null;
@@ -53,12 +59,15 @@ export async function fetchArticleContent(url: string): Promise<string | null> {
 export async function enrichItemContent<
   T extends { link: string; content: string | null },
 >(item: T): Promise<T> {
-  if (!needsFullContentScrape(item.content)) return item;
+  const resolvedLink = await resolveArticleUrl(item.link);
+  const next = resolvedLink !== item.link ? { ...item, link: resolvedLink } : item;
 
-  const scraped = await fetchArticleContent(item.link);
-  if (!scraped) return item;
+  if (!needsFullContentScrape(next.content)) return next;
 
-  return { ...item, content: scraped };
+  const scraped = await fetchArticleContent(next.link);
+  if (!scraped) return next;
+
+  return { ...next, content: scraped };
 }
 
 export async function enrichItemsContent<

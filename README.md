@@ -244,7 +244,7 @@ Add to your MCP client config (e.g. Cursor or Claude Desktop):
 
 ### Available tools
 
-News query tools return stored items from the database. Each item includes `passed_filters` and a computed `filter_passed` flag when filters are configured — inspect these fields if you only want items that matched a filter.
+News query tools return stored items from the database. Each item includes `id`, `title`, `link`, `content`, `published_at`, and `feed_title`.
 
 | Tool | Description |
 | --- | --- |
@@ -254,8 +254,8 @@ News query tools return stored items from the database. Each item includes `pass
 | `update_feed` | Update feed title, URL, or description |
 | `delete_feed` | Remove a feed (also unsubscribes WeChat RSS feeds remotely when configured) |
 | `search_feeds` | Search feeds by keyword in title |
-| `get_news` | Fetch news in an absolute or relative time range |
-| `get_unread_news` | Fetch unread news in a relative time window |
+| `get_news` | Fetch news in an absolute (`since`/`until`) or relative (`unit`/`count`) time range. Supports `cursor` / `limit` pagination; when `hasMore` is true, call again with `nextCursor` as `cursor` (after a relative query, reuse `resolved_since` / `resolved_until` as `since` / `until`) |
+| `get_unread_news` | Fetch unread news in a relative time window (`unit`/`count`). Returned articles are marked as read. When `hasMore` is true, call again with the same `unit`/`count` (and `limit`) until `hasMore` is false |
 | `get_current_time` | Return the server's current UTC time |
 
 Typical WeChat flow for agents: call `add_wechat_feed` with a `query` (it always searches first). If multiple accounts match, call again with the chosen `fakeid`.

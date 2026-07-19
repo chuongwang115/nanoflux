@@ -110643,7 +110643,7 @@ function registerSearchFeeds(server) {
 // mcp/tools/get-items.ts
 function registerGetItems(server) {
   server.registerTool("get_news", {
-    description: "Fetch news in a time range. Use since/until (ISO 8601 bounds) or unit/count (relative window: minutes, hours, or days back from now). When hasMore is true, call again with cursor and the same time range (after a relative query, use resolved_since/resolved_until as since/until).",
+    description: "Fetch news in a time range. Use since/until (ISO 8601 bounds) or unit/count (relative window: minute, hour, or day back from now). When hasMore is true, call again with cursor and the same time range (after a relative query, use resolved_since/resolved_until as since/until).",
     inputSchema: {
       since: exports_external.string().optional().describe("Start time (ISO 8601); use with until"),
       until: exports_external.string().optional().describe("End time (ISO 8601); use with since"),
