@@ -9,9 +9,9 @@ export type AiConfig = {
 };
 
 export function getAiConfig(): AiConfig | null {
-  const baseUrl = process.env.BASE_URL?.trim();
-  const apiKey = process.env.API_KEY?.trim();
-  const model = process.env.MODEL_NAME?.trim();
+  const baseUrl = process.env.LLM_BASE_URL?.trim();
+  const apiKey = process.env.LLM_API_KEY?.trim();
+  const model = process.env.LLM_MODEL_NAME?.trim();
   if (!baseUrl || !apiKey || !model) return null;
   return { baseUrl: baseUrl.replace(/\/$/, ""), apiKey, model };
 }

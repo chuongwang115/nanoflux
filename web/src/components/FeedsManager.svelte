@@ -9,9 +9,12 @@
     downloadFeedsOpml,
     fetchFeedsPage,
     previewFeed,
+    resolveWechatFeed,
+    searchWechatAccounts,
     updateFeed,
     type Feed,
     type FeedSort,
+    type WechatAccount,
   } from "../lib/api";
   import { t } from "../lib/locale.svelte";
   import { formatTime } from "../lib/utils";
@@ -45,6 +48,15 @@
   let keywordInput = $state("");
   let keywordError = $state("");
   let keywordInputEl = $state<HTMLInputElement | null>(null);
+  let wechatDialogOpen = $state(false);
+  let wechatQuery = $state("");
+  let wechatError = $state("");
+  let wechatSearching = $state(false);
+  let wechatResolving = $state(false);
+  let wechatAccounts = $state<WechatAccount[]>([]);
+  let wechatSearched = $state(false);
+  let wechatInputEl = $state<HTMLInputElement | null>(null);
+  let wechatSearchRequest = 0;
 
   const isEditing = $derived(editId !== null);
 
@@ -85,6 +97,89 @@
     titleTouched = true;
     closeKeywordDialog();
     void runPreview(url);
+  }
+
+  async function openWechatDialog() {
+    wechatQuery = "";
+    wechatError = "";
+    wechatAccounts = [];
+    wechatSearched = false;
+    wechatSearching = false;
+    wechatResolving = false;
+    wechatDialogOpen = true;
+    await tick();
+    wechatInputEl?.focus();
+  }
+
+  function closeWechatDialog() {
+    wechatSearchRequest++;
+    wechatDialogOpen = false;
+    wechatQuery = "";
+    wechatError = "";
+    wechatAccounts = [];
+    wechatSearched = false;
+    wechatSearching = false;
+    wechatResolving = false;
+  }
+
+  async function runWechatSearch() {
+    const query = wechatQuery.trim();
+    if (!query) {
+      wechatError = t("feeds.wechatEmpty");
+      return;
+    }
+
+    const requestId = ++wechatSearchRequest;
+    wechatSearching = true;
+    wechatError = "";
+    wechatSearched = false;
+    try {
+      const accounts = await searchWechatAccounts(query);
+      if (requestId !== wechatSearchRequest) return;
+      wechatAccounts = accounts;
+      wechatSearched = true;
+    } catch (e) {
+      if (requestId !== wechatSearchRequest) return;
+      wechatAccounts = [];
+      wechatSearched = true;
+      wechatError = e instanceof Error ? e.message : t("feeds.loadFailed");
+    } finally {
+      if (requestId === wechatSearchRequest) wechatSearching = false;
+    }
+  }
+
+  async function selectWechatAccount(account: WechatAccount) {
+    if (wechatResolving) return;
+    wechatResolving = true;
+    wechatError = "";
+    try {
+      const resolved = account.rss_url
+        ? {
+            title: account.nickname,
+            url: account.rss_url,
+            description: account.alias.trim() || null,
+          }
+        : await resolveWechatFeed({
+            fakeid: account.fakeid,
+            nickname: account.nickname,
+            alias: account.alias,
+            head_img: account.round_head_img,
+          });
+
+      resetForm();
+      title = resolved.title;
+      url = resolved.url;
+      description = resolved.description ?? "";
+      titleTouched = true;
+      descriptionTouched = Boolean(resolved.description);
+      closeWechatDialog();
+      void runPreview(url);
+    } catch (e) {
+      wechatError =
+        e instanceof Error ? e.message : t("feeds.wechatResolveFailed");
+    } finally {
+      wechatResolving = false;
+    }
   }
 
   function isValidFeedUrl(value: string): boolean {
@@ -335,6 +430,13 @@
         >
           {t("feeds.keyword")}
         </button>
+        <button
+          type="button"
+          class="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+          onclick={() => void openWechatDialog()}
+        >
+          {t("feeds.wechat")}
+        </button>
       {/if}
       {#if isEditing}
         <button
@@ -418,6 +520,132 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+{/if}
+
+{#if wechatDialogOpen}
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+    role="presentation"
+    onclick={(e) => {
+      if (e.target === e.currentTarget && !wechatResolving) closeWechatDialog();
+    }}
+    onkeydown={(e) => {
+      if (e.key === "Escape" && !wechatResolving) closeWechatDialog();
+    }}
+  >
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="wechat-dialog-title"
+      class="flex max-h-[80vh] w-full max-w-md flex-col border border-neutral-200 bg-white p-5 shadow-sm dark:border-neutral-700 dark:bg-neutral-900"
+      tabindex="-1"
+    >
+      <h3
+        id="wechat-dialog-title"
+        class="text-sm font-medium text-neutral-900 dark:text-neutral-100"
+      >
+        {t("feeds.wechatTitle")}
+      </h3>
+      <form
+        class="mt-4 flex gap-3"
+        onsubmit={(e) => {
+          e.preventDefault();
+          void runWechatSearch();
+        }}
+      >
+        <input
+          bind:this={wechatInputEl}
+          type="text"
+          bind:value={wechatQuery}
+          disabled={wechatSearching || wechatResolving}
+          placeholder={t("feeds.wechatPlaceholder")}
+          class="min-w-0 flex-1 border-0 border-b border-neutral-200 bg-transparent py-2 text-sm outline-none placeholder:text-neutral-300 focus:border-neutral-900 disabled:opacity-60 dark:border-neutral-700 dark:placeholder:text-neutral-600 dark:focus:border-neutral-100"
+        />
+        <button
+          type="submit"
+          disabled={wechatSearching || wechatResolving}
+          class="shrink-0 text-sm text-neutral-900 underline-offset-4 hover:underline disabled:opacity-50 dark:text-neutral-100"
+        >
+          {wechatSearching ? t("feeds.wechatSearching") : t("feeds.wechatSearch")}
+        </button>
+      </form>
+      {#if wechatError}
+        <p class="mt-3 text-sm text-red-500">{wechatError}</p>
+      {:else if wechatResolving}
+        <p class="mt-3 text-sm text-neutral-400 dark:text-neutral-500">
+          {t("feeds.wechatResolving")}
+        </p>
+      {/if}
+      <div class="mt-4 min-h-0 flex-1 overflow-y-auto">
+        {#if wechatSearching}
+          <p class="py-6 text-center text-sm text-neutral-300 dark:text-neutral-600">
+            {t("feeds.wechatSearching")}
+          </p>
+        {:else if wechatSearched && wechatAccounts.length === 0 && !wechatError}
+          <p class="py-6 text-center text-sm text-neutral-300 dark:text-neutral-600">
+            {t("feeds.wechatNoResults")}
+          </p>
+        {:else if wechatAccounts.length > 0}
+          <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
+            {#each wechatAccounts as account (account.fakeid)}
+              <li>
+                <button
+                  type="button"
+                  disabled={wechatResolving || account.subscribed}
+                  class="flex w-full items-center gap-3 py-3 text-left transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-neutral-800/60"
+                  onclick={() => void selectWechatAccount(account)}
+                >
+                  {#if account.round_head_img}
+                    <img
+                      src={account.round_head_img}
+                      alt=""
+                      class="h-9 w-9 shrink-0 rounded-full bg-neutral-100 object-cover dark:bg-neutral-800"
+                      loading="lazy"
+                      referrerpolicy="no-referrer"
+                    />
+                  {:else}
+                    <div
+                      class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-xs text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500"
+                      aria-hidden="true"
+                    >
+                      {account.nickname.slice(0, 1) || "?"}
+                    </div>
+                  {/if}
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                      {account.nickname}
+                    </p>
+                    <p class="truncate text-xs text-neutral-400 dark:text-neutral-500">
+                      {account.alias || account.fakeid}
+                    </p>
+                  </div>
+                  <span
+                    class="shrink-0 text-xs {account.subscribed
+                      ? 'text-neutral-500 dark:text-neutral-400'
+                      : 'text-neutral-300 dark:text-neutral-600'}"
+                  >
+                    {account.subscribed
+                      ? t("feeds.wechatSubscribed")
+                      : t("feeds.wechatNotSubscribed")}
+                  </span>
+                </button>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+      </div>
+      <div class="mt-4 flex gap-4">
+        <button
+          type="button"
+          class="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+          disabled={wechatResolving}
+          onclick={closeWechatDialog}
+        >
+          {t("feeds.cancel")}
+        </button>
+      </div>
     </div>
   </div>
 {/if}

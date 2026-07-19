@@ -14,27 +14,27 @@
     "db:studio": "drizzle-kit studio"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.3.0",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/bun": "latest",
     "bun-plugin-svelte": "^0.0.6",
     "drizzle-kit": "^0.31.10",
-    "postcss": "^8.5.15",
-    "svelte": "^5.55.9",
-    "tailwindcss": "^4.3.0"
+    "postcss": "^8.5.20",
+    "svelte": "^5.56.6",
+    "tailwindcss": "^4.3.3"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "@extractus/article-extractor": "^8.1.0",
-    "@lucide/svelte": "^1.16.0",
+    "@lucide/svelte": "^1.25.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "drizzle-orm": "^0.45.2",
-    "elysia": "^1.4.28",
+    "elysia": "^1.4.29",
     "elysia-mcp": "^0.1.1",
     "rss-parser": "^3.13.0",
     "socks": "^2.8.9",
-    "undici": "^8.3.0",
+    "undici": "^8.7.0",
     "zod": "^4.4.3"
   }
 }

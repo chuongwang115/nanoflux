@@ -61,7 +61,7 @@ export async function applyAiFilter(
 
   if (!getAiConfig()) {
     console.warn(
-      "[ai-filter] prompt configured but BASE_URL/API_KEY/MODEL_NAME missing; skipping",
+      "[ai-filter] prompt configured but LLM_BASE_URL/LLM_API_KEY/LLM_MODEL_NAME missing; skipping",
     );
     return withoutAi(whitelistReason);
   }

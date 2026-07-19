@@ -162,6 +162,53 @@ export function previewFeed(url: string) {
   );
 }
 
+export type WechatAccount = {
+  fakeid: string;
+  nickname: string;
+  alias: string;
+  round_head_img: string;
+  service_type: number;
+  subscribed?: boolean;
+  rss_url?: string | null;
+};
+
+export async function searchWechatAccounts(
+  query: string,
+): Promise<WechatAccount[]> {
+  const params = new URLSearchParams({ query: query.trim() });
+  const body = await request<{
+    code: number;
+    message: string;
+    data?: { accounts: WechatAccount[] };
+  }>(`/api/feeds/wechat/accounts?${params}`);
+  assertApiOk(body);
+  if (!body.data) {
+    throw new Error(body.message || "Failed to search WeChat accounts");
+  }
+  return body.data.accounts;
+}
+
+export async function resolveWechatFeed(account: {
+  fakeid: string;
+  nickname: string;
+  alias?: string;
+  head_img?: string;
+}): Promise<{ title: string; url: string; description: string | null }> {
+  const body = await request<{
+    code: number;
+    message: string;
+    data?: { title: string; url: string; description: string | null };
+  }>("/api/feeds/wechat/resolve", {
+    method: "POST",
+    body: JSON.stringify(account),
+  });
+  assertApiOk(body);
+  if (!body.data) {
+    throw new Error(body.message || "Failed to resolve WeChat feed");
+  }
+  return body.data;
+}
+
 export function createFeed(payload: {
   title: string;
   url: string;

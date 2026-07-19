@@ -44,13 +44,13 @@ Built on [Bun](https://bun.sh), [Elysia](https://elysiajs.com), and [Svelte 5](h
 - Real-time updates via Server-Sent Events (SSE); in-memory list capped at 100 items to limit DOM size
 - Progressive Web App (installable, offline asset caching)
 - Bilingual UI (English / Chinese), light/dark theme, adjustable font size
-- Feed management page (`/feeds`) with auto-preview, create/edit/delete, sortable list, **add by keyword** (creates a Google News RSS feed for the last 3 days; language inferred from the keyword), and **OPML export** (download all feeds as `nanoflux.opml`)
+- Feed management page (`/feeds`) with auto-preview, create/edit/delete, sortable list, **add by keyword** (creates a Google News RSS feed for the last 3 days; language inferred from the keyword), **subscribe WeChat 公众号**, and **OPML export** (download all feeds as `nanoflux.opml`)
 - Filters management page (`/filters`) for creating, editing, deleting, and reordering named filters
 - Export page (`/export`) — pick a time range and optional filter scope, then download matching articles as an Excel file (`nanoflux-export.xlsx`)
 
 **Integration & Networking**
 
-- MCP server for AI clients (feed management, local news queries, live Google News search)
+- MCP server for AI clients (feed management, WeChat official-account subscribe, local news queries)
 - HTTP and SOCKS proxy support for outbound fetches
 - Local-first security: when bound to `127.0.0.1`, API, SSE, and MCP are restricted to localhost clients
 
@@ -128,11 +128,22 @@ When a filter's `prompt` is non-empty, items that pass that filter's blacklist a
 
 | Variable | Description |
 | --- | --- |
-| `BASE_URL` | API base URL (e.g. `https://api.openai.com`) |
-| `API_KEY` | Bearer token |
-| `MODEL_NAME` | Model ID (e.g. `gpt-4o-mini`) |
+| `LLM_BASE_URL` | API base URL (e.g. `https://api.openai.com`) |
+| `LLM_API_KEY` | Bearer token |
+| `LLM_MODEL_NAME` | Model ID (e.g. `gpt-4o-mini`) |
 
 If a filter has a prompt but these variables are missing, the AI step for that filter is skipped and whitelist-passed items are kept. On API errors, items also fall back to passing through for that filter.
+
+### WeChat official accounts (optional)
+
+Subscribe to WeChat 公众号 via [WeChat RSS](https://wechatrss.waytomaster.com) (UI, REST, or MCP). Configure these in `.env`:
+
+| Variable | Description |
+| --- | --- |
+| `WECHATRSS_API_KEY` | WeChat RSS API key |
+| `WECHATRSS_API_SECRET` | WeChat RSS API secret |
+
+Without these variables, WeChat search/subscribe endpoints and MCP tools return a configuration error.
 
 ### Filter feedback & prompt optimization (optional)
 
@@ -143,7 +154,7 @@ When you select a filter chip on the home list, each item shows **Accept** and *
 | **Accept** | Reinforces the filter — the AI rewrites the prompt so similar items are more likely to pass in the future |
 | **Reject** | Removes the item from that filter's `passed_filters` and rewrites the prompt so similar items are more likely to be excluded |
 
-The optimizer produces a full rewritten prompt (not an appended rule list). If the AI returns unchanged text or the API call fails, the filter prompt is left as-is. Requires `BASE_URL`, `API_KEY`, and `MODEL_NAME` to be configured.
+The optimizer produces a full rewritten prompt (not an appended rule list). If the AI returns unchanged text or the API call fails, the filter prompt is left as-is. Requires `LLM_BASE_URL`, `LLM_API_KEY`, and `LLM_MODEL_NAME` to be configured.
 
 ### Proxy (optional)
 
@@ -239,14 +250,15 @@ News query tools return stored items from the database. Each item includes `pass
 | --- | --- |
 | `add_feed` | Add an RSS feed (metadata auto-fetched when omitted) |
 | `add_feed_by_keyword` | Create a Google News RSS feed from a keyword only (last 3 days; `hl` inferred from keyword) |
+| `add_wechat_feed` | Search by `query` first, then subscribe to one match (pass `fakeid` when multiple). Requires WeChat RSS credentials. |
 | `update_feed` | Update feed title, URL, or description |
-| `delete_feed` | Remove a feed |
+| `delete_feed` | Remove a feed (also unsubscribes WeChat RSS feeds remotely when configured) |
 | `search_feeds` | Search feeds by keyword in title |
 | `get_news` | Fetch news in an absolute or relative time range |
 | `get_unread_news` | Fetch unread news in a relative time window |
-| `mark_news_read` | Mark items as read by ID or time range |
-| `search_google_news` | Live Google News search (not stored locally) |
 | `get_current_time` | Return the server's current UTC time |
+
+Typical WeChat flow for agents: call `add_wechat_feed` with a `query` (it always searches first). If multiple accounts match, call again with the chosen `fakeid`.
 
 ## REST API
 
@@ -258,11 +270,13 @@ Endpoints return JSON unless noted otherwise (e.g. OPML / Excel downloads). When
 | --- | --- | --- |
 | `GET` | `/api/feeds` | Paginated feed list (cursor, limit, keyword, sort) |
 | `GET` | `/api/feeds/export.opml` | Download all feeds as OPML 2.0 (`Content-Disposition: nanoflux.opml`) |
+| `GET` | `/api/feeds/wechat/accounts?query=` | Search WeChat official accounts |
+| `POST` | `/api/feeds/wechat/resolve` | Subscribe remotely and resolve RSS URL (`fakeid`, `nickname`, optional `alias` / `head_img`) |
 | `GET` | `/api/feeds/:id` | Get a feed by ID |
 | `POST` | `/api/feeds/meta` | Preview feed title and description |
 | `POST` | `/api/feeds/create` | Create a feed |
 | `POST` | `/api/feeds/:id` | Update a feed |
-| `POST` | `/api/feeds/:id/delete` | Delete a feed and its items |
+| `POST` | `/api/feeds/:id/delete` | Delete a feed and its items (also unsubscribes WeChat RSS feeds remotely when configured) |
 
 Query parameters for `GET /api/feeds`:
 
@@ -355,7 +369,8 @@ Connect with `EventSource` to receive `items` events when new articles arrive, p
 │   ├── filters/      Blacklist, whitelist, AI relevance, and prompt feedback
 │   ├── items/        Item-level filter verdict (accept / reject)
 │   ├── rss.ts        RSS/Atom HTTP fetch and parse
-│   ├── google-news.ts Live Google News search
+│   ├── google-news.ts Google News RSS URL helpers
+│   ├── wechat-rss/   WeChat official-account search & subscribe
 │   ├── http-fetcher.ts Shared HTTP client (proxy-aware)
 │   └── scheduler.ts  Cron-based fetch and cleanup jobs
 ├── db/               Drizzle schema and data access

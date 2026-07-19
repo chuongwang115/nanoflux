@@ -448,3 +448,10 @@ export async function httpPost(
 ): Promise<Response> {
   return httpRequest(url, { ...init, method: init.method ?? "POST" });
 }
+
+export async function httpDelete(
+  url: string,
+  init: UndiciRequestInit = {},
+): Promise<Response> {
+  return httpRequest(url, { ...init, method: "DELETE" });
+}
