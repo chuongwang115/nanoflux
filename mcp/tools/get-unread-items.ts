@@ -8,7 +8,7 @@ export function registerGetUnreadItems(server: McpServer): void {
     "get_unread_news",
     {
       description:
-        "Fetch unread news within a relative time window before now.).",
+        "Fetch unread news within a relative time window before now. Returned articles are marked as read. When hasMore is true, call again with the same unit/count (and limit) to fetch the next batch until hasMore is false.",
       inputSchema: {
         unit: z.string().describe("Time unit; use with count for a relative range from now"),
         count: z.number().int().min(1).describe("Number of units (e.g. unit=hour, count=2 for the last 2 hours)"),
@@ -35,11 +35,15 @@ export function registerGetUnreadItems(server: McpServer): void {
         const hasMore = selected.length > adjustedLimit;
         const returned = selected.slice(0, adjustedLimit);
 
+        for (const item of returned) {
+          markItemRead(item.id);
+        }
+
         return {
           content: [
             {
               type: "text",
-              text: JSON.stringify({ 
+              text: JSON.stringify({
                 items: returned.map((item) => ({
                   id: item.id,
                   title: item.title,
@@ -48,7 +52,13 @@ export function registerGetUnreadItems(server: McpServer): void {
                   published_at: item.published_at,
                   feed_title: item.feed_title,
                 })),
-                hasMore: hasMore,
+                hasMore,
+                ...(hasMore
+                  ? {
+                      message:
+                        "More unread news remain. Call get_unread_news again with the same unit/count to fetch the next batch.",
+                    }
+                  : {}),
               }),
             },
           ],

@@ -76,11 +76,19 @@ export function getItems(options?: {
       MAX_LIMIT,
     );
 
-    const timeRange = options?.unit && options?.count ? parseTimeRange(options.unit, options.count) : undefined;
-    const timeFilter = timeRange ? and(
-      gte(items.published_at, timeRange.since),
-      lte(items.published_at, timeRange.until),
-    ) : undefined;
+    const relativeRange =
+      options?.unit && options?.count
+        ? parseTimeRange(options.unit, options.count)
+        : undefined;
+    const since = options?.since ?? relativeRange?.since;
+    const until = options?.until ?? relativeRange?.until;
+    const timeFilter =
+      since || until
+        ? and(
+            since ? gte(items.published_at, since) : undefined,
+            until ? lte(items.published_at, until) : undefined,
+          )
+        : undefined;
 
     const cursorFilter = decoded
       ? or(
