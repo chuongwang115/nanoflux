@@ -27,7 +27,7 @@ Built on [Bun](https://bun.sh), [Elysia](https://elysiajs.com), and [Svelte 5](h
 
 - RSS/Atom feed management with auto-fetched metadata
 - Adaptive polling (5–30 min per feed) based on publish frequency
-- Full-text article extraction — when an RSS entry's summary is too short, the article page is fetched and parsed for richer content (improves filtering and list previews)
+- Full-text article extraction — when an RSS entry's summary is too short, the article page is fetched and parsed for richer content (improves filtering and list previews). Google News article links are resolved to the publisher URL first; HTML is decoded with charset detection (Content-Type, BOM, meta/`<?xml` encoding, with UTF-8 / GB18030 fallback)
 - **Multiple named content filters** — each filter runs the same three-stage pipeline:
   1. **Keyword blacklist** — drop items whose title or content matches any configured keyword (runs first)
   2. **Keyword whitelist** — keep items whose title or content matches any configured keyword; matched terms are highlighted in the list, with a keyword-context snippet as the content preview when the match is in the body
@@ -347,7 +347,7 @@ Connect with `EventSource` to receive `items` events when new articles arrive, p
 1. On startup and every minute (UTC cron), the scheduler loads feeds whose `next_fetched_at` is due.
 2. Each feed is fetched over HTTP with the `NanoFlux/1.0` user agent (15 s timeout) and parsed as RSS/Atom.
 3. Each entry gets a normalized GUID: MD5 hex of the article link (feeds that already provide an MD5 GUID are kept as-is). Per-feed known GUIDs are stored in the `last_guids` column; entries already seen by this feed or already present in the database (global GUID uniqueness) are skipped.
-4. For each new entry whose RSS summary is shorter than ~80 word tokens (counted with `Intl.Segmenter` for Chinese and English — roughly ~200 Chinese characters or ~80 English words), the article page is fetched (desktop browser user agent, 15 s timeout, up to 3 concurrent requests) and parsed with `@extractus/article-extractor` to fill in `content`. Already-known entries skip scraping.
+4. For each new entry, Google News article links (`news.google.com/.../articles/...`) are resolved to the publisher URL (embedded token decode, or Google's batchexecute RPC) and the stored `link` is updated when resolution succeeds. If the RSS summary is shorter than ~80 word tokens (counted with `Intl.Segmenter` for Chinese and English — roughly ~200 Chinese characters or ~80 English words), the article page is fetched (desktop browser user agent, 15 s timeout, up to 3 concurrent requests), decoded with charset detection, and parsed with `@extractus/article-extractor` to fill in `content`. Already-known entries skip scraping.
 5. New items are deduplicated globally by `guid` (same article from different feeds is stored once), evaluated through **each** configured filter (blacklist → whitelist → optional AI per filter), and inserted into SQLite with `passed_filters` listing every filter that accepted the item (or `null` if none passed).
 6. All newly inserted items are broadcast to connected SSE clients; the web UI applies the selected filter chip and read tab client-side.
 7. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear.
@@ -369,12 +369,12 @@ Connect with `EventSource` to receive `items` events when new articles arrive, p
 │   ├── filters/      Blacklist, whitelist, AI relevance, and prompt feedback
 │   ├── items/        Item-level filter verdict (accept / reject)
 │   ├── rss.ts        RSS/Atom HTTP fetch and parse
-│   ├── google-news.ts Google News RSS URL helpers
+│   ├── google-news.ts Google News RSS URL helpers and article-link resolution
 │   ├── wechat-rss/   WeChat official-account search & subscribe
 │   ├── http-fetcher.ts Shared HTTP client (proxy-aware)
 │   └── scheduler.ts  Cron-based fetch and cleanup jobs
 ├── db/               Drizzle schema and data access
-├── utils/            Date, hash, HTML, and text helpers
+├── utils/            Date, hash, HTML, text, and charset-decoding helpers
 ├── shared/           Shared types and utilities (e.g. passed-filters)
 ├── drizzle/          SQL migrations
 ├── filters.json      Named content filters (blacklist / whitelist / prompt)
