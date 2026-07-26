@@ -100,7 +100,7 @@ if not errorlevel 1 (
 )
 
 echo Registering service "%SERVICE_NAME%"...
-"%NSSM_EXE%" install "%SERVICE_NAME%" "%BUN_CMD%" "run start:service"
+"%NSSM_EXE%" install "%SERVICE_NAME%" "%BUN_CMD%" "run main.ts"
 if errorlevel 1 (
     echo [ERROR] Failed to register service.
     pause
@@ -109,7 +109,7 @@ if errorlevel 1 (
 
 "%NSSM_EXE%" set "%SERVICE_NAME%" AppDirectory "%WORKDIR%"
 "%NSSM_EXE%" set "%SERVICE_NAME%" DisplayName "NanoFlux"
-"%NSSM_EXE%" set "%SERVICE_NAME%" Description "NanoFlux RSS reader - auto-start web server"
+"%NSSM_EXE%" set "%SERVICE_NAME%" Description "NanoFlux - News Service for AI Agents"
 "%NSSM_EXE%" set "%SERVICE_NAME%" Start SERVICE_AUTO_START
 "%NSSM_EXE%" set "%SERVICE_NAME%" AppStdout "%LOG_DIR%\service-stdout.log"
 "%NSSM_EXE%" set "%SERVICE_NAME%" AppStderr "%LOG_DIR%\service-stderr.log"

@@ -3,7 +3,6 @@ import { addItems, getExistingGuids } from "../../db/items";
 import { getDueFeeds, updateFeedFetchState } from "../../db/feeds";
 import type { Feed } from "../../db/schema";
 import { parseFeedGuids, serializeFeedGuids } from "../../db/utils";
-import { emitNewItems } from "../../sse/streamer";
 import { maxPublishedAt, parsePublishedAt } from "../../utils/date";
 import { isMd5Format, md5Hex } from "../../utils/hash";
 import { stripHtml } from "../../utils/html";
@@ -99,7 +98,6 @@ export async function fetchFeed(feed: Feed): Promise<{
     const enriched = await enrichItemsContent(candidates);
     const filtered = await filterItems(enriched);
     const inserted = addItems(feed.id, filtered);
-    if (inserted.length > 0) emitNewItems(inserted);
 
     const nextInterval = nextFetchIntervalMin(
       currentInterval,

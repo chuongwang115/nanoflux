@@ -5,10 +5,6 @@ import {
   markItemRead,
 } from "../db/items";
 import { buildItemsExport, type ExportLocale } from "../services/export/items-export";
-import {
-  acceptItemForFilter,
-  rejectItemForFilter,
-} from "../services/items/filter-verdict";
 import { DEFAULT_LIMIT, MAX_LIMIT } from "../db/schema";
 import { encodeCursor, parseTimeUnit } from "../db/utils";
 
@@ -34,7 +30,6 @@ function getItemsHandler({ query }: {
     count?: number;
     filter_passed?: number;
     is_read?: number;
-    passed_filter_id?: string;
   }
 }) {
 
@@ -52,7 +47,6 @@ function getItemsHandler({ query }: {
 
     const filterPassed = parseFilterPassed(query?.filter_passed);
     const isRead = parseIsRead(query?.is_read);
-    const passedFilterId = query?.passed_filter_id?.trim() || undefined;
 
     const selected = getItems({
       cursor: query?.cursor,
@@ -63,7 +57,6 @@ function getItemsHandler({ query }: {
       count: query?.count,
       filterPassed,
       isRead,
-      passedFilterId,
     });
 
     const hasMore = selected.length > adjustedLimit;
@@ -103,14 +96,12 @@ function exportItemsHandler({ query }: {
     since?: string;
     until?: string;
     filter_passed?: number;
-    passed_filter_id?: string;
     tz_offset?: number;
     lang?: string;
   };
 }) {
   try {
     const filterPassed = parseFilterPassed(query?.filter_passed);
-    const passedFilterId = query?.passed_filter_id?.trim() || undefined;
     const since = query?.since?.trim() || undefined;
     const until = query?.until?.trim() || undefined;
 
@@ -118,7 +109,6 @@ function exportItemsHandler({ query }: {
       since,
       until,
       filterPassed,
-      passedFilterId,
       tzOffsetMin: parseTzOffset(query?.tz_offset),
       locale: parseExportLocale(query?.lang),
     });
@@ -141,13 +131,11 @@ function markItemsReadHandler({ body }: {
   body: {
     until?: string;
     filter_passed?: number;
-    passed_filter_id?: string;
   };
 }) {
   try {
     const filterPassed = parseFilterPassed(body.filter_passed);
-    const passedFilterId = body.passed_filter_id?.trim() || undefined;
-    markItemsRead(body.until ?? "", { filterPassed, passedFilterId });
+    markItemsRead(body.until ?? "", { filterPassed });
     return { code: 0, message: "ok" };
   } catch (error) {
     const message =
@@ -171,37 +159,8 @@ function markItemReadHandler({ params }: {
   }
 }
 
-async function setItemFilterVerdictHandler({
-  params,
-  body,
-}: {
-  params: { id: string };
-  body: { filter_id?: string; verdict?: string };
-}) {
-  try {
-    const filterId = body.filter_id?.trim();
-    if (!filterId) {
-      return { code: 400, message: "Missing filter_id" };
-    }
-    if (body.verdict !== "accept" && body.verdict !== "reject") {
-      return { code: 400, message: "Invalid verdict" };
-    }
-    if (body.verdict === "accept") {
-      const data = await acceptItemForFilter(params.id, filterId);
-      return { code: 0, message: "ok", data };
-    }
-    const data = await rejectItemForFilter(params.id, filterId);
-    return { code: 0, message: "ok", data };
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to set filter verdict";
-    return { code: 500, message };
-  }
-}
-
 export const routes = new Elysia({ prefix: "/api/items" })
   .get("/", getItemsHandler)
   .get("/export.xlsx", exportItemsHandler)
   .post("/read-all", markItemsReadHandler)
-  .post("/:id/read", markItemReadHandler)
-  .post("/:id/filter-verdict", setItemFilterVerdictHandler);
+  .post("/:id/read", markItemReadHandler);

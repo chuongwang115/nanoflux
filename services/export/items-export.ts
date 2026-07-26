@@ -24,7 +24,6 @@ export function buildItemsExport(options: {
   since?: string;
   until?: string;
   filterPassed?: number;
-  passedFilterId?: string;
   tzOffsetMin?: number;
   locale?: ExportLocale;
 }): Uint8Array<ArrayBuffer> {
@@ -32,7 +31,6 @@ export function buildItemsExport(options: {
     since: options.since,
     until: options.until,
     filterPassed: options.filterPassed,
-    passedFilterId: options.passedFilterId,
   });
 
   const tzOffset = options.tzOffsetMin ?? 0;

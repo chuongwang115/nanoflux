@@ -1,79 +1,31 @@
-import { getFilters, type Filter } from "../../filters";
-import {
-  serializePassedFilters,
-  type PassedFilterEntry,
-} from "../../shared/passed-filters";
+import { getFilterPrompt } from "../../filter";
 import { applyAiFilter } from "./ai";
-import { applyBlacklistFilter } from "./blacklist";
-import { applyWhitelistFilter } from "./whitelist";
 
-export type FilterStepResult = {
-  passed: boolean;
-  keywords: string | null;
-  reason: string | null;
+type ItemFilterResult = {
+  filter_passed: string | null;
 };
 
-export type ItemFilterResult = {
-  passed_filters: string | null;
-};
-
-const PASSED: ItemFilterResult = {
-  passed_filters: null,
-};
-
-const FAILED: ItemFilterResult = {
-  passed_filters: null,
-};
-
-async function applyConfiguredFilter(
-  title: string,
-  content: string | null,
-  filter: Filter,
-): Promise<FilterStepResult> {
-  const blacklist = applyBlacklistFilter(title, content, filter.blacklist);
-  if (!blacklist.passed) {
-    return blacklist;
-  }
-  const whitelist = applyWhitelistFilter(title, content, filter.whitelist);
-  if (!whitelist.passed) {
-    return whitelist;
-  }
-  return applyAiFilter(
-    title,
-    content,
-    whitelist.keywords,
-    filter.prompt,
-  );
-}
-
-export async function applyItemFilter(
+/**
+ * Apply the single AI filter.
+ * Empty prompt → skip filtering (pass-through, `filter_passed` stays null).
+ * Non-empty prompt → LLM verdict; pass stores reason text, fail leaves null.
+ */
+async function applyItemFilter(
   title: string,
   content: string | null,
 ): Promise<ItemFilterResult> {
-  const filters = getFilters();
-  if (filters.length === 0) {
-    return PASSED;
+  const prompt = getFilterPrompt().trim();
+  if (!prompt) {
+    return { filter_passed: null };
   }
 
-  const passed: PassedFilterEntry[] = [];
-
-  for (const filter of filters) {
-    const result = await applyConfiguredFilter(title, content, filter);
-    if (result.passed) {
-      passed.push({
-        id: filter.id,
-        keywords: result.keywords,
-        reason: result.reason,
-      });
-    }
-  }
-
-  if (passed.length === 0) {
-    return FAILED;
+  const result = await applyAiFilter(title, content, prompt);
+  if (!result.passed) {
+    return { filter_passed: null };
   }
 
   return {
-    passed_filters: serializePassedFilters(passed),
+    filter_passed: result.reason?.trim() || "",
   };
 }
 

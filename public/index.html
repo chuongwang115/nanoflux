@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="轻量 RSS 阅读器" />
+    <meta name="description" content="面向 AI Agent 的新闻服务" />
     <meta name="theme-color" content="#171717" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -20,7 +20,7 @@
     var l = localStorage.getItem("nanoflux-locale");
     var loc = l === "en" ? "en" : l === "zh" ? "zh" : (navigator.language.toLowerCase().indexOf("zh") === 0 ? "zh" : "en");
     document.documentElement.lang = loc === "zh" ? "zh-CN" : "en";
-    var desc = loc === "en" ? "Lightweight RSS reader" : "轻量 RSS 阅读器";
+    var desc = loc === "en" ? "News Service for AI Agents" : "面向 AI Agent 的新闻服务";
     var meta = document.querySelector('meta[name="description"]');
     if (meta) meta.setAttribute("content", desc);
     var mf = document.querySelector('link[rel="manifest"]');

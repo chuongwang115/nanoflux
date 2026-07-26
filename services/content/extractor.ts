@@ -6,7 +6,7 @@ import { resolveArticleUrl } from "../google-news";
 import { httpGet } from "../http-fetcher";
 
 /** Unified token threshold; roughly ~200 Chinese chars / 80 English words. */
-export const FULL_CONTENT_MIN_TOKENS = 80;
+const FULL_CONTENT_MIN_TOKENS = 80;
 
 /** Desktop Chrome on Windows — normal browser fetch, not a crawler UA. */
 const BROWSER_USER_AGENT =
@@ -16,17 +16,17 @@ const ARTICLE_TIMEOUT_MS = 15_000;
 const SCRAPE_CONCURRENCY = 3;
 
 /** Whether content is long enough that scraping is unnecessary. */
-export function hasFullContent(content: string | null | undefined): boolean {
+function hasFullContent(content: string | null | undefined): boolean {
   const text = content?.trim();
   if (!text) return false;
   return countContentTokens(text) >= FULL_CONTENT_MIN_TOKENS;
 }
 
-export function needsFullContentScrape(content: string | null | undefined): boolean {
+function needsFullContentScrape(content: string | null | undefined): boolean {
   return !hasFullContent(content);
 }
 
-export async function fetchArticleContent(url: string): Promise<string | null> {
+async function fetchArticleContent(url: string): Promise<string | null> {
   try {
     const articleUrl = await resolveArticleUrl(url);
     const response = await httpGet(articleUrl, {
@@ -56,7 +56,7 @@ export async function fetchArticleContent(url: string): Promise<string | null> {
   }
 }
 
-export async function enrichItemContent<
+async function enrichItemContent<
   T extends { link: string; content: string | null },
 >(item: T): Promise<T> {
   const resolvedLink = await resolveArticleUrl(item.link);

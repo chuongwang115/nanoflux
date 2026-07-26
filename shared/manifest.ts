@@ -34,8 +34,8 @@ const manifestIcons = [
 ] as const;
 
 export const PWA_META_DESCRIPTION: Record<Locale, string> = {
-  zh: "轻量 RSS 阅读器",
-  en: "Lightweight RSS reader",
+  zh: "面向 AI Agent 的新闻服务",
+  en: "News Service for AI Agents",
 };
 
 export function buildWebManifest(locale: Locale) {

@@ -35,11 +35,6 @@ sw.addEventListener("activate", (event) => {
   );
 });
 
-function isSseRequest(request: Request, url: URL) {
-  if (url.pathname === "/sse") return true;
-  return request.headers.get("Accept")?.includes("text/event-stream") ?? false;
-}
-
 function isApiRequest(url: URL) {
   return url.pathname.startsWith("/api/");
 }
@@ -53,8 +48,6 @@ sw.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
 
   if (url.origin !== sw.location.origin) return;
-
-  if (isSseRequest(request, url)) return;
 
   if (isApiRequest(url)) return;
 

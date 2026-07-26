@@ -68,7 +68,7 @@ cat > "$PLIST" <<EOF
   <array>
     <string>${BUN_CMD}</string>
     <string>run</string>
-    <string>start:service</string>
+    <string>main.ts</string>
   </array>
   <key>WorkingDirectory</key>
   <string>${WORKDIR}</string>

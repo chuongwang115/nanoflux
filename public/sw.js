@@ -1,5 +1,5 @@
 (() => {
-  // web/src/sw.ts
+  // ../nanoflux/web/src/sw.ts
   var CACHE_NAME = "nanoflux-v3";
   var SHELL_URLS = ["/", "/feeds"];
   var PRECACHE_URLS = [
@@ -13,11 +13,6 @@
   sw.addEventListener("activate", (event) => {
     event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))).then(() => sw.clients.claim()));
   });
-  function isSseRequest(request, url) {
-    if (url.pathname === "/sse")
-      return true;
-    return request.headers.get("Accept")?.includes("text/event-stream") ?? false;
-  }
   function isApiRequest(url) {
     return url.pathname.startsWith("/api/");
   }
@@ -28,8 +23,6 @@
     const { request } = event;
     const url = new URL(request.url);
     if (url.origin !== sw.location.origin)
-      return;
-    if (isSseRequest(request, url))
       return;
     if (isApiRequest(url))
       return;

@@ -1,5 +1,10 @@
 import { httpGet, httpPost } from "./http-fetcher";
 
+export {
+  buildKeywordGoogleNewsFeedUrl,
+  googleNewsLanguageFromKeyword,
+} from "../shared/google-news";
+
 const GOOGLE_NEWS_HOST = /(^|\.)news\.google\.com$/i;
 const BATCH_EXECUTE_URL =
   "https://news.google.com/_/DotsSplashUi/data/batchexecute";
@@ -7,27 +12,7 @@ const BROWSER_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 const RESOLVE_TIMEOUT_MS = 15_000;
 
-/** Detect Google News `hl` from keyword script: Chinese → zh-CN, otherwise en-US. */
-export function googleNewsLanguageFromKeyword(keyword: string): string {
-  return /[\u4e00-\u9fff]/.test(keyword) ? "zh-CN" : "en-US";
-}
-
-/**
- * Build a Google News RSS feed URL for a keyword (last 3 days).
- * Format: `https://news.google.com/rss/search?q={keyword}+when:3d&hl={language}`
- */
-export function buildKeywordGoogleNewsFeedUrl(keyword: string): string {
-  const trimmed = keyword.trim();
-  if (!trimmed) {
-    throw new Error("keyword must not be empty");
-  }
-
-  const q = encodeURIComponent(trimmed).replace(/%20/g, "+");
-  const language = googleNewsLanguageFromKeyword(trimmed);
-  return `https://news.google.com/rss/search?q=${q}+when:3d&hl=${language}`;
-}
-
-export function isGoogleNewsArticleUrl(url: string): boolean {
+function isGoogleNewsArticleUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
     if (!GOOGLE_NEWS_HOST.test(parsed.hostname)) return false;
@@ -115,7 +100,7 @@ function parsePublisherUrlFromBatchExecute(body: string): string | null {
  * Resolve a Google News article redirect to the publisher URL.
  * Post-2024 tokens need Google's batchexecute `Fbv4je` RPC.
  */
-export async function resolveGoogleNewsArticleUrl(
+async function resolveGoogleNewsArticleUrl(
   url: string,
 ): Promise<string | null> {
   if (!isGoogleNewsArticleUrl(url)) return null;

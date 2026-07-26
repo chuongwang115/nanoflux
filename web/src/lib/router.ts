@@ -1,13 +1,13 @@
 import { get, writable } from "svelte/store";
 
 /** Logical routes (not URL pathnames). */
-export type AppRoute = "/" | "/feeds" | "/filters" | "/export";
+export type AppRoute = "/" | "/feeds" | "/filter" | "/export";
 
 const scrollByRoute = new Map<string, number>();
 
 export const route = writable<AppRoute>("/");
 
-const SUBPAGE_PATH_SUFFIXES = ["/feeds/", "/filters/", "/export/"];
+const SUBPAGE_PATH_SUFFIXES = ["/feeds/", "/filter/", "/export/"];
 
 function isSubPagePath(path: string): boolean {
   return SUBPAGE_PATH_SUFFIXES.some((suffix) => path.endsWith(suffix));
@@ -15,14 +15,16 @@ function isSubPagePath(path: string): boolean {
 
 function pathnameToRoute(pathname: string): AppRoute {
   if (pathname.endsWith("/feeds")) return "/feeds";
-  if (pathname.endsWith("/filters")) return "/filters";
+  if (pathname.endsWith("/filter") || pathname.endsWith("/filters")) {
+    return "/filter";
+  }
   if (pathname.endsWith("/export")) return "/export";
   return "/";
 }
 
 function routeToRelativeHref(next: AppRoute): string {
   if (next === "/feeds") return "feeds";
-  if (next === "/filters") return "filters";
+  if (next === "/filter") return "filter";
   if (next === "/export") return "export";
   if (isSubPagePath(window.location.pathname)) {
     return "..";
@@ -43,18 +45,14 @@ export function feedsHref(): string {
   return "feeds";
 }
 
-/** Relative link to the filters page. */
-export function filtersHref(): string {
-  return "filters";
+/** Relative link to the filter page. */
+export function filterHref(): string {
+  return "filter";
 }
 
 /** Relative link to the export page. */
 export function exportHref(): string {
   return "export";
-}
-
-export function navigateToParent() {
-  navigate("/");
 }
 
 function saveScroll(current: AppRoute) {
@@ -113,13 +111,5 @@ export function navClick(next: AppRoute) {
     if (!shouldHandleNavClick(event)) return;
     event.preventDefault();
     navigate(next);
-  };
-}
-
-export function navClickParent() {
-  return (event: MouseEvent) => {
-    if (!shouldHandleNavClick(event)) return;
-    event.preventDefault();
-    navigateToParent();
   };
 }

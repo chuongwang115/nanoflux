@@ -21,7 +21,7 @@ function systemPrefersDark(): boolean {
 
 export const themeState = $state<{ mode: Theme }>({ mode: "light" });
 
-export function applyTheme(t: Theme) {
+function applyTheme(t: Theme) {
   if (typeof document === "undefined") return;
   document.documentElement.classList.toggle("dark", t === "dark");
 }
@@ -31,7 +31,7 @@ export function initTheme() {
   applyTheme(themeState.mode);
 }
 
-export function setTheme(t: Theme) {
+function setTheme(t: Theme) {
   themeState.mode = t;
   try {
     localStorage.setItem(STORAGE_KEY, t);

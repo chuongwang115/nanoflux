@@ -21,7 +21,7 @@ function browserLocale(): Locale {
 
 export const localeState = $state<{ locale: Locale }>({ locale: "zh" });
 
-export function applyLocale(locale: Locale) {
+function applyLocale(locale: Locale) {
   if (typeof document === "undefined") return;
   document.documentElement.lang = locale === "zh" ? "zh-CN" : "en";
   applyDocumentLocale(locale);
@@ -32,7 +32,7 @@ export function initLocale() {
   applyLocale(localeState.locale);
 }
 
-export function setLocale(locale: Locale) {
+function setLocale(locale: Locale) {
   localeState.locale = locale;
   try {
     localStorage.setItem(STORAGE_KEY, locale);

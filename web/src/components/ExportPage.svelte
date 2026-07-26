@@ -2,10 +2,12 @@
   import { onMount } from "svelte";
   import Download from "@lucide/svelte/icons/download";
   import { t } from "../lib/locale.svelte";
-  import { downloadItemsExcel, fetchFilters, type Filter } from "../lib/api";
+  import { downloadItemsExcel, fetchFilter } from "../lib/api";
 
-  /** Special scope id for "all articles" (not a filter id). */
+  /** Special scope ids. */
   const SCOPE_ALL = "__all__";
+  const SCOPE_PASSED = "__passed__";
+  const SCOPE_UNMATCHED = "__unmatched__";
 
   /** Format a Date as a local-time `datetime-local` value (`YYYY-MM-DDTHH:mm`). */
   function toDatetimeLocal(date: Date): string {
@@ -18,7 +20,7 @@
 
   const nowDate = new Date();
 
-  let filters = $state<Filter[]>([]);
+  let filterEnabled = $state(false);
   let scope = $state<string>(SCOPE_ALL);
   // Default to the last 24 hours.
   let start = $state(toDatetimeLocal(new Date(nowDate.getTime() - 24 * 60 * 60 * 1000)));
@@ -43,9 +45,10 @@
     return new Date(ms).toISOString();
   }
 
-  function scopeParams(): { filterPassed?: 0 | 1; passedFilterId?: string } {
-    if (scope === SCOPE_ALL) return {};
-    return { passedFilterId: scope };
+  function scopeParams(): { filterPassed?: 0 | 1 } {
+    if (scope === SCOPE_PASSED) return { filterPassed: 1 };
+    if (scope === SCOPE_UNMATCHED) return { filterPassed: 0 };
+    return {};
   }
 
   async function handleExport() {
@@ -72,9 +75,10 @@
   onMount(() => {
     void (async () => {
       try {
-        filters = await fetchFilters();
+        const filter = await fetchFilter();
+        filterEnabled = Boolean(filter.prompt.trim());
       } catch {
-        filters = [];
+        filterEnabled = false;
       }
     })();
   });
@@ -111,35 +115,43 @@
     </label>
   </div>
 
-  <div class="space-y-3">
-    <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
-      {t("export.scope")}
-    </span>
-    <div
-      class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm"
-      role="group"
-      aria-label={t("export.scope")}
-    >
-      <button
-        type="button"
-        class="transition-colors {scopeButtonClass(scope === SCOPE_ALL)}"
-        aria-pressed={scope === SCOPE_ALL}
-        onclick={() => (scope = SCOPE_ALL)}
+  {#if filterEnabled}
+    <div class="space-y-3">
+      <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
+        {t("export.scope")}
+      </span>
+      <div
+        class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm"
+        role="group"
+        aria-label={t("export.scope")}
       >
-        {t("export.scopeAll")}
-      </button>
-      {#each filters as f (f.id)}
         <button
           type="button"
-          class="transition-colors {scopeButtonClass(scope === f.id)}"
-          aria-pressed={scope === f.id}
-          onclick={() => (scope = f.id)}
+          class="transition-colors {scopeButtonClass(scope === SCOPE_ALL)}"
+          aria-pressed={scope === SCOPE_ALL}
+          onclick={() => (scope = SCOPE_ALL)}
         >
-          {f.name}
+          {t("export.scopeAll")}
         </button>
-      {/each}
+        <button
+          type="button"
+          class="transition-colors {scopeButtonClass(scope === SCOPE_PASSED)}"
+          aria-pressed={scope === SCOPE_PASSED}
+          onclick={() => (scope = SCOPE_PASSED)}
+        >
+          {t("export.scopePassed")}
+        </button>
+        <button
+          type="button"
+          class="transition-colors {scopeButtonClass(scope === SCOPE_UNMATCHED)}"
+          aria-pressed={scope === SCOPE_UNMATCHED}
+          onclick={() => (scope = SCOPE_UNMATCHED)}
+        >
+          {t("export.scopeUnmatched")}
+        </button>
+      </div>
     </div>
-  </div>
+  {/if}
 
   <div class="flex items-center gap-4">
     <button
@@ -148,12 +160,11 @@
       disabled={exporting}
       onclick={() => void handleExport()}
     >
-      <Download size={16} strokeWidth={1.5} aria-hidden={true} />
+      <Download size={16} strokeWidth={1.5} aria-hidden="true" />
       {exporting ? t("export.exporting") : t("export.button")}
     </button>
+    {#if error}
+      <p class="text-sm text-red-500">{error}</p>
+    {/if}
   </div>
-
-  {#if error}
-    <p class="text-sm text-red-500">{error}</p>
-  {/if}
 </section>

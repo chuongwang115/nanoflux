@@ -31,7 +31,7 @@ export const fontSizeState = $state<{ mode: FontSize; direction: "up" | "down" }
   direction: "up",
 });
 
-export function applyFontSize(f: FontSize) {
+function applyFontSize(f: FontSize) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   root.classList.toggle("font-small", f === "small");
@@ -50,7 +50,7 @@ export function initFontSize() {
   applyFontSize(fontSizeState.mode);
 }
 
-export function setFontSize(f: FontSize) {
+function setFontSize(f: FontSize) {
   fontSizeState.mode = f;
   try {
     localStorage.setItem(STORAGE_KEY, f);

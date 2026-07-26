@@ -18,6 +18,7 @@
   } from "../lib/api";
   import { t } from "../lib/locale.svelte";
   import { formatTime } from "../lib/utils";
+  import { buildKeywordGoogleNewsFeedUrl } from "../../../shared/google-news";
 
   const PAGE_SIZE = 20;
   const iconProps = { size: 16, strokeWidth: 1.5, "aria-hidden": true as const };
@@ -60,16 +61,6 @@
 
   const isEditing = $derived(editId !== null);
 
-  function googleNewsLanguage(keyword: string): string {
-    return /[\u4e00-\u9fff]/.test(keyword) ? "zh-CN" : "en-US";
-  }
-
-  function buildKeywordFeedUrl(keyword: string): string {
-    const trimmed = keyword.trim();
-    const q = encodeURIComponent(trimmed).replace(/%20/g, "+");
-    return `https://news.google.com/rss/search?q=${q}+when:3d&hl=${googleNewsLanguage(trimmed)}`;
-  }
-
   async function openKeywordDialog() {
     keywordInput = "";
     keywordError = "";
@@ -92,7 +83,7 @@
     }
 
     resetForm();
-    url = buildKeywordFeedUrl(keyword);
+    url = buildKeywordGoogleNewsFeedUrl(keyword);
     title = keyword;
     titleTouched = true;
     closeKeywordDialog();

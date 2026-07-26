@@ -10,14 +10,13 @@ import type { Locale } from "./shared/locale";
 import { closeDatabase } from "./db/database";
 import { routes as itemsRoutes } from "./routes/items";
 import { routes as feedsRoutes } from "./routes/feeds";
-import { routes as filtersRoutes } from "./routes/filters";
+import { routes as filterRoutes } from "./routes/filter";
 import { routes as mcpRoutes } from "./mcp/route";
-import { routes as sseRoutes } from "./sse/route";
 import {
   startScheduler,
   stopScheduler,
 } from "./services/scheduler";
-import { loadFilters } from "./filters";
+import { loadFilters } from "./filter";
 
 const PUBLIC_DIR = join(import.meta.dir, "public");
 const indexHtml = () => Bun.file(join(PUBLIC_DIR, "index.html"));
@@ -39,9 +38,8 @@ const restrictLocalhost = isLocalhostRestricted(host);
 const backendRoutes = new Elysia()
   .use(itemsRoutes)
   .use(feedsRoutes)
-  .use(filtersRoutes)
-  .use(mcpRoutes)
-  .use(sseRoutes);
+  .use(filterRoutes)
+  .use(mcpRoutes);
 
 const protectedBackendRoutes = restrictLocalhost
   ? new Elysia().use(localhostOnly).use(backendRoutes)
@@ -50,7 +48,8 @@ const protectedBackendRoutes = restrictLocalhost
 const publicRoutes = new Elysia()
   .get("/", indexHtml)
   .get("/feeds", indexHtml)
-  .get("/filters", indexHtml)
+  .get("/filter", indexHtml)
+  .get("/filters", ({ redirect }) => redirect("/filter"))
   .get("/export", indexHtml)
   .get("/manifest.webmanifest", ({ query, set }) => {
     set.headers["content-type"] = "application/manifest+json; charset=utf-8";
@@ -72,7 +71,7 @@ app.listen({ port, hostname: host });
 
 if (restrictLocalhost) {
   console.log(
-    `Listening on http://localhost:${app.server?.port} (API/SSE/MCP: localhost only)`,
+    `Listening on http://localhost:${app.server?.port} (API/MCP: localhost only)`,
   );
 } else {
   console.log(`Listening on http://${host}:${app.server?.port}/`);

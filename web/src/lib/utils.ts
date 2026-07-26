@@ -1,10 +1,5 @@
 import { localeState, t, tf } from "./locale.svelte";
 
-/** Fullwidth comma (，) → ASCII comma (e.g. whitelist keywords). */
-export function normalizeCommas(value: string): string {
-  return value.replaceAll("，", ",");
-}
-
 export function formatTime(iso: string | null, nowMs: number = Date.now()): string {
   if (!iso) return "";
   const date = new Date(iso);

@@ -1,218 +1,77 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import {
     exportHref,
     feedsHref,
-    filtersHref,
+    filterHref,
     homeHref,
     navClick,
-    navClickParent,
     route,
-    shouldHandleNavClick,
   } from "../lib/router";
   import FontSizeToggle from "./buttons/FontSizeToggle.svelte";
   import LanguageToggle from "./buttons/LanguageToggle.svelte";
   import ThemeToggle from "./buttons/ThemeToggle.svelte";
   import { t } from "../lib/locale.svelte";
 
-  /** Enter compact below this; exit above the lower value to avoid threshold flicker. */
-  const COMPACT_ENTER = 72;
-  const COMPACT_EXIT = 8;
-
-  function readCompact(scrollY: number, current: boolean): boolean {
-    if (!current && scrollY > COMPACT_ENTER) return true;
-    if (current && scrollY < COMPACT_EXIT) return false;
-    return current;
-  }
-
-  function initialCompact(): boolean {
-    return typeof window !== "undefined" && window.scrollY > COMPACT_ENTER;
-  }
-
-  let compact = $state(initialCompact());
-
-  const isFeeds = $derived($route === "/feeds");
-  const isFilters = $derived($route === "/filters");
-  const isExport = $derived($route === "/export");
-  const isSubPage = $derived(isFeeds || isFilters || isExport);
-
-  const rowClass = $derived(
-    `transition-[gap] duration-300 ${compact ? "flex min-w-0 items-center justify-between gap-4" : ""}`,
-  );
-
-  const subClass = $derived(
-    `flex min-h-[30px] min-w-0 items-center gap-2 text-sm text-neutral-400 dark:text-neutral-500 ${compact ? "shrink-0" : "mt-1"}`,
-  );
-
-  const titleClass = "shrink-0 text-lg font-medium tracking-tight";
-
-  function syncCompact() {
-    compact = readCompact(window.scrollY, compact);
-  }
-
-  onMount(() => {
-    let ticking = false;
-
-    const update = () => {
-      ticking = false;
-      syncCompact();
-    };
-
-    const onScroll = () => {
-      if (!ticking) {
-        ticking = true;
-        requestAnimationFrame(update);
-      }
-    };
-
-    syncCompact();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("popstate", update);
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("popstate", update);
-    };
-  });
-
-  $effect(() => {
-    $route;
-    requestAnimationFrame(() => syncCompact());
-  });
+  const navClass = (active: boolean) =>
+    `block rounded-md px-2 py-1.5 transition-colors ${
+      active
+        ? "bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100"
+        : "text-neutral-400 hover:bg-neutral-50 hover:text-neutral-900 dark:text-neutral-500 dark:hover:bg-neutral-900 dark:hover:text-neutral-100"
+    }`;
 </script>
 
-<header
-  class="sticky top-0 z-20 -mx-5 mb-10 flex justify-between gap-4 border-b px-5 transition-colors duration-200 ease-out
-    {compact
-      ? 'items-center border-neutral-100 bg-white py-3 dark:border-neutral-800 dark:bg-neutral-950'
-      : 'items-start border-transparent bg-transparent py-0'}"
+<aside
+  class="border-b border-neutral-100 px-5 py-5 dark:border-neutral-800 md:sticky md:top-4 md:m-4 md:flex md:h-[calc(100vh-2rem)] md:w-48 md:shrink-0 md:flex-col md:rounded-xl md:border md:bg-white md:px-5 md:py-8 md:shadow-sm md:dark:bg-neutral-950"
 >
-  <div class="min-w-0 flex-1">
-    <div class={rowClass}>
-      {#if isSubPage}
-        <a
-          href={homeHref()}
-          onclick={navClickParent()}
-          class="{titleClass} hover:opacity-70"
-        >NanoFlux</a>
-      {:else}
-        <h1 class={titleClass}>NanoFlux</h1>
-      {/if}
+  <a
+    href={homeHref()}
+    onclick={navClick("/")}
+    class="text-lg font-medium tracking-tight hover:opacity-70"
+  >
+    NanoFlux
+  </a>
 
-      {#if isFeeds}
-        <div class="{subClass} gap-3">
-          <a
-            href={homeHref()}
-            onclick={navClickParent()}
-            class="inline-flex shrink-0 rounded-md p-1 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
-            aria-label={t("feeds.back")}
-            title={t("feeds.back")}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="m12 19-7-7 7-7" />
-              <path d="M19 12H5" />
-            </svg>
-          </a>
-          <p>{t("feeds.title")}</p>
-        </div>
-      {:else if isFilters}
-        <div class="{subClass} gap-3">
-          <a
-            href={homeHref()}
-            onclick={navClickParent()}
-            class="inline-flex shrink-0 rounded-md p-1 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
-            aria-label={t("filters.back")}
-            title={t("filters.back")}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="m12 19-7-7 7-7" />
-              <path d="M19 12H5" />
-            </svg>
-          </a>
-          <p>{t("filters.title")}</p>
-        </div>
-      {:else if isExport}
-        <div class="{subClass} gap-3">
-          <a
-            href={homeHref()}
-            onclick={navClickParent()}
-            class="inline-flex shrink-0 rounded-md p-1 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
-            aria-label={t("export.back")}
-            title={t("export.back")}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="m12 19-7-7 7-7" />
-              <path d="M19 12H5" />
-            </svg>
-          </a>
-          <p>{t("export.title")}</p>
-        </div>
-      {:else}
-        <nav class={subClass} aria-label={t("items.latest")}>
-          <span>{t("items.latest")}</span>
-          <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
-          <a
-            href={feedsHref()}
-            onclick={navClick("/feeds")}
-            class="hover:text-neutral-900 dark:hover:text-neutral-100"
-          >
-            {t("items.feeds")}
-          </a>
-          <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
-          <a
-            href={filtersHref()}
-            onclick={navClick("/filters")}
-            class="hover:text-neutral-900 dark:hover:text-neutral-100"
-          >
-            {t("items.filters")}
-          </a>
-          <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
-          <a
-            href={exportHref()}
-            onclick={navClick("/export")}
-            class="hover:text-neutral-900 dark:hover:text-neutral-100"
-          >
-            {t("items.export")}
-          </a>
-        </nav>
-      {/if}
-    </div>
-  </div>
-  <div class="flex shrink-0 items-center gap-0.5">
+  <nav
+    class="mt-4 flex min-w-0 gap-1 overflow-x-auto text-sm md:mt-8 md:flex-col md:overflow-visible"
+    aria-label={t("items.latest")}
+  >
+    <a
+      href={homeHref()}
+      onclick={navClick("/")}
+      class={navClass($route === "/")}
+      aria-current={$route === "/" ? "page" : undefined}
+    >
+      {t("items.latest")}
+    </a>
+    <a
+      href={feedsHref()}
+      onclick={navClick("/feeds")}
+      class={navClass($route === "/feeds")}
+      aria-current={$route === "/feeds" ? "page" : undefined}
+    >
+      {t("items.feeds")}
+    </a>
+    <a
+      href={filterHref()}
+      onclick={navClick("/filter")}
+      class={navClass($route === "/filter")}
+      aria-current={$route === "/filter" ? "page" : undefined}
+    >
+      {t("items.filters")}
+    </a>
+    <a
+      href={exportHref()}
+      onclick={navClick("/export")}
+      class={navClass($route === "/export")}
+      aria-current={$route === "/export" ? "page" : undefined}
+    >
+      {t("items.export")}
+    </a>
+  </nav>
+
+  <div class="mt-4 flex shrink-0 items-center gap-0.5 md:mt-auto">
     <FontSizeToggle />
     <LanguageToggle />
     <ThemeToggle />
   </div>
-</header>
+</aside>

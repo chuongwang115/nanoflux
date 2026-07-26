@@ -1,8 +1,8 @@
 import Parser from "rss-parser";
 import { httpGet } from "./http-fetcher";
 
-export const RSS_USER_AGENT = "NanoFlux/1.0 (+https://github.com/nanoflux)";
-export const RSS_TIMEOUT_MS = 15_000;
+const RSS_USER_AGENT = "NanoFlux/1.0 (+https://github.com/nanoflux)";
+const RSS_TIMEOUT_MS = 15_000;
 
 export async function fetchRssFeed<
   TFeed extends Record<string, unknown> = Record<string, unknown>,

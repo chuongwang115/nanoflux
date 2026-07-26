@@ -21,8 +21,8 @@ export type Item = {
   content: string | null;
   published_at: string;
   is_read: boolean;
-  filter_passed: boolean | null;
-  passed_filters: string | null;
+  /** Pass reason text when the item passed the AI filter; `null` means it did not pass (or filtering was off). */
+  filter_passed: string | null;
   feed_title: string;
 };
 
@@ -32,9 +32,8 @@ export type ItemsPage = {
   hasMore: boolean;
 };
 
-type RawItem = Omit<Item, "is_read" | "filter_passed"> & {
+type RawItem = Omit<Item, "is_read"> & {
   is_read: boolean | number;
-  filter_passed: boolean | number | null;
 };
 
 type ItemsApiResult = {
@@ -65,7 +64,7 @@ export function normalizeItem(raw: RawItem): Item {
     filter_passed:
       raw.filter_passed === null || raw.filter_passed === undefined
         ? null
-        : Boolean(raw.filter_passed),
+        : String(raw.filter_passed),
   };
 }
 
@@ -108,7 +107,6 @@ export async function fetchItemsPage(
   limit = 20,
   filterPassed?: 0 | 1,
   isRead?: 0 | 1,
-  passedFilterId?: string,
 ): Promise<ItemsPage> {
   const params = new URLSearchParams({
     limit: String(limit),
@@ -118,7 +116,6 @@ export async function fetchItemsPage(
   }
   if (cursor) params.set("cursor", cursor);
   if (isRead === 0 || isRead === 1) params.set("is_read", String(isRead));
-  if (passedFilterId) params.set("passed_filter_id", passedFilterId);
   const body = await request<ItemsApiResult>(`/api/items?${params}`);
   assertApiOk(body);
   if (!body.data) {
@@ -261,7 +258,6 @@ export async function downloadItemsExcel(options: {
   since?: string;
   until?: string;
   filterPassed?: 0 | 1;
-  passedFilterId?: string;
 }): Promise<void> {
   const params = new URLSearchParams();
   if (options.since) params.set("since", options.since);
@@ -269,7 +265,6 @@ export async function downloadItemsExcel(options: {
   if (options.filterPassed === 0 || options.filterPassed === 1) {
     params.set("filter_passed", String(options.filterPassed));
   }
-  if (options.passedFilterId) params.set("passed_filter_id", options.passedFilterId);
   params.set("tz_offset", String(new Date().getTimezoneOffset()));
   params.set("lang", localeState.locale);
 
@@ -294,7 +289,6 @@ export async function markAllItemsRead(
   until: string,
   options?: {
     filterPassed?: 0 | 1;
-    passedFilterId?: string;
   },
 ) {
   if (!until) {
@@ -303,13 +297,9 @@ export async function markAllItemsRead(
   const payload: {
     until: string;
     filter_passed?: 0 | 1;
-    passed_filter_id?: string;
   } = { until };
   if (options?.filterPassed === 0 || options?.filterPassed === 1) {
     payload.filter_passed = options.filterPassed;
-  }
-  if (options?.passedFilterId) {
-    payload.passed_filter_id = options.passedFilterId;
   }
   const body = await request<ApiResult>("/api/items/read-all", {
     method: "POST",
@@ -325,82 +315,27 @@ export async function markItemRead(id: string) {
   assertApiOk(body);
 }
 
-export async function setItemFilterVerdict(
-  itemId: string,
-  filterId: string,
-  verdict: "accept" | "reject",
-) {
-  const body = await request<
-    ApiResult & {
-      data?: { passed_filters: string | null; is_read: number };
-    }
-  >(`/api/items/${itemId}/filter-verdict`, {
-    method: "POST",
-    body: JSON.stringify({ filter_id: filterId, verdict }),
-  });
-  assertApiOk(body);
-  return body.data;
-}
-
-export type Filter = {
-  id: string;
-  name: string;
-  whitelist: string;
-  blacklist: string;
+export type FilterConfig = {
   prompt: string;
-};
-
-type FiltersApiResult = {
-  code: number;
-  message: string;
-  data?: {
-    filters: Filter[];
-  };
 };
 
 type FilterApiResult = {
   code: number;
   message: string;
-  data?: Filter;
+  data?: FilterConfig;
 };
 
-export async function fetchFilters(): Promise<Filter[]> {
-  const body = await request<FiltersApiResult>("/api/filters");
+export async function fetchFilter(): Promise<FilterConfig> {
+  const body = await request<FilterApiResult>("/api/filter");
   assertApiOk(body);
   if (!body.data) {
-    throw new Error(body.message || "Failed to load filters");
+    throw new Error(body.message || "Failed to load filter");
   }
-  return body.data.filters;
+  return body.data;
 }
 
-export function createFilter(payload: {
-  name: string;
-  whitelist: string;
-  blacklist: string;
-  prompt: string;
-}) {
-  return request<FilterApiResult>("/api/filters/create", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  }).then((body) => {
-    assertApiOk(body);
-    if (!body.data) {
-      throw new Error(body.message || "Failed to create filter");
-    }
-    return body.data;
-  });
-}
-
-export function updateFilter(
-  id: string,
-  payload: {
-    name: string;
-    whitelist: string;
-    blacklist: string;
-    prompt: string;
-  },
-) {
-  return request<FilterApiResult>(`/api/filters/${id}`, {
+export function updateFilter(payload: { prompt: string }) {
+  return request<FilterApiResult>("/api/filter", {
     method: "POST",
     body: JSON.stringify(payload),
   }).then((body) => {
@@ -409,28 +344,5 @@ export function updateFilter(
       throw new Error(body.message || "Failed to update filter");
     }
     return body.data;
-  });
-}
-
-export function deleteFilter(id: string) {
-  return request<ApiResult>(`/api/filters/${id}/delete`, {
-    method: "POST",
-  }).then((body) => {
-    assertApiOk(body);
-  });
-}
-
-export type FilterReorderAction = "up" | "down" | "top" | "bottom";
-
-export function reorderFilter(id: string, action: FilterReorderAction) {
-  return request<FiltersApiResult>(`/api/filters/${id}/reorder`, {
-    method: "POST",
-    body: JSON.stringify({ action }),
-  }).then((body) => {
-    assertApiOk(body);
-    if (!body.data) {
-      throw new Error(body.message || "Failed to reorder filters");
-    }
-    return body.data.filters;
   });
 }

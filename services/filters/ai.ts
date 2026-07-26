@@ -4,7 +4,6 @@ const MAX_CONTENT_CHARS = 3000;
 
 type AiFilterResult = {
   passed: boolean;
-  keywords: string | null;
   reason: string | null;
 };
 
@@ -40,30 +39,26 @@ function parseAiVerdict(
   return null;
 }
 
-function withoutAi(whitelistReason: string | null): AiFilterResult {
-  return {
-    passed: true,
-    keywords: whitelistReason,
-    reason: null,
-  };
+/** Fail-open: keep the item when LLM is unavailable or unparseable. */
+function passThrough(): AiFilterResult {
+  return { passed: true, reason: null };
 }
 
 export async function applyAiFilter(
   title: string,
   content: string | null,
-  whitelistReason: string | null,
   prompt: string,
 ): Promise<AiFilterResult> {
   const trimmedPrompt = prompt.trim();
   if (!trimmedPrompt) {
-    return withoutAi(whitelistReason);
+    return passThrough();
   }
 
   if (!getAiConfig()) {
     console.warn(
       "[ai-filter] prompt configured but LLM_BASE_URL/LLM_API_KEY/LLM_MODEL_NAME missing; skipping",
     );
-    return withoutAi(whitelistReason);
+    return passThrough();
   }
 
   const bodyContent = (content ?? "").slice(0, MAX_CONTENT_CHARS);
@@ -90,12 +85,11 @@ export async function applyAiFilter(
 
     return {
       passed: verdict.pass,
-      keywords: whitelistReason,
       reason: verdict.reason,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`[ai-filter] ${message}`);
-    return withoutAi(whitelistReason);
+    return passThrough();
   }
 }

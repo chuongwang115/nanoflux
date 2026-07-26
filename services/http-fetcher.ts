@@ -412,7 +412,7 @@ async function socksProxyFetch(
   throw new Error("Too many redirects");
 }
 
-export function resolveProxyUrl(url: string): string | undefined {
+function resolveProxyUrl(url: string): string | undefined {
   if (shouldBypassProxy(url)) return undefined;
   return proxyFromEnv();
 }

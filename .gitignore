@@ -29,6 +29,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .eslintcache
 .cache
 *.tsbuildinfo
+.tmp-check
 
 # Finder (MacOS) folder config
 .DS_Store
@@ -41,5 +42,6 @@ data.sqlite-wal
 # cursor
 .cursor
 
-# filters.json
+# filter.json
+filter.json
 filters.json

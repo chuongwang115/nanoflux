@@ -6,13 +6,21 @@
 
 @theme {
   --font-sans: system-ui, "Segoe UI", sans-serif;
-  --max-width-page: 680px;
+  --max-width-page: 860px;
   --text-base: 16px;
   --text-base--line-height: 1.5;
   --text-sm: 16px;
   --text-sm--line-height: 1.5;
   --text-xs: 14px;
   --text-xs--line-height: calc(16 / 14);
+}
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
 }
 
 html.font-small {

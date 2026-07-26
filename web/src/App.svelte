@@ -7,15 +7,19 @@
   import { route } from "./lib/router";
 </script>
 
-<main class="mx-auto max-w-page px-5 py-16 font-sans">
+<main class="w-full font-sans md:flex">
   <Header />
-  {#if $route === "/feeds"}
-    <FeedsManager />
-  {:else if $route === "/filters"}
-    <FiltersManager />
-  {:else if $route === "/export"}
-    <ExportPage />
-  {:else}
-    <NewsList />
-  {/if}
+  <div class="min-w-0 flex-1">
+    <div class="mx-auto max-w-page px-5 py-10 md:py-16">
+      {#if $route === "/feeds"}
+        <FeedsManager />
+      {:else if $route === "/filter"}
+        <FiltersManager />
+      {:else if $route === "/export"}
+        <ExportPage />
+      {:else}
+        <NewsList />
+      {/if}
+    </div>
+  </div>
 </main>

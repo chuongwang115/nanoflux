@@ -10,8 +10,10 @@ import { registerDeleteFeed } from "./tools/delete-feed";
 import { registerSearchFeeds } from "./tools/search-feeds";
 import { registerGetItems } from "./tools/get-items";
 import { registerGetUnreadItems } from "./tools/get-unread-items";
+import { registerGetFilterPrompt } from "./tools/get-filter-prompt";
+import { registerUpdateFilterPrompt } from "./tools/update-filter-prompt";
 
-export function registerMcpTools(server: McpServer): void {
+function registerMcpTools(server: McpServer): void {
   registerGetCurrentTime(server);
   registerAddFeed(server);
   registerAddFeedByKeyword(server);
@@ -21,6 +23,8 @@ export function registerMcpTools(server: McpServer): void {
   registerSearchFeeds(server);
   registerGetItems(server);
   registerGetUnreadItems(server);
+  registerGetFilterPrompt(server);
+  registerUpdateFilterPrompt(server);
 }
 
 export const routes = mcp({

@@ -11,44 +11,25 @@ import {
   or,
   sql,
 } from "drizzle-orm";
-import { getFilters } from "../filters";
-import {
-  isItemFilterPassed,
-} from "../shared/passed-filters";
+import { hasFilterPrompt } from "../filter";
 import { db } from "./database";
 import { getFeed } from "./feeds";
 import { feeds, items, DEFAULT_LIMIT, MAX_LIMIT } from "./schema";
 import { newItemId, decodeCursor, parseTimeRange, TimeUnit, toUtcIso } from "./utils";
 
 function buildPassedFilter(filterPassed?: number) {
-  const hasFilters = getFilters().length > 0;
-  if (!hasFilters) {
+  const filtering = hasFilterPrompt();
+  if (!filtering) {
     return filterPassed === 0 ? sql`1 = 0` : undefined;
   }
 
   if (filterPassed === 0) {
-    return isNull(items.passed_filters);
+    return isNull(items.filter_passed);
   }
   if (filterPassed === 1) {
-    return isNotNull(items.passed_filters);
+    return isNotNull(items.filter_passed);
   }
   return undefined;
-}
-
-function buildPassedFilterIdFilter(filterId?: string) {
-  const id = filterId?.trim();
-  if (!id) return undefined;
-
-  return sql`(
-    ${items.passed_filters} IS NOT NULL
-    AND (
-      ${items.passed_filters} LIKE ${'%"id":"' + id + '"%'}
-      OR ${items.passed_filters} = ${id}
-      OR ${items.passed_filters} LIKE ${id + ",%"}
-      OR ${items.passed_filters} LIKE ${"%," + id + ",%"}
-      OR ${items.passed_filters} LIKE ${"%," + id}
-    )
-  )`;
 }
 
 export function getItems(options?: {
@@ -56,10 +37,8 @@ export function getItems(options?: {
   until?: string;
   unit?: string;
   count?: number;
-  keyword?: string;
   isRead?: number;
   filterPassed?: number;
-  passedFilterId?: string;
   cursor?: string;
   limit?: number;
 }): any[] {
@@ -102,8 +81,6 @@ export function getItems(options?: {
         ? eq(items.is_read, options.isRead)
         : undefined;
     const passedFilter = buildPassedFilter(options?.filterPassed);
-    const passedFilterIdFilter = buildPassedFilterIdFilter(options?.passedFilterId);
-    const hasFilters = getFilters().length > 0;
 
     const selected = db
       .select({
@@ -115,20 +92,19 @@ export function getItems(options?: {
         content: items.content,
         published_at: items.published_at,
         is_read: items.is_read,
-        passed_filters: items.passed_filters,
+        filter_passed: items.filter_passed,
         created_at: items.created_at,
         feed_title: feeds.title,
       })
       .from(items)
       .innerJoin(feeds, eq(items.feed_id, feeds.id))
-      .where(and(timeFilter, cursorFilter, readFilter, passedFilter, passedFilterIdFilter))
+      .where(and(timeFilter, cursorFilter, readFilter, passedFilter))
       .orderBy(desc(items.published_at), desc(items.id))
       .limit(adjustedLimit + 1)
       .all();
 
     return selected.map((row) => ({
       ...row,
-      filter_passed: isItemFilterPassed(row.passed_filters, hasFilters),
       created_at: toUtcIso(row.created_at),
     }));
   
@@ -142,7 +118,6 @@ export function getItemsForExport(options: {
   since?: string;
   until?: string;
   filterPassed?: number;
-  passedFilterId?: string;
 }): { published_at: string; title: string; content: string | null; link: string }[] {
   try {
     const sinceFilter = options.since
@@ -152,7 +127,6 @@ export function getItemsForExport(options: {
       ? lte(items.published_at, options.until)
       : undefined;
     const passedFilter = buildPassedFilter(options.filterPassed);
-    const passedFilterIdFilter = buildPassedFilterIdFilter(options.passedFilterId);
 
     return db
       .select({
@@ -162,7 +136,7 @@ export function getItemsForExport(options: {
         link: items.link,
       })
       .from(items)
-      .where(and(sinceFilter, untilFilter, passedFilter, passedFilterIdFilter))
+      .where(and(sinceFilter, untilFilter, passedFilter))
       .orderBy(desc(items.published_at), desc(items.id))
       .all();
   } catch (error) {
@@ -191,7 +165,7 @@ export function addItems(
     link: string;
     content: string | null;
     published_at: string;
-    passed_filters: string | null;
+    filter_passed: string | null;
   }[],
 ): any[] {
 
@@ -204,7 +178,6 @@ export function addItems(
     }
 
     const feed_title = feed.title;
-    const hasFilters = getFilters().length > 0;
     const existingGuids = getExistingGuids(newItems.map((item) => item.guid));
 
     let insertedItems = [];
@@ -213,7 +186,7 @@ export function addItems(
       if (existingGuids.has(newItem.guid)) continue;
 
       const id = newItemId();
-      const { passed_filters } = newItem;
+      const { filter_passed } = newItem;
 
       const inserted = db.insert(items)
         .values({
@@ -225,7 +198,7 @@ export function addItems(
           content: newItem.content,
           published_at: newItem.published_at,
           is_read: 0,
-          passed_filters,
+          filter_passed,
         })
         .onConflictDoNothing({ target: items.guid })
         .returning()
@@ -236,7 +209,6 @@ export function addItems(
         existingGuids.add(inserted.guid);
         insertedItems.push({
           ...inserted,
-          filter_passed: isItemFilterPassed(inserted.passed_filters, hasFilters),
           created_at: toUtcIso(inserted.created_at),
           feed_title,
         });
@@ -255,14 +227,12 @@ export function markItemsRead(
   until: string,
   options?: {
     filterPassed?: number;
-    passedFilterId?: string;
   },
 ): void {
   
   try {
 
     const passedFilter = buildPassedFilter(options?.filterPassed);
-    const passedFilterIdFilter = buildPassedFilterIdFilter(options?.passedFilterId);
 
     db.update(items)
     .set({ is_read: 1 })
@@ -271,7 +241,6 @@ export function markItemsRead(
         lte(items.published_at, until),
         eq(items.is_read, 0),
         passedFilter,
-        passedFilterIdFilter,
       ),
     )
     .run();
@@ -294,46 +263,6 @@ export function markItemRead(id: string): void {
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to mark item ${id} as read: ${detail}`);
-  }
-}
-
-export function getItemById(id: string): {
-  id: string;
-  title: string;
-  content: string | null;
-  passed_filters: string | null;
-  is_read: number;
-} | undefined {
-  try {
-    return db
-      .select({
-        id: items.id,
-        title: items.title,
-        content: items.content,
-        passed_filters: items.passed_filters,
-        is_read: items.is_read,
-      })
-      .from(items)
-      .where(eq(items.id, id))
-      .get();
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to get item ${id}: ${detail}`);
-  }
-}
-
-export function updateItemPassedFilters(
-  id: string,
-  passed_filters: string | null,
-): void {
-  try {
-    db.update(items)
-      .set({ passed_filters })
-      .where(eq(items.id, id))
-      .run();
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to update item ${id} passed filters: ${detail}`);
   }
 }
 
