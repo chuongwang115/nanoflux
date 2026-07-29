@@ -58,7 +58,7 @@ Run it on localhost next to your agent runtime; when `HOST=127.0.0.1`, API and M
 **Operator UI (secondary)**
 
 - Minimal web console to verify ingestion, edit the filter prompt, manage feeds, and export Excel
-- Home list: **Unread** / **All**; passed items can show an AI reason badge (items that did not pass still appear)
+- Home list: **Unread** / **All**; **Unread** only shows filter-passed items (`filter_passed` non-null) and marks those as read in bulk; **All** still lists rejected items; passed items can show an AI reason badge
 - Feed page (`/feeds`): preview, CRUD, sort, **add by keyword** (Google News RSS for the last 3 days; language inferred from the keyword), **subscribe WeChat 公众号**, **OPML export**
 - Filter page (`/filter`) and export page (`/export`) with optional scope (**all** / **passed** / **unmatched** when filtering is enabled)
 - PWA shell (installable, offline asset caching; manifest at `/manifest.webmanifest`), bilingual UI (English / Chinese), light/dark theme, adjustable font size
@@ -255,7 +255,7 @@ News query tools return stored items from the database. Each item includes `id`,
 | `delete_feed` | Remove a feed (also unsubscribes WeChat RSS feeds remotely when configured) |
 | `search_feeds` | Search feeds by keyword in title |
 | `get_news` | Fetch news in an absolute (`since`/`until`) or relative (`unit`/`count`) time range. Supports `cursor` / `limit` pagination; when `hasMore` is true, call again with `nextCursor` as `cursor` (after a relative query, reuse `resolved_since` / `resolved_until` as `since` / `until`) |
-| `get_unread_news` | Fetch unread news in a relative time window (`unit`/`count`). Returned articles are marked as read. When `hasMore` is true, call again with the same `unit`/`count` (and `limit`) until `hasMore` is false |
+| `get_unread_news` | Fetch unread **filter-passed** news in a relative time window (`unit`/`count`). Items that did not pass the filter are excluded. Returned articles are marked as read. When `hasMore` is true, call again with the same `unit`/`count` (and `limit`) until `hasMore` is false |
 | `get_filter_prompt` | Get the AI content filter prompt (`prompt`, `enabled`). Empty prompt means filtering is off |
 | `update_filter_prompt` | Set the AI filter prompt. Pass an empty string to disable filtering. Applies to newly fetched items only |
 | `get_current_time` | Return the server's current UTC time |
@@ -312,7 +312,7 @@ Query parameters for `GET /api/items`:
 | `cursor` | Pagination cursor from a previous response |
 | `limit` | Page size (default 20, max 50) |
 | `filter_passed` | `1` — items that passed; `0` — items that failed. Only meaningful when a prompt is set; with filtering off, `0` returns no rows |
-| `is_read` | `0` or `1` — filter by read state (the UI **Unread** tab uses `is_read=0`) |
+| `is_read` | `0` or `1` — filter by read state (the UI **Unread** tab uses `is_read=0` and `filter_passed=1`) |
 | `since`, `until` | Absolute ISO 8601 time bounds |
 | `unit`, `count` | Relative window (e.g. `unit=hour&count=2` for the last 2 hours) |
 
