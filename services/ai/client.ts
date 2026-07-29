@@ -1,4 +1,5 @@
-import { httpPost } from "../http-fetcher";
+import { HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { ChatOpenAI } from "@langchain/openai";
 
 const AI_TIMEOUT_MS = 30_000;
 
@@ -16,6 +17,23 @@ export function getAiConfig(): AiConfig | null {
   return { baseUrl: baseUrl.replace(/\/$/, ""), apiKey, model };
 }
 
+function createChatModel(
+  config: AiConfig,
+  options?: { temperature?: number },
+): ChatOpenAI {
+  return new ChatOpenAI({
+    apiKey: config.apiKey,
+    model: config.model,
+    temperature: options?.temperature ?? 0,
+    timeout: AI_TIMEOUT_MS,
+    // Prefer chat completions for OpenAI-compatible providers.
+    useResponsesApi: false,
+    configuration: {
+      baseURL: `${config.baseUrl}/v1`,
+    },
+  });
+}
+
 export async function chatCompletion(
   system: string,
   user: string,
@@ -26,31 +44,28 @@ export async function chatCompletion(
     throw new Error("AI is not configured");
   }
 
-  const response = await httpPost(`${config.baseUrl}/v1/chat/completions`, {
-    headers: {
-      Authorization: `Bearer ${config.apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: config.model,
-      temperature: options?.temperature ?? 0,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
-    }),
-    signal: AbortSignal.timeout(AI_TIMEOUT_MS),
-  });
+  const model = createChatModel(config, options);
+  const response = await model.invoke([
+    new SystemMessage(system),
+    new HumanMessage(user),
+  ]);
 
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    throw new Error(`HTTP ${response.status}: ${detail.slice(0, 200)}`);
-  }
+  const text =
+    typeof response.content === "string"
+      ? response.content.trim()
+      : Array.isArray(response.content)
+        ? response.content
+            .map((part) =>
+              typeof part === "string"
+                ? part
+                : part.type === "text"
+                  ? part.text
+                  : "",
+            )
+            .join("")
+            .trim()
+        : "";
 
-  const data = (await response.json()) as {
-    choices?: { message?: { content?: string } }[];
-  };
-  const text = data.choices?.[0]?.message?.content?.trim();
   if (!text) throw new Error("Empty AI response");
   return text;
 }

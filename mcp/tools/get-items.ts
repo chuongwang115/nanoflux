@@ -76,6 +76,18 @@ export function registerGetItems(server: McpServer): void {
             ? encodeCursor(lastItem.published_at, lastItem.id)
             : null;
 
+        const message = hasMore
+          ? [
+              "More news remain.",
+              "Call get_news again with:",
+              `cursor=${nextCursor}`,
+              `since=${resolvedSince ?? "(omit)"}`,
+              `until=${resolvedUntil ?? "(omit)"}`,
+              `limit=${adjustedLimit}`,
+              "(Do not reuse unit/count; pass the resolved since/until above.)",
+            ].join(" ")
+          : "No more news in this range.";
+
         return {
           content: [
             {
@@ -93,6 +105,7 @@ export function registerGetItems(server: McpServer): void {
                 nextCursor,
                 resolved_since: resolvedSince ?? null,
                 resolved_until: resolvedUntil ?? null,
+                message,
               }),
             },
           ],

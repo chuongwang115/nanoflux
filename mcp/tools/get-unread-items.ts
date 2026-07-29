@@ -8,7 +8,7 @@ export function registerGetUnreadItems(server: McpServer): void {
     "get_unread_news",
     {
       description:
-        "Fetch unread news within a relative time window before now. Returned articles are marked as read. When hasMore is true, call again with the same unit/count (and limit) to fetch the next batch until hasMore is false.",
+        "Fetch unread news within a relative time window before now. Returned news are marked as read. When hasMore is true, call again with the same unit/count (and limit) to fetch the next batch until hasMore is false.",
       inputSchema: {
         unit: z.string().describe("Time unit; use with count for a relative range from now"),
         count: z.number().int().min(1).describe("Number of units (e.g. unit=hour, count=2 for the last 2 hours)"),
@@ -30,7 +30,13 @@ export function registerGetUnreadItems(server: McpServer): void {
           MAX_LIMIT,
         );
 
-        const selected = getItems({ unit, count, limit: adjustedLimit, isRead: 0 });
+        const selected = getItems({
+          unit,
+          count,
+          limit: adjustedLimit,
+          isRead: 0,
+          filterPassed: 1,
+        });
 
         const hasMore = selected.length > adjustedLimit;
         const returned = selected.slice(0, adjustedLimit);
@@ -38,6 +44,16 @@ export function registerGetUnreadItems(server: McpServer): void {
         for (const item of returned) {
           markItemRead(item.id);
         }
+
+        const message = hasMore
+          ? [
+              "More unread news remain.",
+              "Call get_unread_news again with the same parameters:",
+              `unit=${unit}`,
+              `count=${count}`,
+              `limit=${adjustedLimit}`,
+            ].join(" ")
+          : "No more unread news in this window.";
 
         return {
           content: [
@@ -53,12 +69,7 @@ export function registerGetUnreadItems(server: McpServer): void {
                   feed_title: item.feed_title,
                 })),
                 hasMore,
-                ...(hasMore
-                  ? {
-                      message:
-                        "More unread news remain. Call get_unread_news again with the same unit/count to fetch the next batch.",
-                    }
-                  : {}),
+                message,
               }),
             },
           ],

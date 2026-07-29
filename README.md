@@ -78,7 +78,7 @@ Run it on localhost next to your agent runtime; when `HOST=127.0.0.1`, API and M
 | Operator UI | Svelte 5, Tailwind CSS 4 |
 | Feed parsing | rss-parser |
 | Article extraction | @extractus/article-extractor |
-| AI relevance filter | OpenAI-compatible chat completions API |
+| AI relevance filter | LangChain (`@langchain/openai`) + OpenAI-compatible API |
 
 ## Requirements
 
@@ -134,7 +134,7 @@ Create a `.env` file (see `.env.example`):
 
 ### AI filter (optional)
 
-When `filter.json` has a non-empty `prompt`, new items are sent to an OpenAI-compatible chat completions endpoint for relevance scoring. Configure these in `.env`:
+When `filter.json` has a non-empty `prompt`, new items are scored via LangChain `ChatOpenAI` against an OpenAI-compatible endpoint. Configure these in `.env`:
 
 | Variable | Description |
 | --- | --- |
@@ -356,7 +356,7 @@ Agents then consume this store through MCP / REST; they do not scrape feeds them
 ├── routes/           REST API routes (feeds, items, filter)
 ├── mcp/              MCP server and tools (agent interface)
 ├── services/
-│   ├── ai/           OpenAI-compatible chat client
+│   ├── ai/           LangChain chat client (OpenAI-compatible)
 │   ├── feeds/        Feed fetching, adaptive polling intervals, and OPML export
 │   ├── export/       Excel (.xlsx) article export
 │   ├── content/      Full-text article extraction

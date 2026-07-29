@@ -9391,6 +9391,7 @@ function ItemList($$anchor, $$props) {
   let loadGeneration = 0;
   let now2 = state(proxy(Date.now()));
   const filterIsRead = user_derived(() => get2(filter) === "unread" ? 0 : undefined);
+  const filterPassed = user_derived(() => get2(filter) === "unread" ? 1 : undefined);
   function resetList() {
     set(items, [], true);
     set(cursor, null);
@@ -9405,7 +9406,7 @@ function ItemList($$anchor, $$props) {
     set(loading, true);
     set(error, "");
     try {
-      const page = await fetchItemsPage(get2(cursor) ?? undefined, PAGE_SIZE, undefined, get2(filterIsRead));
+      const page = await fetchItemsPage(get2(cursor) ?? undefined, PAGE_SIZE, get2(filterPassed), get2(filterIsRead));
       if (gen !== loadGeneration)
         return;
       set(items, [...get2(items), ...page.data], true);
@@ -9473,7 +9474,7 @@ function ItemList($$anchor, $$props) {
     }, undefined);
     if (!until)
       return;
-    await markAllItemsRead(until);
+    await markAllItemsRead(until, { filterPassed: get2(filter) === "unread" ? 1 : undefined });
     if (get2(filter) === "unread") {
       set(items, get2(items).filter((item) => item.published_at > until), true);
     } else {

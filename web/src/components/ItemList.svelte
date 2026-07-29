@@ -28,6 +28,7 @@
   let now = $state(Date.now());
 
   const filterIsRead = $derived(filter === "unread" ? (0 as const) : undefined);
+  const filterPassed = $derived(filter === "unread" ? (1 as const) : undefined);
 
   function resetList() {
     items = [];
@@ -47,7 +48,7 @@
       const page = await fetchItemsPage(
         cursor ?? undefined,
         PAGE_SIZE,
-        undefined,
+        filterPassed,
         filterIsRead,
       );
       if (gen !== loadGeneration) return;
@@ -119,7 +120,9 @@
       return max;
     }, undefined);
     if (!until) return;
-    await markAllItemsRead(until);
+    await markAllItemsRead(until, {
+      filterPassed: filter === "unread" ? 1 : undefined,
+    });
     if (filter === "unread") {
       items = items.filter((item) => item.published_at > until);
     } else {
