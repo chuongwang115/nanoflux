@@ -16,17 +16,38 @@ import {
   startScheduler,
   stopScheduler,
 } from "./services/scheduler";
+import { httpGet } from "./services/http-fetcher";
 import { loadFilters } from "./filter";
 
 const PUBLIC_DIR = join(import.meta.dir, "public");
+const GOOGLE_CONNECTIVITY_URL = "https://www.google.com/generate_204";
+const GOOGLE_CONNECTIVITY_TIMEOUT_MS = 10_000;
 const indexHtml = () => Bun.file(join(PUBLIC_DIR, "index.html"));
 const serviceWorker = () => Bun.file(join(PUBLIC_DIR, "sw.js"));
+
+async function ensureGoogleConnectivity(): Promise<void> {
+  try {
+    const response = await httpGet(GOOGLE_CONNECTIVITY_URL, {
+      signal: AbortSignal.timeout(GOOGLE_CONNECTIVITY_TIMEOUT_MS),
+    });
+    if (response.status !== 204) {
+      throw new Error(`unexpected HTTP status ${response.status}`);
+    }
+    console.log("Google connectivity check passed");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`Google is not accessible: ${message}`);
+    process.exit(1);
+  }
+}
 
 function manifestLocale(query: Record<string, string | undefined>): Locale {
   const v = query.locale ?? query.lang;
   if (v === "en" || v === "zh") return v;
   return "zh";
 }
+
+await ensureGoogleConnectivity();
 
 void loadFilters().then(() => {
   void startScheduler();

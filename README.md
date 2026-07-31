@@ -63,10 +63,6 @@ Run it on localhost next to your agent runtime; when `HOST=127.0.0.1`, API and M
 - Filter page (`/filter`) and export page (`/export`) with optional scope (**all** / **passed** / **unmatched** when filtering is enabled)
 - PWA shell (installable, offline asset caching; manifest at `/manifest.webmanifest`), bilingual UI (English / Chinese), light/dark theme, adjustable font size
 
-**Networking**
-
-- HTTP and SOCKS proxy support for outbound fetches
-
 ## Tech Stack
 
 | Layer | Technology |
@@ -157,14 +153,22 @@ Without these variables, WeChat search/subscribe endpoints and MCP tools return 
 
 ### Proxy (optional)
 
-Outbound HTTP requests (RSS fetches, article page scraping, Google News) honor standard proxy environment variables:
+Outbound HTTP requests honor standard proxy environment variables via undici `EnvHttpProxyAgent`:
 
 | Variable | Description |
 | --- | --- |
-| `HTTPS_PROXY`, `HTTP_PROXY`, `ALL_PROXY`, `SOCKS_PROXY`, `PROXY_URL` | Proxy URL (supports HTTP and SOCKS) |
-| `PROXY_HOST` + `PROXY_PORT` | Alternative host/port form |
-| `PROXY_PROTOCOL` | Protocol when using host/port form (default: `socks5h`) |
-| `NO_PROXY` | Comma-separated hosts to bypass |
+| `HTTP_PROXY` / `http_proxy` | Proxy for HTTP (also used for HTTPS if `HTTPS_PROXY` is unset) |
+| `HTTPS_PROXY` / `https_proxy` | Proxy for HTTPS requests |
+| `NO_PROXY` / `no_proxy` | Comma-separated hosts to bypass |
+
+Example (Clash mixed port):
+
+```env
+HTTP_PROXY=http://127.0.0.1:9080
+HTTPS_PROXY=http://127.0.0.1:9080
+```
+
+On PowerShell, set session env vars with `$env:HTTPS_PROXY="http://127.0.0.1:9080"` (not `set VAR=...`). Prefer putting them in `.env` so Bun loads them automatically.
 
 ### Content filter (`filter.json`)
 
@@ -364,7 +368,7 @@ Agents then consume this store through MCP / REST; they do not scrape feeds them
 │   ├── rss.ts        RSS/Atom HTTP fetch and parse
 │   ├── google-news.ts Google News RSS URL helpers and article-link resolution
 │   ├── wechat-rss/   WeChat official-account search & subscribe
-│   ├── http-fetcher.ts Shared HTTP client (proxy-aware)
+│   ├── http-fetcher.ts Shared HTTP client
 │   └── scheduler.ts  Cron-based fetch and cleanup jobs
 ├── db/               Drizzle schema and data access
 ├── utils/            Date, hash, HTML, text, and charset-decoding helpers
