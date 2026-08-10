@@ -275,7 +275,7 @@ News query tools return stored items from the database. Each item includes `id`,
 | `get_filter_prompt` | Get the AI content filter prompt (`prompt`, `enabled`). Empty prompt means filtering is off |
 | `update_filter_prompt` | Set the AI filter prompt. Pass an empty string to disable filtering. Applies to newly fetched items only |
 | `get_current_time` | Return the server's current UTC time |
-| `send_telegram_message` | Post text to a Telegram channel (`text` ≤ 4096 chars; optional `chat_id` / `parse_mode` / `disable_notification`). Requires Telegram bot credentials; bot must be a channel admin. Omitting `chat_id` uses `TELEGRAM_CHANNEL_ID` |
+| `send_telegram_message` | Post text to the configured Telegram channel (`text` ≤ 4096 chars; optional `parse_mode` / `disable_notification`). Target is always `TELEGRAM_CHANNEL_ID`; bot must be a channel admin |
 
 Typical WeChat flow for agents: call `add_wechat_feed` with a `query` (it always searches first). If multiple accounts match, call again with the chosen `fakeid`.
 
