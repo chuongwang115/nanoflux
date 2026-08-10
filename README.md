@@ -41,7 +41,7 @@ Run it on localhost next to your agent runtime; when `HOST=127.0.0.1`, API and M
 
 **For agents (primary)**
 
-- MCP server at `/mcp` — feed CRUD, keyword / WeChat subscribe, time-ranged news, unread consumption, filter prompt read/write, current time
+- MCP server at `/mcp` — feed CRUD, keyword / WeChat subscribe, time-ranged news, unread consumption, filter prompt read/write, Telegram channel push, current time
 - REST API with the same data model (`{ code, message, data }` JSON)
 - Local-first binding: `HOST=127.0.0.1` restricts API and MCP to localhost
 - Persistent SQLite store with cursor pagination so agents can page through large result sets
@@ -151,6 +151,17 @@ Subscribe to WeChat 公众号 via [WeChat RSS](https://wechatrss.waytomaster.com
 
 Without these variables, WeChat search/subscribe endpoints and MCP tools return a configuration error.
 
+### Telegram channel (optional)
+
+Post messages to a Telegram channel via MCP (`send_telegram_message`). Create a bot with [@BotFather](https://t.me/BotFather), add it as an **admin** of the channel, then set:
+
+| Variable | Description |
+| --- | --- |
+| `TELEGRAM_BOT_TOKEN` | Bot token from BotFather |
+| `TELEGRAM_CHANNEL_ID` | Channel username (`@mychannel`) or numeric id (`-100...`) |
+
+Without these variables, `send_telegram_message` returns a configuration error.
+
 ### Proxy (optional)
 
 Outbound HTTP requests honor standard proxy environment variables via undici `EnvHttpProxyAgent`:
@@ -245,6 +256,7 @@ Add to your MCP client config (e.g. Cursor or Claude Desktop):
 2. Optionally set relevance criteria with `update_filter_prompt`
 3. Call `get_unread_news` (or `get_news`) on a schedule; page with `hasMore` / `nextCursor` until caught up
 4. Use returned `title`, `content`, `link`, and `published_at` in your agent workflow
+5. Optionally push a digest or alert to a Telegram channel with `send_telegram_message` (requires bot credentials)
 
 ### Available tools
 
@@ -263,6 +275,7 @@ News query tools return stored items from the database. Each item includes `id`,
 | `get_filter_prompt` | Get the AI content filter prompt (`prompt`, `enabled`). Empty prompt means filtering is off |
 | `update_filter_prompt` | Set the AI filter prompt. Pass an empty string to disable filtering. Applies to newly fetched items only |
 | `get_current_time` | Return the server's current UTC time |
+| `send_telegram_message` | Post text to a Telegram channel (`text` ≤ 4096 chars; optional `chat_id` / `parse_mode` / `disable_notification`). Requires Telegram bot credentials; bot must be a channel admin. Omitting `chat_id` uses `TELEGRAM_CHANNEL_ID` |
 
 Typical WeChat flow for agents: call `add_wechat_feed` with a `query` (it always searches first). If multiple accounts match, call again with the chosen `fakeid`.
 
@@ -368,6 +381,7 @@ Agents then consume this store through MCP / REST; they do not scrape feeds them
 │   ├── rss.ts        RSS/Atom HTTP fetch and parse
 │   ├── google-news.ts Google News RSS URL helpers and article-link resolution
 │   ├── wechat-rss/   WeChat official-account search & subscribe
+│   ├── telegram/     Telegram Bot API client (channel push)
 │   ├── http-fetcher.ts Shared HTTP client
 │   └── scheduler.ts  Cron-based fetch and cleanup jobs
 ├── db/               Drizzle schema and data access
