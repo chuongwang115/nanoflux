@@ -50,7 +50,9 @@ function manifestLocale(query: Record<string, string | undefined>): Locale {
 await ensureGoogleConnectivity();
 
 void loadFilters().then(() => {
-  void startScheduler();
+  void startScheduler().catch((error) => {
+    console.error("[scheduler]", error);
+  });
 });
 
 const host = resolveHost();

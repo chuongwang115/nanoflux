@@ -6724,7 +6724,7 @@ var messages = {
   en: {
     "items.latest": "Latest",
     "items.feeds": "Feeds",
-    "items.filters": "Filters",
+    "items.filters": "Filter",
     "items.export": "Export",
     "items.noItems": "No news yet",
     "items.loading": "Loading…",
@@ -7411,7 +7411,8 @@ function normalizeItem(raw) {
   return {
     ...raw,
     is_read: Boolean(raw.is_read),
-    filter_passed: raw.filter_passed === null || raw.filter_passed === undefined ? null : String(raw.filter_passed)
+    filter_passed: Number(raw.filter_passed) === 1 ? 1 : 0,
+    passed_reason: raw.passed_reason === null || raw.passed_reason === undefined ? null : String(raw.passed_reason)
   };
 }
 async function request(url, options = {}) {
@@ -9209,7 +9210,7 @@ delegate(["click"]);
 
 // ../nanoflux/web/src/lib/highlight.ts
 function getItemAiReason(item) {
-  const reason = item.filter_passed?.trim();
+  const reason = item.passed_reason?.trim();
   return reason || null;
 }
 

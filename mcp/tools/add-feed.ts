@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { createFeed } from "../../db/feeds";
-import { fetchFeedMetadata } from "../../services/feeds/fetcher";
+import { enqueueNewFeedFetch, fetchFeedMetadata } from "../../services/feeds/fetcher";
 
 export function registerAddFeed(server: McpServer): void {
   server.registerTool(
@@ -60,6 +60,7 @@ export function registerAddFeed(server: McpServer): void {
           url: feedUrl,
           description: feedDescription ?? null,
         });
+        enqueueNewFeedFetch(feed);
 
         return {
           content: [

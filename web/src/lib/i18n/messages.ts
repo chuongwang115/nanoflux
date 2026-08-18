@@ -95,7 +95,7 @@ export const messages = {
   en: {
     "items.latest": "Latest",
     "items.feeds": "Feeds",
-    "items.filters": "Filters",
+    "items.filters": "Filter",
     "items.export": "Export",
     "items.noItems": "No news yet",
     "items.loading": "Loading…",

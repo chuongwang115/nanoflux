@@ -8,11 +8,7 @@ let fetchCronJob: Bun.CronJob | null = null;
 let cleanupCronJob: Bun.CronJob | null = null;
 
 export async function startScheduler() {
-
-  // Run once immediately on startup
-  await fetchDueFeeds("startup");
-
-  // Run every minute
+  // Register cron first so a long startup fetch cannot block later ticks.
   fetchCronJob = Bun.cron(TICK_CRON, async () => {
     try {
       await fetchDueFeeds("cron");
@@ -21,7 +17,6 @@ export async function startScheduler() {
     }
   });
 
-  // Run daily at 1:00 AM UTC
   cleanupCronJob = Bun.cron(CLEANUP_CRON, async () => {
     try {
       clearItems();
@@ -37,6 +32,12 @@ export async function startScheduler() {
   console.log(
     `Cleanup items scheduler: Bun.cron (cron ${CLEANUP_CRON} UTC, items older than 90 days)`,
   );
+
+  try {
+    await fetchDueFeeds("startup");
+  } catch (error) {
+    console.error("[fetch:startup]", error);
+  }
 }
 
 export async function stopScheduler() {

@@ -17,6 +17,14 @@ import {
 
 const rssParser = new Parser();
 
+/** Keep each tick finite when many feeds are overdue or a feed has a large backlog. */
+const MAX_FEEDS_PER_TICK = 3;
+const MAX_NEW_ITEMS_PER_FEED = 10;
+const CATCH_UP_INTERVAL_MIN = 1;
+
+const inFlightFeedIds = new Set<string>();
+let dueFetchRunning = false;
+
 function toStoredItem(entry: Parser.Item) {
   const link = entry.link?.trim();
   if (!link) return null;
@@ -80,6 +88,11 @@ export async function fetchFeed(feed: Feed): Promise<{
   newItems: any[];
   error?: string;
 }> {
+  if (inFlightFeedIds.has(feed.id)) {
+    return { newItems: [] };
+  }
+  inFlightFeedIds.add(feed.id);
+
   const currentInterval =
     feed.fetch_interval_min || DEFAULT_FETCH_INTERVAL_MIN;
 
@@ -95,15 +108,17 @@ export async function fetchFeed(feed: Feed): Promise<{
     const candidates = entries.filter(
       (entry) => !knownGuids.has(entry.guid) && !globalGuids.has(entry.guid),
     );
-    const enriched = await enrichItemsContent(candidates);
+    const batch = candidates.slice(0, MAX_NEW_ITEMS_PER_FEED);
+    const remaining = candidates.length - batch.length;
+    const unprocessed = new Set(candidates.slice(MAX_NEW_ITEMS_PER_FEED).map((entry) => entry.guid));
+    const enriched = await enrichItemsContent(batch);
     const filtered = await filterItems(enriched);
     const inserted = addItems(feed.id, filtered);
 
-    const nextInterval = nextFetchIntervalMin(
-      currentInterval,
-      inserted.length,
-      rawItems,
-    );
+    const nextInterval =
+      remaining > 0
+        ? CATCH_UP_INTERVAL_MIN
+        : nextFetchIntervalMin(currentInterval, inserted.length, rawItems);
     let lastPublishedAt = maxPublishedAt(entries);
     if (lastPublishedAt && feed.last_published_at) {
       const next = Date.parse(lastPublishedAt);
@@ -114,17 +129,46 @@ export async function fetchFeed(feed: Feed): Promise<{
     }
     updateFeedFetchState(feed.id, {
       next_fetched_at: nextFetchedAtIso(nextInterval),
-      fetch_interval_min: nextInterval,
+      fetch_interval_min:
+        remaining > 0 ? currentInterval : nextInterval,
       ...(lastPublishedAt ? { last_published_at: lastPublishedAt } : {}),
       last_build_date: feedBuildDate(parsed),
-      last_guids: serializeFeedGuids(entries.map((entry) => entry.guid)),
+      last_guids: serializeFeedGuids(
+        entries
+          .filter((entry) => !unprocessed.has(entry.guid))
+          .map((entry) => entry.guid),
+      ),
     });
+
+    if (remaining > 0) {
+      console.log(
+        `[fetch] ${feed.title}: processed ${batch.length}, ${remaining} more queued`,
+      );
+    }
 
     return { newItems: inserted };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return { newItems: [], error: `${feed.title}: ${message}` };
+  } finally {
+    inFlightFeedIds.delete(feed.id);
   }
+}
+
+/** Fetch a newly created feed without waiting for the next cron tick. */
+export function enqueueNewFeedFetch(feed: Feed): void {
+  if (feed.next_fetched_at) return;
+
+  void fetchFeed(feed)
+    .then((result) => {
+      console.log(
+        `[fetch:create] ${feed.title} new=${result.newItems.length}`,
+      );
+      if (result.error) console.error(`[fetch:create] ${result.error}`);
+    })
+    .catch((error) => {
+      console.error("[fetch:create]", error);
+    });
 }
 
 export async function fetchDueFeeds(label: string): Promise<{
@@ -132,31 +176,48 @@ export async function fetchDueFeeds(label: string): Promise<{
   newItems: number;
   errors: string[];
 }> {
+  if (dueFetchRunning) {
+    console.log(`[fetch:${label}] skipped (already running)`);
+    return { feeds: 0, newItems: 0, errors: [] };
+  }
+  dueFetchRunning = true;
+
   const started = Date.now();
-  const feeds = getDueFeeds();
+  try {
+    const due = getDueFeeds();
+    const feeds = due.slice(0, MAX_FEEDS_PER_TICK);
+    console.log(
+      `[fetch:${label}] due=${due.length} taking=${feeds.length}`,
+    );
 
-  let newItemsCount = 0;
-  const errors: string[] = [];
+    let newItemsCount = 0;
+    const errors: string[] = [];
 
-  for (const feed of feeds) {
-    const result = await fetchFeed(feed);
-    newItemsCount += result.newItems.length;
-    if (result.error) errors.push(result.error);
+    for (const [index, feed] of feeds.entries()) {
+      console.log(
+        `[fetch:${label}] ${index + 1}/${feeds.length} ${feed.title}`,
+      );
+      const result = await fetchFeed(feed);
+      newItemsCount += result.newItems.length;
+      if (result.error) errors.push(result.error);
+    }
+
+    const result = {
+      feeds: feeds.length,
+      newItems: newItemsCount,
+      errors,
+    };
+
+    console.log(
+      `[fetch:${label}] done feeds=${result.feeds} new=${result.newItems} ${Date.now() - started}ms`,
+    );
+
+    for (const error of result.errors) {
+      console.error(`[fetch:${label}] ${error}`);
+    }
+
+    return result;
+  } finally {
+    dueFetchRunning = false;
   }
-
-  const result = {
-    feeds: feeds.length,
-    newItems: newItemsCount,
-    errors,
-  };
-
-  console.log(
-    `[fetch:${label}] due=${result.feeds} new=${result.newItems} ${Date.now() - started}ms`,
-  );
-
-  for (const error of result.errors) {
-    console.error(`[fetch:${label}] ${error}`);
-  }
-
-  return result;
 }

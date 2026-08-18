@@ -11,7 +11,7 @@ import {
 } from "../db/feeds";
 import { encodeCursor } from "../db/utils";
 import { DEFAULT_LIMIT, MAX_LIMIT } from "../db/schema";
-import { fetchFeedMetadata } from "../services/feeds/fetcher";
+import { enqueueNewFeedFetch, fetchFeedMetadata } from "../services/feeds/fetcher";
 import { feedsToOpml } from "../services/feeds/opml";
 import {
   resolveWechatFeed,
@@ -113,6 +113,7 @@ function createFeedHandler({ body }: { body: any; }) {
 
   try {
     const created = createFeed(body);
+    enqueueNewFeedFetch(created);
     return { code: 0, message: "ok", data: created };
 
   } catch (error) {

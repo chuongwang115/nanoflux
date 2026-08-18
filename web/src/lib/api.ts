@@ -21,8 +21,10 @@ export type Item = {
   content: string | null;
   published_at: string;
   is_read: boolean;
-  /** Pass reason text when the item passed the AI filter; `null` means it did not pass (or filtering was off). */
-  filter_passed: string | null;
+  /** `1` when the item passed (or filtering was off); `0` when the AI rejected it. */
+  filter_passed: 0 | 1;
+  /** Pass reason text when the item passed the AI filter; `null` when rejected or filtering was off. */
+  passed_reason: string | null;
   feed_title: string;
 };
 
@@ -32,8 +34,9 @@ export type ItemsPage = {
   hasMore: boolean;
 };
 
-type RawItem = Omit<Item, "is_read"> & {
+type RawItem = Omit<Item, "is_read" | "filter_passed"> & {
   is_read: boolean | number;
+  filter_passed: boolean | number;
 };
 
 type ItemsApiResult = {
@@ -61,10 +64,11 @@ export function normalizeItem(raw: RawItem): Item {
   return {
     ...raw,
     is_read: Boolean(raw.is_read),
-    filter_passed:
-      raw.filter_passed === null || raw.filter_passed === undefined
+    filter_passed: Number(raw.filter_passed) === 1 ? 1 : 0,
+    passed_reason:
+      raw.passed_reason === null || raw.passed_reason === undefined
         ? null
-        : String(raw.filter_passed),
+        : String(raw.passed_reason),
   };
 }
 

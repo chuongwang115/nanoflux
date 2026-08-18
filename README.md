@@ -48,17 +48,17 @@ Run it on localhost next to your agent runtime; when `HOST=127.0.0.1`, API and M
 
 **News pipeline**
 
-- RSS/Atom feed management with auto-fetched metadata
-- Adaptive polling (5–30 min per feed) based on publish frequency
+- RSS/Atom feed management with auto-fetched metadata; newly created feeds are fetched immediately (no wait for the next cron tick)
+- Adaptive polling (5–30 min per feed) based on publish frequency; each minute tick processes at most 3 due feeds, and each feed processes at most 10 new items per run (backlog requeues in ~1 min)
 - Full-text article extraction when an RSS summary is too short; Google News article links are resolved to the publisher URL first; HTML is decoded with charset detection (Content-Type, BOM, meta/`<?xml` encoding, with UTF-8 / GB18030 fallback)
 - **AI content filter** — a single LLM prompt decides relevance. Empty prompt skips filtering (no LLM call)
-- Results stored in `filter_passed` (`null` when filtering is off or the item failed; a non-null string — possibly empty — when it passed, including fail-open pass-through)
+- Results stored in `filter_passed` (`1` on pass or when filtering is off; `0` on AI reject) and `passed_reason` (`null` when filtering is off or the item failed; a non-null string — possibly empty — when it passed, including fail-open pass-through)
 - Automatic cleanup of items older than 90 days
 
 **Operator UI (secondary)**
 
 - Minimal web console to verify ingestion, edit the filter prompt, manage feeds, and export Excel
-- Home list: **Unread** / **All**; **Unread** only shows filter-passed items (`filter_passed` non-null) and marks those as read in bulk; **All** still lists rejected items; passed items can show an AI reason badge
+- Home list: **Unread** / **All**; **Unread** only shows filter-passed items (`filter_passed = 1`) and marks those as read in bulk; **All** still lists rejected items; passed items can show an AI reason badge
 - Feed page (`/feeds`): preview, CRUD, sort, **add by keyword** (Google News RSS for the last 3 days; language inferred from the keyword), **subscribe WeChat 公众号**, **OPML export**
 - Filter page (`/filter`) and export page (`/export`) with optional scope (**all** / **passed** / **unmatched** when filtering is enabled)
 - PWA shell (installable, offline asset caching; manifest at `/manifest.webmanifest`), bilingual UI (English / Chinese), light/dark theme, adjustable font size
@@ -138,7 +138,7 @@ When `filter.json` has a non-empty `prompt`, new items are scored via LangChain 
 | `LLM_API_KEY` | Bearer token |
 | `LLM_MODEL_NAME` | Model ID (e.g. `gpt-4o-mini`) |
 
-If the prompt is empty, filtering is skipped (no LLM call) and items are stored with `filter_passed = null`. If a prompt is set but these variables are missing, or the API fails, items still pass through (`filter_passed` is stored as an empty string).
+If the prompt is empty, filtering is skipped (no LLM call) and items are stored with `filter_passed = 1` and `passed_reason = null`. If a prompt is set but these variables are missing, or the API fails, items still pass through (`filter_passed = 1`, `passed_reason` is stored as an empty string).
 
 ### WeChat official accounts (optional)
 
@@ -315,12 +315,12 @@ Query parameters for `GET /api/feeds`:
 | `POST` | `/api/items/:id/read` | Mark one item as read |
 | `POST` | `/api/items/read-all` | Mark all items up to a timestamp as read |
 
-Each item includes `content` (RSS summary or scraped full text) and `filter_passed`:
+Each item includes `content` (RSS summary or scraped full text), `filter_passed`, and `passed_reason`:
 
-| `filter_passed` | Meaning |
+| Field | Meaning |
 | --- | --- |
-| `null` | Filtering was off, or the AI rejected the item |
-| non-null string | Item passed while filtering was enabled (AI reason when present; `""` for fail-open pass-through) |
+| `filter_passed` | `1` — passed the AI filter, or filtering was off; `0` — AI rejected the item |
+| `passed_reason` | `null` when filtering was off or the AI rejected the item; non-null string when it passed (AI reason when present; `""` for fail-open pass-through) |
 
 Query parameters for `GET /api/items`:
 
@@ -355,13 +355,14 @@ Exported columns: published time, title, content, and original link.
 
 ## How Feed Fetching Works
 
-1. On startup and every minute (UTC cron), the scheduler loads feeds whose `next_fetched_at` is due.
-2. Each feed is fetched over HTTP with the `NanoFlux/1.0` user agent (15 s timeout) and parsed as RSS/Atom.
-3. Each entry gets a normalized GUID: MD5 hex of the article link (feeds that already provide an MD5 GUID are kept as-is). Per-feed known GUIDs are stored in the `last_guids` column; entries already seen by this feed or already present in the database (global GUID uniqueness) are skipped.
-4. For each new entry, Google News article links (`news.google.com/.../articles/...`) are resolved to the publisher URL (embedded token decode, or Google's batchexecute RPC) and the stored `link` is updated when resolution succeeds. If the RSS summary is shorter than ~80 word tokens (counted with `Intl.Segmenter` for Chinese and English — roughly ~200 Chinese characters or ~80 English words), the article page is fetched (desktop browser user agent, 15 s timeout, up to 3 concurrent requests), decoded with charset detection, and parsed with `@extractus/article-extractor` to fill in `content`. Already-known entries skip scraping.
-5. New items are deduplicated globally by `guid` (same article from different feeds is stored once), evaluated by the AI filter when a prompt is set (skipped when empty), and inserted into SQLite. On pass, `filter_passed` stores the AI reason (or `""` for fail-open); on fail or when filtering is off, it is `null`.
-6. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear.
-7. Daily at 01:00 UTC, items older than 90 days are deleted.
+1. On startup and every minute (UTC cron), the scheduler loads feeds whose `next_fetched_at` is due. Cron is registered before the startup fetch so a long first run cannot block later ticks; overlapping due-fetch runs are skipped.
+2. Each tick takes at most **3** due feeds. Creating a feed via REST or MCP also enqueues an immediate fetch when `next_fetched_at` is still unset.
+3. Each feed is fetched over HTTP with the `NanoFlux/1.0` user agent (15 s timeout) and parsed as RSS/Atom. Concurrent fetches of the same feed id are ignored.
+4. Each entry gets a normalized GUID: MD5 hex of the article link (feeds that already provide an MD5 GUID are kept as-is). Per-feed known GUIDs are stored in the `last_guids` column; entries already seen by this feed or already present in the database (global GUID uniqueness) are skipped.
+5. At most **10** unseen candidates are enriched and inserted per feed per run. For each of those, Google News article links (`news.google.com/.../articles/...`) are resolved to the publisher URL (embedded token decode, or Google's batchexecute RPC) and the stored `link` is updated when resolution succeeds. If the RSS summary is shorter than ~80 word tokens (counted with `Intl.Segmenter` for Chinese and English — roughly ~200 Chinese characters or ~80 English words), the article page is fetched (desktop browser user agent, 15 s timeout, up to 3 concurrent requests), decoded with charset detection, and parsed with `@extractus/article-extractor` to fill in `content`. Already-known entries skip scraping. Unprocessed backlog entries stay out of `last_guids` so the next catch-up run can pick them up.
+6. New items are deduplicated globally by `guid` (same article from different feeds is stored once), evaluated by the AI filter when a prompt is set (skipped when empty), and inserted into SQLite. On pass (or when filtering is off), `filter_passed = 1`; `passed_reason` stores the AI reason (or `""` for fail-open) when filtering was on and the item passed, otherwise `null`. On AI reject, `filter_passed = 0` and `passed_reason` is `null`.
+7. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear. If a feed still has unprocessed new items after the 10-item cap, the next fetch is scheduled in **1 minute** (catch-up) while keeping the adaptive interval for later.
+8. Daily at 01:00 UTC, items older than 90 days are deleted.
 
 Agents then consume this store through MCP / REST; they do not scrape feeds themselves.
 

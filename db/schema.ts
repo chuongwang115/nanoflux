@@ -46,11 +46,12 @@ export const items = sqliteTable(
     link: text("link").notNull(),
     content: text("content"),
     published_at: text("published_at").notNull(),
-    is_read: integer("is_read").notNull().default(0),
-    filter_passed: text("filter_passed"),
     created_at: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),
+    filter_passed: integer("filter_passed").notNull().default(0),
+    passed_reason: text("passed_reason"),
+    is_read: integer("is_read").notNull().default(0),
   },
   (table) => [
     unique().on(table.guid),

@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { createFeed } from "../../db/feeds";
-import { fetchFeedMetadata } from "../../services/feeds/fetcher";
+import { enqueueNewFeedFetch, fetchFeedMetadata } from "../../services/feeds/fetcher";
 import { buildKeywordGoogleNewsFeedUrl } from "../../services/google-news";
 
 export function registerAddFeedByKeyword(server: McpServer): void {
@@ -41,6 +41,7 @@ export function registerAddFeedByKeyword(server: McpServer): void {
           url: feedUrl,
           description,
         });
+        enqueueNewFeedFetch(feed);
 
         return {
           content: [

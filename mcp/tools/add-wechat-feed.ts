@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { createFeed } from "../../db/feeds";
+import { enqueueNewFeedFetch } from "../../services/feeds/fetcher";
 import {
   resolveWechatFeed,
   searchWechatAccounts,
@@ -124,6 +125,7 @@ export function registerAddWechatFeed(server: McpServer): void {
           url: resolved.url,
           description: resolved.description,
         });
+        enqueueNewFeedFetch(feed);
 
         return {
           content: [

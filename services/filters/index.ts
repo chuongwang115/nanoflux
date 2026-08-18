@@ -2,13 +2,14 @@ import { getFilterPrompt } from "../../filter";
 import { applyAiFilter } from "./ai";
 
 type ItemFilterResult = {
-  filter_passed: string | null;
+  filter_passed: 0 | 1;
+  passed_reason: string | null;
 };
 
 /**
  * Apply the single AI filter.
- * Empty prompt → skip filtering (pass-through, `filter_passed` stays null).
- * Non-empty prompt → LLM verdict; pass stores reason text, fail leaves null.
+ * Empty prompt → skip filtering (pass-through, `filter_passed = 1`, `passed_reason` null).
+ * Non-empty prompt → LLM verdict; pass stores reason text, fail leaves reason null.
  */
 async function applyItemFilter(
   title: string,
@@ -16,16 +17,17 @@ async function applyItemFilter(
 ): Promise<ItemFilterResult> {
   const prompt = getFilterPrompt().trim();
   if (!prompt) {
-    return { filter_passed: null };
+    return { filter_passed: 1, passed_reason: null };
   }
 
   const result = await applyAiFilter(title, content, prompt);
   if (!result.passed) {
-    return { filter_passed: null };
+    return { filter_passed: 0, passed_reason: null };
   }
 
   return {
-    filter_passed: result.reason?.trim() || "",
+    filter_passed: 1,
+    passed_reason: result.reason?.trim() || "",
   };
 }
 

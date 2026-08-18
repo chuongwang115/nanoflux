@@ -4,8 +4,6 @@ import {
   eq,
   gte,
   inArray,
-  isNotNull,
-  isNull,
   lt,
   lte,
   or,
@@ -23,11 +21,8 @@ function buildPassedFilter(filterPassed?: number) {
     return filterPassed === 0 ? sql`1 = 0` : undefined;
   }
 
-  if (filterPassed === 0) {
-    return isNull(items.filter_passed);
-  }
-  if (filterPassed === 1) {
-    return isNotNull(items.filter_passed);
+  if (filterPassed === 0 || filterPassed === 1) {
+    return eq(items.filter_passed, filterPassed);
   }
   return undefined;
 }
@@ -93,6 +88,7 @@ export function getItems(options?: {
         published_at: items.published_at,
         is_read: items.is_read,
         filter_passed: items.filter_passed,
+        passed_reason: items.passed_reason,
         created_at: items.created_at,
         feed_title: feeds.title,
       })
@@ -165,7 +161,8 @@ export function addItems(
     link: string;
     content: string | null;
     published_at: string;
-    filter_passed: string | null;
+    filter_passed: 0 | 1;
+    passed_reason: string | null;
   }[],
 ): any[] {
 
@@ -186,7 +183,7 @@ export function addItems(
       if (existingGuids.has(newItem.guid)) continue;
 
       const id = newItemId();
-      const { filter_passed } = newItem;
+      const { filter_passed, passed_reason } = newItem;
 
       const inserted = db.insert(items)
         .values({
@@ -199,6 +196,7 @@ export function addItems(
           published_at: newItem.published_at,
           is_read: 0,
           filter_passed,
+          passed_reason,
         })
         .onConflictDoNothing({ target: items.guid })
         .returning()
