@@ -13,6 +13,7 @@ import { registerGetUnreadItems } from "./tools/get-unread-items";
 import { registerGetFilterPrompt } from "./tools/get-filter-prompt";
 import { registerUpdateFilterPrompt } from "./tools/update-filter-prompt";
 import { registerSendTelegramMessage } from "./tools/send-telegram-message";
+import { registerSendTelegramDigest } from "./tools/send-telegram-digest";
 
 function registerMcpTools(server: McpServer): void {
   registerGetCurrentTime(server);
@@ -27,6 +28,7 @@ function registerMcpTools(server: McpServer): void {
   registerGetFilterPrompt(server);
   registerUpdateFilterPrompt(server);
   registerSendTelegramMessage(server);
+  registerSendTelegramDigest(server);
 }
 
 export const routes = mcp({

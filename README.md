@@ -2,7 +2,7 @@
 
 **News Service for AI Agents**
 
-NanoFlux is a local news ingestion and query service built for AI agents. It continuously fetches RSS/Atom (and related) sources, extracts article text, optionally scores relevance with an LLM, and exposes the result over **MCP** and a small REST API so agents can subscribe to sources, pull unread news, and manage the filter prompt.
+NanoFlux is a local news ingestion and query service built for AI agents. It continuously fetches RSS/Atom (and related) sources, extracts article text, optionally scores relevance with an LLM, and exposes the result over **MCP** and a small REST API so agents can subscribe to sources, pull unread news, manage the filter prompt, and optionally push headlines or HTML daily reports to a Telegram channel.
 
 A minimal web UI is included for operators to inspect feeds, tweak the filter, and export data — not as a full-featured RSS reader.
 
@@ -33,7 +33,7 @@ Typical RSS readers optimize for human browsing. NanoFlux optimizes for **agent 
 1. **Ingest** — adaptive polling of RSS/Atom, Google News keyword feeds, and WeChat official accounts
 2. **Normalize** — GUID dedupe, Google News link resolution, full-text extraction when the feed summary is thin
 3. **Filter** — optional single LLM prompt that marks relevant items for agents
-4. **Serve** — MCP tools and REST endpoints so agents can fetch news by time window, consume unread items (marking them read), and manage feeds / the filter prompt
+4. **Serve** — MCP tools and REST endpoints so agents can fetch news by time window, consume unread items (marking them read), manage feeds / the filter prompt, and push Telegram headlines or HTML digests
 
 Run it on localhost next to your agent runtime; when `HOST=127.0.0.1`, API and MCP accept only local clients.
 
@@ -41,7 +41,7 @@ Run it on localhost next to your agent runtime; when `HOST=127.0.0.1`, API and M
 
 **For agents (primary)**
 
-- MCP server at `/mcp` — feed CRUD, keyword / WeChat subscribe, time-ranged news, unread consumption, filter prompt read/write, Telegram channel push, current time
+- MCP server at `/mcp` — feed CRUD, keyword / WeChat subscribe, time-ranged news, unread consumption, filter prompt read/write, Telegram channel push (headline or daily digest), current time
 - REST API with the same data model (`{ code, message, data }` JSON)
 - Local-first binding: `HOST=127.0.0.1` restricts API and MCP to localhost
 - Persistent SQLite store with cursor pagination so agents can page through large result sets
@@ -153,14 +153,30 @@ Without these variables, WeChat search/subscribe endpoints and MCP tools return 
 
 ### Telegram channel (optional)
 
-Post messages to a Telegram channel via MCP (`send_telegram_message`). Create a bot with [@BotFather](https://t.me/BotFather), add it as an **admin** of the channel, then set:
+Post to a Telegram channel via MCP. Create a bot with [@BotFather](https://t.me/BotFather), add it as an **admin** of the channel, then set:
 
 | Variable | Description |
 | --- | --- |
 | `TELEGRAM_BOT_TOKEN` | Bot token from BotFather |
 | `TELEGRAM_CHANNEL_ID` | Channel username (`@mychannel`) or numeric id (`-100...`) |
 
-Without these variables, `send_telegram_message` returns a configuration error.
+Without these variables, both Telegram MCP tools return a configuration error.
+
+| Tool | When to use | Payload |
+| --- | --- | --- |
+| `send_telegram_message` | Single headline + link (optional country flag) | `title`, `url`, optional `country`, `disable_notification` |
+| `send_telegram_digest` | Daily-report / digest | `title` (always bold), `content` (HTML written by the agent), optional `disable_notification` |
+
+`send_telegram_digest` sends `parse_mode=HTML`. The title is HTML-escaped and wrapped in `<b>`. The body is agent-authored HTML (do not dump raw articles). Telegram-native tags pass through; common layout tags are normalized; other tags are stripped. Combined title + body must be ≤ 4096 characters.
+
+| Agent HTML | In the channel |
+| --- | --- |
+| `b` / `strong`, `i` / `em`, `u`, `s`, `a href`, `code`, `pre`, `blockquote` | Rendered as Telegram HTML |
+| `br` | Line break |
+| `p`, `div` | Paragraph / line breaks |
+| `h1`–`h6` | Bold line |
+| `ul` / `ol` / `li` | Bullet lines (`• `) |
+| other tags (including `script` / `style`) | Removed; inner text kept |
 
 ### Proxy (optional)
 
@@ -256,7 +272,7 @@ Add to your MCP client config (e.g. Cursor or Claude Desktop):
 2. Optionally set relevance criteria with `update_filter_prompt`
 3. Call `get_unread_news` (or `get_news`) on a schedule; page with `hasMore` / `nextCursor` until caught up
 4. Use returned `title`, `content`, `link`, and `published_at` in your agent workflow
-5. Optionally push a digest or alert to a Telegram channel with `send_telegram_message` (requires bot credentials)
+5. Optionally push a headline + URL with `send_telegram_message`, or compose an HTML daily report and push it with `send_telegram_digest` (requires bot credentials)
 
 ### Available tools
 
@@ -276,6 +292,7 @@ News query tools return stored items from the database. Each item includes `id`,
 | `update_filter_prompt` | Set the AI filter prompt. Pass an empty string to disable filtering. Applies to newly fetched items only |
 | `get_current_time` | Return the server's current UTC time |
 | `send_telegram_message` | Post a title + URL to the configured Telegram channel (`title`, `url`; optional `country`, `disable_notification`). Title is bold (HTML). Optional `country` is an ISO 3166-1 alpha-2 code (e.g. `CN`); shown as a flag emoji before the title. Omit / null / empty skips the icon. Message is `[flag ]<b>title</b>\\nurl`. Target is always `TELEGRAM_CHANNEL_ID`; bot must be a channel admin |
+| `send_telegram_digest` | Post a daily-report message (`title`, HTML `content`; optional `disable_notification`). Title is bold and escaped; `content` is agent-written HTML (`parse_mode=HTML`). See [Telegram channel](#telegram-channel-optional) for tag mapping and the 4096-character limit. Same env as `send_telegram_message` |
 
 Typical WeChat flow for agents: call `add_wechat_feed` with a `query` (it always searches first). If multiple accounts match, call again with the chosen `fakeid`.
 
