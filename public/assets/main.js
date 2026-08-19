@@ -1,6 +1,6 @@
-// ../nanoflux/node_modules/esm-env/true.js
+// node_modules/esm-env/true.js
 var true_default = true;
-// ../nanoflux/node_modules/svelte/src/internal/shared/utils.js
+// node_modules/svelte/src/internal/shared/utils.js
 var is_array = Array.isArray;
 var index_of = Array.prototype.indexOf;
 var includes = Array.prototype.includes;
@@ -50,7 +50,7 @@ function to_array(value, n) {
   return array;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/constants.js
+// node_modules/svelte/src/internal/client/constants.js
 var DERIVED = 1 << 1;
 var EFFECT = 1 << 2;
 var RENDER_EFFECT = 1 << 3;
@@ -96,7 +96,7 @@ var ELEMENT_NODE = 1;
 var TEXT_NODE = 3;
 var COMMENT_NODE = 8;
 
-// ../nanoflux/node_modules/svelte/src/internal/shared/errors.js
+// node_modules/svelte/src/internal/shared/errors.js
 function invariant_violation(message) {
   if (true_default) {
     const error = new Error(`invariant_violation
@@ -120,7 +120,7 @@ https://svelte.dev/e/lifecycle_outside_component`);
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/errors.js
+// node_modules/svelte/src/internal/client/errors.js
 function async_derived_orphan() {
   if (true_default) {
     const error = new Error(`async_derived_orphan
@@ -320,7 +320,7 @@ https://svelte.dev/e/svelte_boundary_reset_onerror`);
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/constants.js
+// node_modules/svelte/src/constants.js
 var EACH_ITEM_REACTIVE = 1;
 var EACH_INDEX_REACTIVE = 1 << 1;
 var EACH_IS_CONTROLLED = 1 << 2;
@@ -351,7 +351,7 @@ var NAMESPACE_HTML = "http://www.w3.org/1999/xhtml";
 var NAMESPACE_SVG = "http://www.w3.org/2000/svg";
 var ATTACHMENT_KEY = "@attach";
 
-// ../nanoflux/node_modules/svelte/src/internal/client/warnings.js
+// node_modules/svelte/src/internal/client/warnings.js
 var bold = "font-weight: bold";
 var normal = "font-weight: normal";
 function await_reactivity_loss(name) {
@@ -445,7 +445,7 @@ https://svelte.dev/e/svelte_boundary_reset_noop`, bold, normal);
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/hydration.js
+// node_modules/svelte/src/internal/client/dom/hydration.js
 var hydrating = false;
 function set_hydrating(value) {
   hydrating = value;
@@ -508,7 +508,7 @@ function read_hydration_instruction(node) {
   return node.data;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/reactivity/equality.js
+// node_modules/svelte/src/internal/client/reactivity/equality.js
 function equals(value) {
   return value === this.v;
 }
@@ -519,7 +519,7 @@ function safe_equals(value) {
   return !safe_not_equal(value, this.v);
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/flags/index.js
+// node_modules/svelte/src/internal/flags/index.js
 var async_mode_flag = false;
 var legacy_mode_flag = false;
 var tracing_mode_flag = false;
@@ -527,7 +527,7 @@ function enable_legacy_mode_flag() {
   legacy_mode_flag = true;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dev/tracing.js
+// node_modules/svelte/src/internal/client/dev/tracing.js
 var tracing_expressions = null;
 function tag(source, label) {
   source.label = label;
@@ -539,7 +539,7 @@ function tag_proxy(value, label) {
   return value;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/shared/dev.js
+// node_modules/svelte/src/internal/shared/dev.js
 function get_error(label) {
   const error = new Error;
   const stack = get_stack();
@@ -591,7 +591,7 @@ function invariant(condition, message) {
     invariant_violation(message);
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/context.js
+// node_modules/svelte/src/internal/client/context.js
 var component_context = null;
 function set_component_context(context) {
   component_context = context;
@@ -665,7 +665,7 @@ function get_parent_context(component_context2) {
   return null;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/task.js
+// node_modules/svelte/src/internal/client/dom/task.js
 var micro_tasks = [];
 function run_micro_tasks() {
   var tasks = micro_tasks;
@@ -688,7 +688,7 @@ function flush_tasks() {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/error-handling.js
+// node_modules/svelte/src/internal/client/error-handling.js
 var adjustments = new WeakMap;
 function handle_error(error) {
   var effect = active_effect;
@@ -764,7 +764,7 @@ function apply_adjustments(error) {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/reactivity/status.js
+// node_modules/svelte/src/internal/client/reactivity/status.js
 var STATUS_MASK = ~(DIRTY | MAYBE_DIRTY | CLEAN);
 function set_signal_status(signal, status) {
   signal.f = signal.f & STATUS_MASK | status;
@@ -777,7 +777,7 @@ function update_derived_status(derived) {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/reactivity/utils.js
+// node_modules/svelte/src/internal/client/reactivity/utils.js
 function clear_marked(deps) {
   if (deps === null)
     return;
@@ -799,7 +799,7 @@ function defer_effect(effect, dirty_effects, maybe_dirty_effects) {
   set_signal_status(effect, CLEAN);
 }
 
-// ../nanoflux/node_modules/svelte/src/store/utils.js
+// node_modules/svelte/src/store/utils.js
 function subscribe_to_store(store, run2, invalidate) {
   if (store == null) {
     run2(undefined);
@@ -811,7 +811,7 @@ function subscribe_to_store(store, run2, invalidate) {
   return unsub.unsubscribe ? () => unsub.unsubscribe() : unsub;
 }
 
-// ../nanoflux/node_modules/svelte/src/store/shared/index.js
+// node_modules/svelte/src/store/shared/index.js
 var subscriber_queue = [];
 function writable(value, start = noop) {
   let stop = null;
@@ -860,7 +860,7 @@ function get(store) {
   return value;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/reactivity/store.js
+// node_modules/svelte/src/internal/client/reactivity/store.js
 var legacy_is_updating_store = false;
 var is_store_binding = false;
 var IS_UNMOUNTED = Symbol("unmounted");
@@ -922,7 +922,7 @@ function capture_store_binding(fn) {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/misc.js
+// node_modules/svelte/src/internal/client/dom/elements/misc.js
 function autofocus(dom, value) {
   if (value) {
     const body = document.body;
@@ -955,7 +955,7 @@ function add_form_reset_listener() {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/bindings/shared.js
+// node_modules/svelte/src/internal/client/dom/elements/bindings/shared.js
 function without_reactive_context(fn) {
   var previous_reaction = active_reaction;
   var previous_effect = active_effect;
@@ -982,7 +982,7 @@ function listen_to_event_and_reset_event(element, event, handler, on_reset = han
   add_form_reset_listener();
 }
 
-// ../nanoflux/node_modules/svelte/src/reactivity/create-subscriber.js
+// node_modules/svelte/src/reactivity/create-subscriber.js
 function createSubscriber(start) {
   let subscribers = 0;
   let version = source(0);
@@ -1013,7 +1013,7 @@ function createSubscriber(start) {
   };
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/blocks/boundary.js
+// node_modules/svelte/src/internal/client/dom/blocks/boundary.js
 var flags = EFFECT_TRANSPARENT | EFFECT_PRESERVED;
 function boundary(node, props, children, transform_error) {
   new Boundary(node, props, children, transform_error);
@@ -1315,7 +1315,7 @@ class Boundary {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/reactivity/async.js
+// node_modules/svelte/src/internal/client/reactivity/async.js
 function flatten(blockers, sync, async, fn) {
   const d = is_runes() ? derived : derived_safe_equal;
   var pending = blockers.filter((b) => !b.settled);
@@ -1408,7 +1408,7 @@ function increment_pending() {
   };
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/reactivity/deriveds.js
+// node_modules/svelte/src/internal/client/reactivity/deriveds.js
 var reactivity_loss_tracker = null;
 function set_reactivity_loss_tracker(v) {
   reactivity_loss_tracker = v;
@@ -1663,7 +1663,7 @@ function unfreeze_derived_effects(derived2) {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/reactivity/batch.js
+// node_modules/svelte/src/internal/client/reactivity/batch.js
 var first_batch = null;
 var last_batch = null;
 var current_batch = null;
@@ -2366,7 +2366,7 @@ function reset_all(effect) {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/reactivity/sources.js
+// node_modules/svelte/src/internal/client/reactivity/sources.js
 var eager_effects = new Set;
 var old_values = new Map;
 function set_eager_effects(v) {
@@ -2529,7 +2529,7 @@ function mark_reactions(signal, status, updated_during_traversal) {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/proxy.js
+// node_modules/svelte/src/internal/client/proxy.js
 var regex_is_valid_identifier = /^[a-zA-Z_$][a-zA-Z_$0-9]*$/;
 function proxy(value) {
   if (typeof value !== "object" || value === null || STATE_SYMBOL in value) {
@@ -2795,7 +2795,7 @@ function inspectable_array(array) {
   });
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dev/equality.js
+// node_modules/svelte/src/internal/client/dev/equality.js
 function init_array_prototype_warnings() {
   const array_prototype2 = Array.prototype;
   const cleanup = Array.__svelte_cleanup;
@@ -2846,7 +2846,7 @@ function init_array_prototype_warnings() {
   };
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/operations.js
+// node_modules/svelte/src/internal/client/dom/operations.js
 var $window;
 var $document;
 var is_firefox;
@@ -2979,7 +2979,7 @@ function merge_text_nodes(text) {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/reactivity/effects.js
+// node_modules/svelte/src/internal/client/reactivity/effects.js
 function validate_effect(rune) {
   if (active_effect === null) {
     if (active_reaction === null) {
@@ -3331,10 +3331,10 @@ function move_effect(effect2, fragment) {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/legacy.js
+// node_modules/svelte/src/internal/client/legacy.js
 var captured_signals = null;
 
-// ../nanoflux/node_modules/svelte/src/internal/client/runtime.js
+// node_modules/svelte/src/internal/client/runtime.js
 var is_updating_effect = false;
 var is_destroying_effect = false;
 function set_is_destroying_effect(value) {
@@ -3779,7 +3779,7 @@ function deep_read(value, visited = new Set) {
     }
   }
 }
-// ../nanoflux/node_modules/svelte/src/utils.js
+// node_modules/svelte/src/utils.js
 function is_capture_event(name) {
   return name.endsWith("capture") && name !== "gotpointercapture" && name !== "lostpointercapture";
 }
@@ -3907,9 +3907,9 @@ var RAW_TEXT_ELEMENTS = ["textarea", "script", "style", "title"];
 function is_raw_text_element(name) {
   return RAW_TEXT_ELEMENTS.includes(name);
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/dev/css.js
+// node_modules/svelte/src/internal/client/dev/css.js
 var all_styles = new Map;
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/events.js
+// node_modules/svelte/src/internal/client/dom/elements/events.js
 var event_symbol = Symbol("events");
 var all_registered_events = new Set;
 var root_event_handles = new Set;
@@ -4029,7 +4029,7 @@ function handle_event_propagation(event2) {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/reconciler.js
+// node_modules/svelte/src/internal/client/dom/reconciler.js
 var policy = globalThis?.window?.trustedTypes && /* @__PURE__ */ globalThis.window.trustedTypes.createPolicy("svelte-trusted-html", {
   createHTML: (html) => {
     return html;
@@ -4044,7 +4044,7 @@ function create_fragment_from_html(html) {
   return elem.content;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/template.js
+// node_modules/svelte/src/internal/client/dom/template.js
 function assign_nodes(start, end) {
   var effect2 = active_effect;
   if (effect2.nodes === null) {
@@ -4144,7 +4144,7 @@ function append(anchor, dom) {
   anchor.before(dom);
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/render.js
+// node_modules/svelte/src/internal/client/render.js
 var should_intro = true;
 function set_should_intro(value) {
   should_intro = value;
@@ -4296,7 +4296,7 @@ function unmount(component, options) {
   }
   return Promise.resolve();
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/blocks/branches.js
+// node_modules/svelte/src/internal/client/dom/blocks/branches.js
 class BranchManager {
   anchor;
   #batches = new Map;
@@ -4417,7 +4417,7 @@ class BranchManager {
     }
   }
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/blocks/if.js
+// node_modules/svelte/src/internal/client/dom/blocks/if.js
 function if_block(node, fn, elseif = false) {
   var marker;
   if (hydrating) {
@@ -4452,9 +4452,9 @@ function if_block(node, fn, elseif = false) {
     }
   }, flags2);
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/blocks/key.js
+// node_modules/svelte/src/internal/client/dom/blocks/key.js
 var NAN = Symbol("NaN");
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/blocks/each.js
+// node_modules/svelte/src/internal/client/dom/blocks/each.js
 function index(_, i) {
   return i;
 }
@@ -4483,7 +4483,7 @@ function pause_effects(state2, to_destroy, controlled_anchor) {
     }, false);
   }
   if (remaining === 0) {
-    var fast_path = transitions.length === 0 && controlled_anchor !== null;
+    var fast_path = transitions.length === 0 && controlled_anchor !== null && state2.pending.size === 0;
     if (fast_path) {
       var anchor = controlled_anchor;
       var parent_node = anchor.parentNode;
@@ -4892,7 +4892,7 @@ function validate_each_keys(array, key_fn) {
     keys.set(key, i);
   }
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/blocks/snippet.js
+// node_modules/svelte/src/internal/client/dom/blocks/snippet.js
 function snippet(node, get_snippet, ...args) {
   var branches = new BranchManager(node);
   block(() => {
@@ -4903,7 +4903,7 @@ function snippet(node, get_snippet, ...args) {
     branches.ensure(snippet2, snippet2 && ((anchor) => snippet2(anchor, ...args)));
   }, EFFECT_TRANSPARENT);
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/timing.js
+// node_modules/svelte/src/internal/client/timing.js
 var now = true_default ? () => performance.now() : () => Date.now();
 var raf = {
   tick: (_) => (true_default ? requestAnimationFrame : noop)(_),
@@ -4911,13 +4911,13 @@ var raf = {
   tasks: new Set
 };
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/transitions.js
+// node_modules/svelte/src/internal/client/dom/elements/transitions.js
 var animation_effect_override = null;
 function set_animation_effect_override(v) {
   animation_effect_override = v;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/blocks/svelte-element.js
+// node_modules/svelte/src/internal/client/dom/blocks/svelte-element.js
 function element(node, get_tag, is_svg, render_fn, get_namespace, location) {
   let was_hydrating = hydrating;
   if (hydrating) {
@@ -4994,7 +4994,7 @@ function element(node, get_tag, is_svg, render_fn, get_namespace, location) {
     set_hydrate_node(anchor);
   }
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/attachments.js
+// node_modules/svelte/src/internal/client/dom/elements/attachments.js
 function attach(node, get_fn) {
   var fn = undefined;
   var e;
@@ -5012,7 +5012,7 @@ function attach(node, get_fn) {
     }
   });
 }
-// ../nanoflux/node_modules/clsx/dist/clsx.mjs
+// node_modules/clsx/dist/clsx.mjs
 function r(e) {
   var t, f, n = "";
   if (typeof e == "string" || typeof e == "number")
@@ -5033,7 +5033,7 @@ function clsx() {
   return n;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/shared/attributes.js
+// node_modules/svelte/src/internal/shared/attributes.js
 var replacements = {
   translate: new Map([
     [true, "yes"],
@@ -5168,7 +5168,7 @@ function to_style(value, styles) {
   return value == null ? null : String(value);
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/class.js
+// node_modules/svelte/src/internal/client/dom/elements/class.js
 function set_class(dom, is_html, value, hash2, prev_classes, next_classes) {
   var prev = dom[CLASS_CACHE];
   if (hydrating || prev !== value || prev === undefined) {
@@ -5194,7 +5194,7 @@ function set_class(dom, is_html, value, hash2, prev_classes, next_classes) {
   return next_classes;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/style.js
+// node_modules/svelte/src/internal/client/dom/elements/style.js
 function update_styles(dom, prev = {}, next2, priority) {
   for (var key in next2) {
     var value = next2[key];
@@ -5230,7 +5230,7 @@ function set_style(dom, value, prev_styles, next_styles) {
   return next_styles;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/bindings/select.js
+// node_modules/svelte/src/internal/client/dom/elements/bindings/select.js
 function select_option(select, value, mounting = false) {
   if (select.multiple) {
     if (value == undefined) {
@@ -5279,7 +5279,7 @@ function get_option_value(option) {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/attributes.js
+// node_modules/svelte/src/internal/client/dom/elements/attributes.js
 var CLASS = Symbol("class");
 var STYLE = Symbol("style");
 var IS_CUSTOM_ELEMENT = Symbol("is custom element");
@@ -5567,7 +5567,7 @@ function srcset_url_equal(element2, srcset) {
   var urls = split_srcset(srcset);
   return urls.length === element_urls.length && urls.every(([url, width], i) => width === element_urls[i][1] && (src_url_equal(element_urls[i][0], url) || src_url_equal(url, element_urls[i][0])));
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/bindings/input.js
+// node_modules/svelte/src/internal/client/dom/elements/bindings/input.js
 function bind_value(input, get3, set2 = get3) {
   var batches = new WeakSet;
   listen_to_event_and_reset_event(input, "input", async (is_reset) => {
@@ -5634,7 +5634,7 @@ function is_numberlike_input(input) {
 function to_number(value) {
   return value === "" ? null : +value;
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/bindings/size.js
+// node_modules/svelte/src/internal/client/dom/elements/bindings/size.js
 class ResizeObserverSingleton {
   #listeners = new WeakMap;
   #observer;
@@ -5668,7 +5668,7 @@ class ResizeObserverSingleton {
     }));
   }
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/bindings/this.js
+// node_modules/svelte/src/internal/client/dom/elements/bindings/this.js
 function is_bound_this(bound_value, element_or_component) {
   return bound_value === element_or_component || bound_value?.[STATE_SYMBOL] === element_or_component;
 }
@@ -5709,7 +5709,7 @@ function bind_this(element_or_component = {}, update2, get_value, get_parts) {
   });
   return element_or_component;
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/legacy/lifecycle.js
+// node_modules/svelte/src/internal/client/dom/legacy/lifecycle.js
 function init(immutable = false) {
   const context = component_context;
   const callbacks = context.l.u;
@@ -5764,7 +5764,7 @@ function observe_all(context, props) {
   }
   props();
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/reactivity/props.js
+// node_modules/svelte/src/internal/client/reactivity/props.js
 var rest_props_handler = {
   get(target, key) {
     if (target.exclude.has(key))
@@ -5971,7 +5971,7 @@ function prop(props, key, flags2, fallback) {
     return get2(d);
   };
 }
-// ../nanoflux/node_modules/svelte/src/legacy/legacy-client.js
+// node_modules/svelte/src/legacy/legacy-client.js
 function createClassComponent(options) {
   return new Svelte4Component(options);
 }
@@ -6049,7 +6049,7 @@ class Svelte4Component {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/custom-element.js
+// node_modules/svelte/src/internal/client/dom/elements/custom-element.js
 var SvelteElement;
 if (typeof HTMLElement === "function") {
   SvelteElement = class extends HTMLElement {
@@ -6225,7 +6225,7 @@ function get_custom_elements_slots(element2) {
   });
   return result;
 }
-// ../nanoflux/node_modules/svelte/src/index-client.js
+// node_modules/svelte/src/index-client.js
 if (true_default) {
   let throw_rune_error = function(rune) {
     if (!(rune in globalThis)) {
@@ -6270,17 +6270,17 @@ function init_update_callbacks(context) {
   return l.u ??= { a: [], b: [], m: [] };
 }
 
-// ../nanoflux/node_modules/svelte/src/version.js
+// node_modules/svelte/src/version.js
 var PUBLIC_VERSION = "5";
 
-// ../nanoflux/node_modules/svelte/src/internal/disclose-version.js
+// node_modules/svelte/src/internal/disclose-version.js
 if (typeof window !== "undefined") {
   ((window.__svelte ??= {}).v ??= new Set).add(PUBLIC_VERSION);
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/flags/legacy.js
+// node_modules/svelte/src/internal/flags/legacy.js
 enable_legacy_mode_flag();
-// ../nanoflux/web/src/lib/router.ts
+// web/src/lib/router.ts
 var scrollByRoute = new Map;
 var route = writable("/");
 var SUBPAGE_PATH_SUFFIXES = ["/feeds/", "/filter/", "/export/"];
@@ -6370,7 +6370,7 @@ function navClick(next2) {
   };
 }
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/defaultAttributes.js
+// node_modules/@lucide/svelte/dist/defaultAttributes.js
 var defaultAttributes = {
   xmlns: "http://www.w3.org/2000/svg",
   width: 24,
@@ -6384,7 +6384,7 @@ var defaultAttributes = {
 };
 var defaultAttributes_default = defaultAttributes;
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/utils/hasA11yProp.js
+// node_modules/@lucide/svelte/dist/utils/hasA11yProp.js
 var hasA11yProp = (props) => {
   for (const prop2 in props) {
     if (prop2.startsWith("aria-") || prop2 === "role" || prop2 === "title") {
@@ -6394,11 +6394,11 @@ var hasA11yProp = (props) => {
   return false;
 };
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/context.js
+// node_modules/@lucide/svelte/dist/context.js
 var LucideContext = Symbol("lucide-context");
 var getLucideContext = () => getContext(LucideContext);
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/Icon.svelte
+// node_modules/@lucide/svelte/dist/Icon.svelte
 var rest_excludes = new Set([
   "$$slots",
   "$$events",
@@ -6469,10 +6469,10 @@ function Icon($$anchor, $$props) {
 if (undefined) {}
 var Icon_default = Icon;
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/a-arrow-down.svelte
+// node_modules/@lucide/svelte/dist/icons/a-arrow-down.svelte
 var rest_excludes2 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root2 = from_html(`<!--
-@lucide/svelte v1.27.0 - ISC
+@lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -6512,10 +6512,10 @@ function A_arrow_down($$anchor, $$props) {
 }
 if (undefined) {}
 var a_arrow_down_default = A_arrow_down;
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/a-arrow-up.svelte
+// node_modules/@lucide/svelte/dist/icons/a-arrow-up.svelte
 var rest_excludes3 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root3 = from_html(`<!--
-@lucide/svelte v1.27.0 - ISC
+@lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -6555,7 +6555,7 @@ function A_arrow_up($$anchor, $$props) {
 }
 if (undefined) {}
 var a_arrow_up_default = A_arrow_up;
-// ../nanoflux/web/src/lib/fontSize.svelte.ts
+// web/src/lib/fontSize.svelte.ts
 var STORAGE_KEY = "nanoflux-font-size";
 var MIGRATION_KEY = "nanoflux-font-size-v2";
 function migrateStoredFontSize() {
@@ -6620,7 +6620,7 @@ function toggleFontSize() {
   }
 }
 
-// ../nanoflux/shared/manifest.ts
+// shared/manifest.ts
 var PWA_META_DESCRIPTION = {
   zh: "面向 AI Agent 的新闻服务",
   en: "News Service for AI Agents"
@@ -6629,7 +6629,7 @@ function manifestHref(locale) {
   return `/manifest.webmanifest?locale=${locale}`;
 }
 
-// ../nanoflux/web/src/lib/i18n/messages.ts
+// web/src/lib/i18n/messages.ts
 var messages = {
   zh: {
     "items.latest": "最新资讯",
@@ -6813,7 +6813,7 @@ var messages = {
   }
 };
 
-// ../nanoflux/web/src/lib/locale.ts
+// web/src/lib/locale.ts
 function applyDocumentLocale(locale) {
   if (typeof document === "undefined")
     return;
@@ -6824,7 +6824,7 @@ function applyDocumentLocale(locale) {
     manifest.href = manifestHref(locale);
 }
 
-// ../nanoflux/web/src/lib/locale.svelte.ts
+// web/src/lib/locale.svelte.ts
 var STORAGE_KEY2 = "nanoflux-locale";
 function readStored2() {
   try {
@@ -6868,7 +6868,7 @@ function tf(key2, vars) {
   return Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, String(v)), t(key2));
 }
 
-// ../nanoflux/web/src/components/buttons/FontSizeToggle.svelte
+// web/src/components/buttons/FontSizeToggle.svelte
 var root4 = from_html(`
     <!>
   `, 1);
@@ -6926,7 +6926,7 @@ if (undefined) {}
 var FontSizeToggle_default = FontSizeToggle;
 delegate(["click"]);
 
-// ../nanoflux/web/src/components/buttons/LanguageToggle.svelte
+// web/src/components/buttons/LanguageToggle.svelte
 var root5 = from_html(`
 
 <button type="button" class="inline-flex min-w-[2rem] cursor-pointer items-center justify-center rounded-md p-1.5 text-xs font-medium text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"> </button>`, 1);
@@ -6956,10 +6956,10 @@ if (undefined) {}
 var LanguageToggle_default = LanguageToggle;
 delegate(["click"]);
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/moon.svelte
+// node_modules/@lucide/svelte/dist/icons/moon.svelte
 var rest_excludes4 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root6 = from_html(`<!--
-@lucide/svelte v1.27.0 - ISC
+@lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -7001,10 +7001,10 @@ function Moon($$anchor, $$props) {
 }
 if (undefined) {}
 var moon_default = Moon;
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/sun.svelte
+// node_modules/@lucide/svelte/dist/icons/sun.svelte
 var rest_excludes5 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root7 = from_html(`<!--
-@lucide/svelte v1.27.0 - ISC
+@lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -7049,7 +7049,7 @@ function Sun($$anchor, $$props) {
 }
 if (undefined) {}
 var sun_default = Sun;
-// ../nanoflux/web/src/lib/theme.svelte.ts
+// web/src/lib/theme.svelte.ts
 var STORAGE_KEY3 = "nanoflux-theme";
 function readStored3() {
   try {
@@ -7083,7 +7083,7 @@ function toggleTheme() {
   setTheme(themeState.mode === "light" ? "dark" : "light");
 }
 
-// ../nanoflux/web/src/components/buttons/ThemeToggle.svelte
+// web/src/components/buttons/ThemeToggle.svelte
 var root8 = from_html(`
     <!>
   `, 1);
@@ -7141,7 +7141,7 @@ if (undefined) {}
 var ThemeToggle_default = ThemeToggle;
 delegate(["click"]);
 
-// ../nanoflux/web/src/components/Header.svelte
+// web/src/components/Header.svelte
 var root9 = from_html(`
 
 <aside class="border-b border-neutral-100 px-5 py-5 dark:border-neutral-800 md:sticky md:top-4 md:m-4 md:flex md:h-[calc(100vh-2rem)] md:w-48 md:shrink-0 md:flex-col md:rounded-xl md:border md:bg-white md:px-5 md:py-8 md:shadow-sm md:dark:bg-neutral-950">
@@ -7269,10 +7269,10 @@ if (undefined) {}
 var Header_default = Header;
 delegate(["click"]);
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/download.svelte
+// node_modules/@lucide/svelte/dist/icons/download.svelte
 var rest_excludes6 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root10 = from_html(`<!--
-@lucide/svelte v1.27.0 - ISC
+@lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -7311,10 +7311,10 @@ function Download($$anchor, $$props) {
 }
 if (undefined) {}
 var download_default = Download;
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/pencil.svelte
+// node_modules/@lucide/svelte/dist/icons/pencil.svelte
 var rest_excludes7 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root11 = from_html(`<!--
-@lucide/svelte v1.27.0 - ISC
+@lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -7357,10 +7357,10 @@ function Pencil($$anchor, $$props) {
 }
 if (undefined) {}
 var pencil_default = Pencil;
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/trash-2.svelte
+// node_modules/@lucide/svelte/dist/icons/trash-2.svelte
 var rest_excludes8 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root12 = from_html(`<!--
-@lucide/svelte v1.27.0 - ISC
+@lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -7401,7 +7401,7 @@ function Trash_2($$anchor, $$props) {
 }
 if (undefined) {}
 var trash_2_default = Trash_2;
-// ../nanoflux/web/src/lib/api.ts
+// web/src/lib/api.ts
 function assertApiOk(body) {
   if (body.code !== 0) {
     throw new Error(body.message || "Request failed");
@@ -7595,7 +7595,7 @@ function updateFilter(payload) {
   });
 }
 
-// ../nanoflux/web/src/lib/utils.ts
+// web/src/lib/utils.ts
 function formatTime(iso, nowMs = Date.now()) {
   if (!iso)
     return "";
@@ -7623,7 +7623,7 @@ function formatTime(iso, nowMs = Date.now()) {
   });
 }
 
-// ../nanoflux/shared/google-news.ts
+// shared/google-news.ts
 function googleNewsLanguageFromKeyword(keyword) {
   return /[\u4e00-\u9fff]/.test(keyword) ? "zh-CN" : "en-US";
 }
@@ -7637,7 +7637,7 @@ function buildKeywordGoogleNewsFeedUrl(keyword) {
   return `https://news.google.com/rss/search?q=${q}+when:3d&hl=${language}`;
 }
 
-// ../nanoflux/web/src/components/FeedsManager.svelte
+// web/src/components/FeedsManager.svelte
 var root13 = from_html(`
         <button type="button" class="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"> </button>
         <button type="button" class="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"> </button>
@@ -8797,7 +8797,7 @@ if (undefined) {}
 var FeedsManager_default = FeedsManager;
 delegate(["input", "click", "keydown"]);
 
-// ../nanoflux/web/src/components/FiltersManager.svelte
+// web/src/components/FiltersManager.svelte
 var root14 = from_html(`
     <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
   `, 1);
@@ -8958,7 +8958,7 @@ function FiltersManager($$anchor, $$props) {
 if (undefined) {}
 var FiltersManager_default = FiltersManager;
 
-// ../nanoflux/web/src/components/ExportPage.svelte
+// web/src/components/ExportPage.svelte
 var root15 = from_html(`
     <div class="space-y-3">
       <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
@@ -9208,16 +9208,16 @@ if (undefined) {}
 var ExportPage_default = ExportPage;
 delegate(["click"]);
 
-// ../nanoflux/web/src/lib/highlight.ts
+// web/src/lib/highlight.ts
 function getItemAiReason(item) {
   const reason = item.passed_reason?.trim();
   return reason || null;
 }
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/check-check.svelte
+// node_modules/@lucide/svelte/dist/icons/check-check.svelte
 var rest_excludes9 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root16 = from_html(`<!--
-@lucide/svelte v1.27.0 - ISC
+@lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -9255,7 +9255,7 @@ function Check_check($$anchor, $$props) {
 }
 if (undefined) {}
 var check_check_default = Check_check;
-// ../nanoflux/web/src/components/buttons/MarkAllReadButton.svelte
+// web/src/components/buttons/MarkAllReadButton.svelte
 var root17 = from_html(`
 
 <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
@@ -9284,10 +9284,10 @@ if (undefined) {}
 var MarkAllReadButton_default = MarkAllReadButton;
 delegate(["click"]);
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/circle-check.svelte
+// node_modules/@lucide/svelte/dist/icons/circle-check.svelte
 var rest_excludes10 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root18 = from_html(`<!--
-@lucide/svelte v1.27.0 - ISC
+@lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -9325,7 +9325,7 @@ function Circle_check($$anchor, $$props) {
 }
 if (undefined) {}
 var circle_check_default = Circle_check;
-// ../nanoflux/web/src/components/ItemList.svelte
+// web/src/components/ItemList.svelte
 var root19 = from_html(`
   <p class="py-6 text-sm text-red-500"> </p>
 `, 1);
@@ -9688,7 +9688,7 @@ if (undefined) {}
 var ItemList_default = ItemList;
 delegate(["click"]);
 
-// ../nanoflux/web/src/App.svelte
+// web/src/App.svelte
 var root20 = from_html(`
         <!>
       `, 1);
@@ -9765,7 +9765,7 @@ function App($$anchor) {
 if (undefined) {}
 var App_default = App;
 
-// ../nanoflux/web/src/lib/pwa.ts
+// web/src/lib/pwa.ts
 function registerPwa() {
   if (!("serviceWorker" in navigator))
     return;
@@ -9774,7 +9774,7 @@ function registerPwa() {
   });
 }
 
-// ../nanoflux/web/src/main.ts
+// web/src/main.ts
 initRouter();
 initTheme();
 initFontSize();

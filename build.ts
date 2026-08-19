@@ -1,9 +1,7 @@
-import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { $ } from "bun";
 import { SveltePlugin } from "bun-plugin-svelte";
-import postcss from "postcss";
-import postcssConfig from "./postcss.config.mjs";
 const root = import.meta.dir;
 const webDir = path.join(root, "web");
 const publicDir = path.join(root, "public");
@@ -15,11 +13,7 @@ await mkdir(assetsDir, { recursive: true });
 
 const appCssIn = path.join(webDir, "src/app.css");
 const appCssOut = path.join(assetsDir, "app.css");
-const appCssResult = await postcss(postcssConfig.plugins).process(
-  await readFile(appCssIn, "utf8"),
-  { from: appCssIn, to: appCssOut },
-);
-await writeFile(appCssOut, appCssResult.css);
+await $`tailwindcss -i ${appCssIn} -o ${appCssOut} --minify`.cwd(webDir);
 
 const result = await Bun.build({
   entrypoints: [path.join(webDir, "src/main.ts")],

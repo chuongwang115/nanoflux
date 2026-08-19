@@ -14,11 +14,10 @@
   },
   "devDependencies": {
     "@lucide/svelte": "^1.33.0",
-    "@tailwindcss/postcss": "^4.3.3",
+    "@tailwindcss/cli": "^4.3.3",
     "@types/bun": "^1.3.14",
     "bun-plugin-svelte": "^0.0.6",
     "drizzle-kit": "^0.31.10",
-    "postcss": "^8.5.26",
     "svelte": "^5.56.9",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3"

@@ -72,7 +72,7 @@ Run it on localhost next to your agent runtime; when `HOST=127.0.0.1`, API and M
 | Backend | Elysia, Drizzle ORM |
 | Database | SQLite (WAL mode) |
 | Agent bridge | MCP via elysia-mcp (`@modelcontextprotocol/sdk` types, Zod tool schemas) |
-| Operator UI | Svelte 5, Tailwind CSS 4 (compiled with PostCSS in `build.ts`) |
+| Operator UI | Svelte 5 (`bun-plugin-svelte`), Tailwind CSS 4 (`@tailwindcss/cli` in `build.ts`) |
 | HTTP | undici (`EnvHttpProxyAgent` for `HTTP_PROXY` / `HTTPS_PROXY`) |
 | Feed parsing | rss-parser |
 | Article extraction | @extractus/article-extractor |
@@ -119,6 +119,8 @@ bun run dev
 ```
 
 This runs the frontend build and the backend together under `bun --watch`. Database migrations run automatically on startup.
+
+`build.ts` compiles CSS with `@tailwindcss/cli`, then bundles the Svelte app with `Bun.build` and `bun-plugin-svelte`. Output lands in `public/` (`index.html`, `/assets/app.css`, JS, and `sw.js`).
 
 ## Configuration
 
@@ -413,7 +415,7 @@ Agents then consume this store through MCP / REST; they do not scrape feeds them
 ├── filter.ts         Filter load and persist
 ├── main.ts           Application entry point
 ├── dev.ts            Concurrent frontend/backend watch for `bun run dev`
-└── build.ts          Frontend build script
+└── build.ts          Frontend build (Tailwind CLI + Bun/Svelte)
 ```
 
 ## License
