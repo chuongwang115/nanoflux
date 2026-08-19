@@ -76,6 +76,7 @@ export function getItems(options?: {
         ? eq(items.is_read, options.isRead)
         : undefined;
     const passedFilter = buildPassedFilter(options?.filterPassed);
+    const deletedFilter = eq(items.is_deleted, 0);
 
     const selected = db
       .select({
@@ -94,7 +95,7 @@ export function getItems(options?: {
       })
       .from(items)
       .innerJoin(feeds, eq(items.feed_id, feeds.id))
-      .where(and(timeFilter, cursorFilter, readFilter, passedFilter))
+      .where(and(timeFilter, cursorFilter, readFilter, passedFilter, deletedFilter))
       .orderBy(desc(items.published_at), desc(items.id))
       .limit(adjustedLimit + 1)
       .all();
@@ -123,6 +124,7 @@ export function getItemsForExport(options: {
       ? lte(items.published_at, options.until)
       : undefined;
     const passedFilter = buildPassedFilter(options.filterPassed);
+    const deletedFilter = eq(items.is_deleted, 0);
 
     return db
       .select({
@@ -132,7 +134,7 @@ export function getItemsForExport(options: {
         link: items.link,
       })
       .from(items)
-      .where(and(sinceFilter, untilFilter, passedFilter))
+      .where(and(sinceFilter, untilFilter, passedFilter, deletedFilter))
       .orderBy(desc(items.published_at), desc(items.id))
       .all();
   } catch (error) {
@@ -238,6 +240,7 @@ export function markItemsRead(
       and(
         lte(items.published_at, until),
         eq(items.is_read, 0),
+        eq(items.is_deleted, 0),
         passedFilter,
       ),
     )
@@ -249,13 +252,41 @@ export function markItemsRead(
   }
 }
 
+export function deleteItem(id: string): boolean {
+  try {
+    const existing = db
+      .select({ id: items.id, is_deleted: items.is_deleted })
+      .from(items)
+      .where(eq(items.id, id))
+      .get();
+
+    if (!existing) {
+      throw new Error("Item does not exist");
+    }
+
+    if (existing.is_deleted === 1) {
+      throw new Error("Item is already deleted");
+    }
+
+    db.update(items)
+      .set({ is_deleted: 1 })
+      .where(eq(items.id, id))
+      .run();
+
+    return true;
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to delete item ${id}: ${detail}`);
+  }
+}
+
 export function markItemRead(id: string): void {
 
   try {
 
     db.update(items)
     .set({ is_read: 1 })
-    .where(and(eq(items.id, id), eq(items.is_read, 0)))
+    .where(and(eq(items.id, id), eq(items.is_read, 0), eq(items.is_deleted, 0)))
     .run();
 
   } catch (error) {

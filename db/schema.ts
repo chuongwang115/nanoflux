@@ -52,6 +52,7 @@ export const items = sqliteTable(
     filter_passed: integer("filter_passed").notNull().default(0),
     passed_reason: text("passed_reason"),
     is_read: integer("is_read").notNull().default(0),
+    is_deleted: integer("is_deleted").notNull().default(0),
   },
   (table) => [
     unique().on(table.guid),

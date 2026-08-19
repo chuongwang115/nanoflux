@@ -2,7 +2,7 @@
 
 **News Service for AI Agents**
 
-NanoFlux is a local news ingestion and query service built for AI agents. It continuously fetches RSS/Atom (and related) sources, extracts article text, optionally scores relevance with an LLM, and exposes the result over **MCP** and a small REST API so agents can subscribe to sources, pull unread news, manage the filter prompt, and optionally push headlines or HTML daily reports to a Telegram channel.
+NanoFlux is a local news ingestion and query service built for AI agents. It continuously fetches RSS/Atom (and related) sources, extracts article text, optionally scores relevance with an LLM, and exposes the result over **MCP** and a small REST API so agents can subscribe to sources, pull unread news, soft-delete items, manage the filter prompt, and optionally push headlines or HTML daily reports to a Telegram channel.
 
 A minimal web UI is included for operators to inspect feeds, tweak the filter, and export data — not as a full-featured RSS reader.
 
@@ -33,7 +33,7 @@ Typical RSS readers optimize for human browsing. NanoFlux optimizes for **agent 
 1. **Ingest** — adaptive polling of RSS/Atom, Google News keyword feeds, and WeChat official accounts
 2. **Normalize** — GUID dedupe, Google News link resolution, full-text extraction when the feed summary is thin
 3. **Filter** — optional single LLM prompt that marks relevant items for agents
-4. **Serve** — MCP tools and REST endpoints so agents can fetch news by time window, consume unread items (marking them read), manage feeds / the filter prompt, and push Telegram headlines or HTML digests
+4. **Serve** — MCP tools and REST endpoints so agents can consume unread items (marking them read), soft-delete items, manage feeds / the filter prompt, and push Telegram headlines or HTML digests
 
 Run it on localhost next to your agent runtime; when `HOST=127.0.0.1`, API and MCP accept only local clients.
 
@@ -41,7 +41,7 @@ Run it on localhost next to your agent runtime; when `HOST=127.0.0.1`, API and M
 
 **For agents (primary)**
 
-- MCP server at `/mcp` — feed CRUD, keyword / WeChat subscribe, time-ranged news, unread consumption, filter prompt read/write, Telegram channel push (headline or daily digest), current time
+- MCP server at `/mcp` — feed CRUD, keyword / WeChat subscribe, unread consumption, item soft-delete, filter prompt read/write, Telegram channel push (headline or daily digest), current time
 - REST API with the same data model (`{ code, message, data }` JSON)
 - Local-first binding: `HOST=127.0.0.1` restricts API and MCP to localhost
 - Persistent SQLite store with cursor pagination so agents can page through large result sets
@@ -53,7 +53,8 @@ Run it on localhost next to your agent runtime; when `HOST=127.0.0.1`, API and M
 - Full-text article extraction when an RSS summary is too short; Google News article links are resolved to the publisher URL first; HTML is decoded with charset detection (Content-Type, BOM, meta/`<?xml` encoding, with UTF-8 / GB18030 fallback)
 - **AI content filter** — a single LLM prompt decides relevance. Empty prompt skips filtering (no LLM call)
 - Results stored in `filter_passed` (`1` on pass or when filtering is off; `0` on AI reject) and `passed_reason` (`null` when filtering is off or the item failed; a non-null string — possibly empty — when it passed, including fail-open pass-through)
-- Automatic cleanup of items older than 90 days
+- Soft-delete (`is_deleted`) hides an item from MCP, REST, UI, and export, while keeping the `guid` so the same article is not ingested again
+- Automatic cleanup of items older than 90 days (hard delete, including previously soft-deleted rows)
 
 **Operator UI (secondary)**
 
@@ -70,8 +71,9 @@ Run it on localhost next to your agent runtime; when `HOST=127.0.0.1`, API and M
 | Runtime | Bun |
 | Backend | Elysia, Drizzle ORM |
 | Database | SQLite (WAL mode) |
-| Agent bridge | Model Context Protocol (MCP) via elysia-mcp |
-| Operator UI | Svelte 5, Tailwind CSS 4 |
+| Agent bridge | MCP via elysia-mcp (`@modelcontextprotocol/sdk` types, Zod tool schemas) |
+| Operator UI | Svelte 5, Tailwind CSS 4 (compiled with PostCSS in `build.ts`) |
+| HTTP | undici (`EnvHttpProxyAgent` for `HTTP_PROXY` / `HTTPS_PROXY`) |
 | Feed parsing | rss-parser |
 | Article extraction | @extractus/article-extractor |
 | AI relevance filter | LangChain (`@langchain/openai`) + OpenAI-compatible API |
@@ -270,9 +272,10 @@ Add to your MCP client config (e.g. Cursor or Claude Desktop):
 
 1. Ensure sources exist (`add_feed`, `add_feed_by_keyword`, or `add_wechat_feed`)
 2. Optionally set relevance criteria with `update_filter_prompt`
-3. Call `get_unread_news` (or `get_news`) on a schedule; page with `hasMore` / `nextCursor` until caught up
+3. Call `get_unread_news` on a schedule; page with `hasMore` until caught up
 4. Use returned `title`, `content`, `link`, and `published_at` in your agent workflow
-5. Optionally push a headline + URL with `send_telegram_message`, or compose an HTML daily report and push it with `send_telegram_digest` (requires bot credentials)
+5. Optionally `delete_item` to hide a stored article without allowing it to be fetched again
+6. Optionally push a headline + URL with `send_telegram_message`, or compose an HTML daily report and push it with `send_telegram_digest` (requires bot credentials)
 
 ### Available tools
 
@@ -286,8 +289,8 @@ News query tools return stored items from the database. Each item includes `id`,
 | `update_feed` | Update feed title, URL, or description |
 | `delete_feed` | Remove a feed (also unsubscribes WeChat RSS feeds remotely when configured) |
 | `search_feeds` | Search feeds by keyword in title |
-| `get_news` | Fetch news in an absolute (`since`/`until`) or relative (`unit`/`count`) time range. Supports `cursor` / `limit` pagination; when `hasMore` is true, call again with `nextCursor` as `cursor` (after a relative query, reuse `resolved_since` / `resolved_until` as `since` / `until`) |
 | `get_unread_news` | Fetch unread **filter-passed** news in a relative time window (`unit`/`count`). Items that did not pass the filter are excluded. Returned articles are marked as read. When `hasMore` is true, call again with the same `unit`/`count` (and `limit`) until `hasMore` is false |
+| `delete_item` | Soft-delete a news item by `id`. Hidden from queries; the same `guid` will not be fetched again |
 | `get_filter_prompt` | Get the AI content filter prompt (`prompt`, `enabled`). Empty prompt means filtering is off |
 | `update_filter_prompt` | Set the AI filter prompt. Pass an empty string to disable filtering. Applies to newly fetched items only |
 | `get_current_time` | Return the server's current UTC time |
@@ -327,8 +330,8 @@ Query parameters for `GET /api/feeds`:
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/api/items?cursor=&limit=` | Paginated news list (newest first) |
-| `GET` | `/api/items/export.xlsx` | Download matching items as Excel (`Content-Disposition: nanoflux-export.xlsx`) |
+| `GET` | `/api/items?cursor=&limit=` | Paginated news list (newest first; soft-deleted items are omitted) |
+| `GET` | `/api/items/export.xlsx` | Download matching items as Excel (`Content-Disposition: nanoflux-export.xlsx`; soft-deleted items are omitted) |
 | `POST` | `/api/items/:id/read` | Mark one item as read |
 | `POST` | `/api/items/read-all` | Mark all items up to a timestamp as read |
 
@@ -375,11 +378,11 @@ Exported columns: published time, title, content, and original link.
 1. On startup and every minute (UTC cron), the scheduler loads feeds whose `next_fetched_at` is due. Cron is registered before the startup fetch so a long first run cannot block later ticks; overlapping due-fetch runs are skipped.
 2. Each tick takes at most **3** due feeds. Creating a feed via REST or MCP also enqueues an immediate fetch when `next_fetched_at` is still unset.
 3. Each feed is fetched over HTTP with the `NanoFlux/1.0` user agent (15 s timeout) and parsed as RSS/Atom. Concurrent fetches of the same feed id are ignored.
-4. Each entry gets a normalized GUID: MD5 hex of the article link (feeds that already provide an MD5 GUID are kept as-is). Per-feed known GUIDs are stored in the `last_guids` column; entries already seen by this feed or already present in the database (global GUID uniqueness) are skipped.
+4. Each entry gets a normalized GUID: MD5 hex of the article link (feeds that already provide an MD5 GUID are kept as-is). Per-feed known GUIDs are stored in the `last_guids` column; entries already seen by this feed or already present in the database (global GUID uniqueness, including soft-deleted rows) are skipped.
 5. At most **10** unseen candidates are enriched and inserted per feed per run. For each of those, Google News article links (`news.google.com/.../articles/...`) are resolved to the publisher URL (embedded token decode, or Google's batchexecute RPC) and the stored `link` is updated when resolution succeeds. If the RSS summary is shorter than ~80 word tokens (counted with `Intl.Segmenter` for Chinese and English — roughly ~200 Chinese characters or ~80 English words), the article page is fetched (desktop browser user agent, 15 s timeout, up to 3 concurrent requests), decoded with charset detection, and parsed with `@extractus/article-extractor` to fill in `content`. Already-known entries skip scraping. Unprocessed backlog entries stay out of `last_guids` so the next catch-up run can pick them up.
 6. New items are deduplicated globally by `guid` (same article from different feeds is stored once), evaluated by the AI filter when a prompt is set (skipped when empty), and inserted into SQLite. On pass (or when filtering is off), `filter_passed = 1`; `passed_reason` stores the AI reason (or `""` for fail-open) when filtering was on and the item passed, otherwise `null`. On AI reject, `filter_passed = 0` and `passed_reason` is `null`.
 7. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear. If a feed still has unprocessed new items after the 10-item cap, the next fetch is scheduled in **1 minute** (catch-up) while keeping the adaptive interval for later.
-8. Daily at 01:00 UTC, items older than 90 days are deleted.
+8. Daily at 01:00 UTC, items older than 90 days are hard-deleted.
 
 Agents then consume this store through MCP / REST; they do not scrape feeds themselves.
 
