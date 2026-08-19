@@ -2,7 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {
   hasFilterPrompt,
-  updateFilterPrompt,
+  updateFilterConfig,
 } from "../../filter";
 
 export function registerUpdateFilterPrompt(server: McpServer): void {
@@ -10,18 +10,25 @@ export function registerUpdateFilterPrompt(server: McpServer): void {
     "update_filter_prompt",
     {
       description:
-        "Set the AI content filter prompt used to decide whether new articles are relevant. Pass an empty string to disable filtering (all items pass by default). Changes apply to newly fetched items only.",
+        "Set the AI content filter prompt and/or enabled flag used to decide whether new articles are relevant. Filtering runs only when enabled is true and prompt is non-empty. Changes apply to newly fetched items only.",
       inputSchema: {
         prompt: z
           .string()
+          .optional()
           .describe(
-            "Filter criteria for the LLM. Empty string disables filtering.",
+            "Filter criteria for the LLM. Empty string skips LLM filtering even if enabled.",
+          ),
+        enabled: z
+          .boolean()
+          .optional()
+          .describe(
+            "Turn AI filtering on or off without clearing the prompt.",
           ),
       },
     },
-    async ({ prompt }) => {
+    async ({ prompt, enabled }) => {
       try {
-        const updated = await updateFilterPrompt(prompt);
+        const updated = await updateFilterConfig({ prompt, enabled });
         return {
           content: [
             {
@@ -30,7 +37,8 @@ export function registerUpdateFilterPrompt(server: McpServer): void {
                 {
                   updated: true,
                   prompt: updated.prompt,
-                  enabled: hasFilterPrompt(),
+                  enabled: updated.enabled,
+                  active: hasFilterPrompt(),
                 },
                 null,
                 2,

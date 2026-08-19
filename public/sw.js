@@ -1,5 +1,5 @@
 (() => {
-  // web/src/sw.ts
+  // ../nanoflux/web/src/sw.ts
   var CACHE_NAME = "nanoflux-v3";
   var SHELL_URLS = ["/", "/feeds"];
   var PRECACHE_URLS = [

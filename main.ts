@@ -49,7 +49,11 @@ function manifestLocale(query: Record<string, string | undefined>): Locale {
 
 await ensureGoogleConnectivity();
 
-void loadFilters().then(() => {
+const filterReady = loadFilters().then(() => {
+  console.log("[filter] config loaded");
+});
+
+void filterReady.then(() => {
   void startScheduler().catch((error) => {
     console.error("[scheduler]", error);
   });

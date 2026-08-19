@@ -7,7 +7,6 @@
   /** Special scope ids. */
   const SCOPE_ALL = "__all__";
   const SCOPE_PASSED = "__passed__";
-  const SCOPE_UNMATCHED = "__unmatched__";
 
   /** Format a Date as a local-time `datetime-local` value (`YYYY-MM-DDTHH:mm`). */
   function toDatetimeLocal(date: Date): string {
@@ -47,7 +46,6 @@
 
   function scopeParams(): { filterPassed?: 0 | 1 } {
     if (scope === SCOPE_PASSED) return { filterPassed: 1 };
-    if (scope === SCOPE_UNMATCHED) return { filterPassed: 0 };
     return {};
   }
 
@@ -76,7 +74,7 @@
     void (async () => {
       try {
         const filter = await fetchFilter();
-        filterEnabled = Boolean(filter.prompt.trim());
+        filterEnabled = filter.enabled && Boolean(filter.prompt.trim());
       } catch {
         filterEnabled = false;
       }
@@ -140,14 +138,6 @@
           onclick={() => (scope = SCOPE_PASSED)}
         >
           {t("export.scopePassed")}
-        </button>
-        <button
-          type="button"
-          class="transition-colors {scopeButtonClass(scope === SCOPE_UNMATCHED)}"
-          aria-pressed={scope === SCOPE_UNMATCHED}
-          onclick={() => (scope = SCOPE_UNMATCHED)}
-        >
-          {t("export.scopeUnmatched")}
         </button>
       </div>
     </div>

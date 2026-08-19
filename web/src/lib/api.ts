@@ -321,13 +321,31 @@ export async function markItemRead(id: string) {
 
 export type FilterConfig = {
   prompt: string;
+  enabled: boolean;
 };
 
 type FilterApiResult = {
   code: number;
   message: string;
-  data?: FilterConfig;
+  data?: Partial<FilterConfig>;
 };
+
+function normalizeFilterConfig(
+  data: Partial<FilterConfig> | undefined,
+  defaults?: Partial<FilterConfig>,
+): FilterConfig {
+  const prompt =
+    typeof data?.prompt === "string" ? data.prompt : (defaults?.prompt ?? "");
+  return {
+    prompt,
+    enabled:
+      typeof data?.enabled === "boolean"
+        ? data.enabled
+        : typeof defaults?.enabled === "boolean"
+          ? defaults.enabled
+          : false,
+  };
+}
 
 export async function fetchFilter(): Promise<FilterConfig> {
   const body = await request<FilterApiResult>("/api/filter");
@@ -335,10 +353,10 @@ export async function fetchFilter(): Promise<FilterConfig> {
   if (!body.data) {
     throw new Error(body.message || "Failed to load filter");
   }
-  return body.data;
+  return normalizeFilterConfig(body.data);
 }
 
-export function updateFilter(payload: { prompt: string }) {
+export function updateFilter(payload: { prompt?: string; enabled?: boolean }) {
   return request<FilterApiResult>("/api/filter", {
     method: "POST",
     body: JSON.stringify(payload),
@@ -347,6 +365,6 @@ export function updateFilter(payload: { prompt: string }) {
     if (!body.data) {
       throw new Error(body.message || "Failed to update filter");
     }
-    return body.data;
+    return normalizeFilterConfig(body.data, payload);
   });
 }

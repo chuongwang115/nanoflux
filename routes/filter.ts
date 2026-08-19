@@ -1,15 +1,12 @@
-import { Elysia } from "elysia";
-import {
-  getFilterPrompt,
-  updateFilterPrompt,
-} from "../filter";
+import { Elysia, t } from "elysia";
+import { getFilterConfig, updateFilterConfig } from "../filter";
 
 function getFilterHandler() {
   try {
     return {
       code: 0,
       message: "ok",
-      data: { prompt: getFilterPrompt() },
+      data: getFilterConfig(),
     };
   } catch (error) {
     const message =
@@ -18,10 +15,20 @@ function getFilterHandler() {
   }
 }
 
-async function updateFilterHandler({ body }: { body: { prompt?: string } }) {
+async function updateFilterHandler({
+  body,
+}: {
+  body: { prompt?: string; enabled?: boolean };
+}) {
   try {
-    const prompt = typeof body?.prompt === "string" ? body.prompt : "";
-    const updated = await updateFilterPrompt(prompt);
+    const payload: { prompt?: string; enabled?: boolean } = {};
+    if (typeof body?.prompt === "string") {
+      payload.prompt = body.prompt;
+    }
+    if (typeof body?.enabled === "boolean") {
+      payload.enabled = body.enabled;
+    }
+    const updated = await updateFilterConfig(payload);
     return { code: 0, message: "ok", data: updated };
   } catch (error) {
     const message =
@@ -32,4 +39,9 @@ async function updateFilterHandler({ body }: { body: { prompt?: string } }) {
 
 export const routes = new Elysia({ prefix: "/api/filter" })
   .get("/", getFilterHandler)
-  .post("/", updateFilterHandler);
+  .post("/", updateFilterHandler, {
+    body: t.Object({
+      prompt: t.Optional(t.String()),
+      enabled: t.Optional(t.Boolean()),
+    }),
+  });

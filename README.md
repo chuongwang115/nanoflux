@@ -32,7 +32,7 @@ Typical RSS readers optimize for human browsing. NanoFlux optimizes for **agent 
 
 1. **Ingest** — adaptive polling of RSS/Atom, Google News keyword feeds, and WeChat official accounts
 2. **Normalize** — GUID dedupe, Google News link resolution, full-text extraction when the feed summary is thin
-3. **Filter** — optional single LLM prompt that marks relevant items for agents
+3. **Filter** — optional single LLM prompt plus an on/off switch that marks relevant items for agents
 4. **Serve** — MCP tools and REST endpoints so agents can consume unread items (marking them read), soft-delete items, manage feeds / the filter prompt, and push Telegram headlines or HTML digests
 
 Run it on localhost next to your agent runtime; when `HOST=127.0.0.1`, API and MCP accept only local clients.
@@ -51,17 +51,17 @@ Run it on localhost next to your agent runtime; when `HOST=127.0.0.1`, API and M
 - RSS/Atom feed management with auto-fetched metadata; newly created feeds are fetched immediately (no wait for the next cron tick)
 - Adaptive polling (5–30 min per feed) based on publish frequency; each minute tick processes at most 3 due feeds, and each feed processes at most 10 new items per run (backlog requeues in ~1 min)
 - Full-text article extraction when an RSS summary is too short; Google News article links are resolved to the publisher URL first; HTML is decoded with charset detection (Content-Type, BOM, meta/`<?xml` encoding, with UTF-8 / GB18030 fallback)
-- **AI content filter** — a single LLM prompt decides relevance. Empty prompt skips filtering (no LLM call)
+- **AI content filter** — a single LLM prompt decides relevance. Filtering runs only when `enabled` is true and `prompt` is non-empty; otherwise it is skipped (no LLM call). You can turn filtering off without clearing the prompt.
 - Results stored in `filter_passed` (`1` on pass or when filtering is off; `0` on AI reject) and `passed_reason` (`null` when filtering is off or the item failed; a non-null string — possibly empty — when it passed, including fail-open pass-through)
 - Soft-delete (`is_deleted`) hides an item from MCP, REST, UI, and export, while keeping the `guid` so the same article is not ingested again
 - Automatic cleanup of items older than 90 days (hard delete, including previously soft-deleted rows)
 
 **Operator UI (secondary)**
 
-- Minimal web console to verify ingestion, edit the filter prompt, manage feeds, and export Excel
+- Minimal web console to verify ingestion, edit the filter prompt and on/off switch, manage feeds, and export Excel
 - Home list: **Unread** / **All**; **Unread** only shows filter-passed items (`filter_passed = 1`) and marks those as read in bulk; **All** still lists rejected items; passed items can show an AI reason badge
 - Feed page (`/feeds`): preview, CRUD, sort, **add by keyword** (Google News RSS for the last 3 days; language inferred from the keyword), **subscribe WeChat 公众号**, **OPML export**
-- Filter page (`/filter`) and export page (`/export`) with optional scope (**all** / **passed** / **unmatched** when filtering is enabled)
+- Filter page (`/filter`) with prompt editor and enable/disable toggle; export page (`/export`) with optional scope (**all** / **passed** / **unmatched** when filtering is active)
 - PWA shell (installable, offline asset caching; manifest at `/manifest.webmanifest`), bilingual UI (English / Chinese), light/dark theme, adjustable font size
 
 ## Tech Stack
@@ -134,7 +134,7 @@ Create a `.env` file (see `.env.example`):
 
 ### AI filter (optional)
 
-When `filter.json` has a non-empty `prompt`, new items are scored via LangChain `ChatOpenAI` against an OpenAI-compatible endpoint. Configure these in `.env`:
+When filtering is active (`enabled` is true and `prompt` is non-empty), new items are scored via LangChain `ChatOpenAI` against an OpenAI-compatible endpoint. Configure these in `.env`:
 
 | Variable | Description |
 | --- | --- |
@@ -142,7 +142,7 @@ When `filter.json` has a non-empty `prompt`, new items are scored via LangChain 
 | `LLM_API_KEY` | Bearer token |
 | `LLM_MODEL_NAME` | Model ID (e.g. `gpt-4o-mini`) |
 
-If the prompt is empty, filtering is skipped (no LLM call) and items are stored with `filter_passed = 1` and `passed_reason = null`. If a prompt is set but these variables are missing, or the API fails, items still pass through (`filter_passed = 1`, `passed_reason` is stored as an empty string).
+If filtering is off (`enabled` is false or `prompt` is empty), there is no LLM call and items are stored with `filter_passed = 1` and `passed_reason = null`. If filtering is on but these variables are missing, or the API fails, items still pass through (`filter_passed = 1`, `passed_reason` is stored as an empty string).
 
 ### WeChat official accounts (optional)
 
@@ -207,17 +207,21 @@ The filter is stored in `filter.json` at the project root (created or updated vi
 
 | Field | Description |
 | --- | --- |
-| `prompt` | Instructions for the AI relevance filter. Leave empty to skip filtering. |
+| `prompt` | Instructions for the AI relevance filter. Leave empty to skip LLM scoring even if `enabled` is true. |
+| `enabled` | Whether the filter is turned on. Set `false` to skip scoring without clearing `prompt`. Defaults to true when migrating an old file that only had a non-empty prompt. |
+
+Filtering is **active** only when both `enabled` is true and `prompt` is non-empty.
 
 Example:
 
 ```json
 {
-  "prompt": "Keep only news directly related to asset management regulation, product launches, or institutional fund flows."
+  "prompt": "Keep only news directly related to asset management regulation, product launches, or institutional fund flows.",
+  "enabled": true
 }
 ```
 
-On load, a legacy `filters.json` file (or a multi-filter array in `filter.json`) is migrated to the single-prompt `filter.json` format; the first non-empty `prompt` is kept.
+On load, a legacy `filters.json` file (or a multi-filter array in `filter.json`) is migrated to `{ prompt, enabled }`; the first non-empty `prompt` is kept and `enabled` is set to true.
 
 Changes to the filter prompt apply to **newly fetched** items only; existing rows in the database are not re-evaluated.
 
@@ -273,7 +277,7 @@ Add to your MCP client config (e.g. Cursor or Claude Desktop):
 ### Typical agent loop
 
 1. Ensure sources exist (`add_feed`, `add_feed_by_keyword`, or `add_wechat_feed`)
-2. Optionally set relevance criteria with `update_filter_prompt`
+2. Optionally set relevance criteria with `update_filter_prompt` (prompt and/or `enabled`)
 3. Call `get_unread_news` on a schedule; page with `hasMore` until caught up
 4. Use returned `title`, `content`, `link`, and `published_at` in your agent workflow
 5. Optionally `delete_item` to hide a stored article without allowing it to be fetched again
@@ -293,8 +297,8 @@ News query tools return stored items from the database. Each item includes `id`,
 | `search_feeds` | Search feeds by keyword in title |
 | `get_unread_news` | Fetch unread **filter-passed** news in a relative time window (`unit`/`count`). Items that did not pass the filter are excluded. Returned articles are marked as read. When `hasMore` is true, call again with the same `unit`/`count` (and `limit`) until `hasMore` is false |
 | `delete_item` | Soft-delete a news item by `id`. Hidden from queries; the same `guid` will not be fetched again |
-| `get_filter_prompt` | Get the AI content filter prompt (`prompt`, `enabled`). Empty prompt means filtering is off |
-| `update_filter_prompt` | Set the AI filter prompt. Pass an empty string to disable filtering. Applies to newly fetched items only |
+| `get_filter_prompt` | Get the AI content filter (`prompt`, `enabled`, `active`). `enabled` is the stored switch; `active` is true only when filtering will actually run (`enabled` and non-empty prompt) |
+| `update_filter_prompt` | Set `prompt` and/or `enabled` (both optional). Empty prompt or `enabled: false` skips LLM filtering. Applies to newly fetched items only |
 | `get_current_time` | Return the server's current UTC time |
 | `send_telegram_message` | Post a title + URL to the configured Telegram channel (`title`, `url`; optional `country`, `disable_notification`). Title is bold (HTML). Optional `country` is an ISO 3166-1 alpha-2 code (e.g. `CN`); shown as a flag emoji before the title. Omit / null / empty skips the icon. Message is `[flag ]<b>title</b>\\nurl`. Target is always `TELEGRAM_CHANNEL_ID`; bot must be a channel admin |
 | `send_telegram_digest` | Post a daily-report message (`title`, HTML `content`; optional `disable_notification`). Title is bold and escaped; `content` is agent-written HTML (`parse_mode=HTML`). See [Telegram channel](#telegram-channel-optional) for tag mapping and the 4096-character limit. Same env as `send_telegram_message` |
@@ -350,7 +354,7 @@ Query parameters for `GET /api/items`:
 | --- | --- |
 | `cursor` | Pagination cursor from a previous response |
 | `limit` | Page size (default 20, max 50) |
-| `filter_passed` | `1` — items that passed; `0` — items that failed. Only meaningful when a prompt is set; with filtering off, `0` returns no rows |
+| `filter_passed` | `1` — items that passed; `0` — items that failed. Only meaningful when filtering is active; with filtering off, `0` returns no rows |
 | `is_read` | `0` or `1` — filter by read state (the UI **Unread** tab uses `is_read=0` and `filter_passed=1`) |
 | `since`, `until` | Absolute ISO 8601 time bounds |
 | `unit`, `count` | Relative window (e.g. `unit=hour&count=2` for the last 2 hours) |
@@ -372,8 +376,8 @@ Exported columns: published time, title, content, and original link.
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/api/filter` | Get the AI filter config (`{ prompt }`) |
-| `POST` | `/api/filter` | Update the AI filter prompt (body: `{ prompt }`) |
+| `GET` | `/api/filter` | Get the AI filter config (`{ prompt, enabled }`) |
+| `POST` | `/api/filter` | Update the AI filter (body: optional `{ prompt, enabled }`; omit a field to leave it unchanged) |
 
 ## How Feed Fetching Works
 
@@ -382,7 +386,7 @@ Exported columns: published time, title, content, and original link.
 3. Each feed is fetched over HTTP with the `NanoFlux/1.0` user agent (15 s timeout) and parsed as RSS/Atom. Concurrent fetches of the same feed id are ignored.
 4. Each entry gets a normalized GUID: MD5 hex of the article link (feeds that already provide an MD5 GUID are kept as-is). Per-feed known GUIDs are stored in the `last_guids` column; entries already seen by this feed or already present in the database (global GUID uniqueness, including soft-deleted rows) are skipped.
 5. At most **10** unseen candidates are enriched and inserted per feed per run. For each of those, Google News article links (`news.google.com/.../articles/...`) are resolved to the publisher URL (embedded token decode, or Google's batchexecute RPC) and the stored `link` is updated when resolution succeeds. If the RSS summary is shorter than ~80 word tokens (counted with `Intl.Segmenter` for Chinese and English — roughly ~200 Chinese characters or ~80 English words), the article page is fetched (desktop browser user agent, 15 s timeout, up to 3 concurrent requests), decoded with charset detection, and parsed with `@extractus/article-extractor` to fill in `content`. Already-known entries skip scraping. Unprocessed backlog entries stay out of `last_guids` so the next catch-up run can pick them up.
-6. New items are deduplicated globally by `guid` (same article from different feeds is stored once), evaluated by the AI filter when a prompt is set (skipped when empty), and inserted into SQLite. On pass (or when filtering is off), `filter_passed = 1`; `passed_reason` stores the AI reason (or `""` for fail-open) when filtering was on and the item passed, otherwise `null`. On AI reject, `filter_passed = 0` and `passed_reason` is `null`.
+6. New items are deduplicated globally by `guid` (same article from different feeds is stored once), evaluated by the AI filter when it is active (`enabled` and non-empty prompt), and inserted into SQLite. On pass (or when filtering is off), `filter_passed = 1`; `passed_reason` stores the AI reason (or `""` for fail-open) when filtering was on and the item passed, otherwise `null`. On AI reject, `filter_passed = 0` and `passed_reason` is `null`.
 7. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear. If a feed still has unprocessed new items after the 10-item cap, the next fetch is scheduled in **1 minute** (catch-up) while keeping the adaptive interval for later.
 8. Daily at 01:00 UTC, items older than 90 days are hard-deleted.
 

@@ -1,4 +1,4 @@
-import { getFilterPrompt } from "../../filter";
+import { getFilterPrompt, hasFilterPrompt } from "../../filter";
 import { applyAiFilter } from "./ai";
 
 type ItemFilterResult = {
@@ -8,17 +8,17 @@ type ItemFilterResult = {
 
 /**
  * Apply the single AI filter.
- * Empty prompt → skip filtering (pass-through, `filter_passed = 1`, `passed_reason` null).
- * Non-empty prompt → LLM verdict; pass stores reason text, fail leaves reason null.
+ * Disabled or empty prompt → skip filtering (pass-through, `filter_passed = 1`, `passed_reason` null).
+ * Enabled with a prompt → LLM verdict; pass stores reason text, fail leaves reason null.
  */
 async function applyItemFilter(
   title: string,
   content: string | null,
 ): Promise<ItemFilterResult> {
-  const prompt = getFilterPrompt().trim();
-  if (!prompt) {
+  if (!hasFilterPrompt()) {
     return { filter_passed: 1, passed_reason: null };
   }
+  const prompt = getFilterPrompt().trim();
 
   const result = await applyAiFilter(title, content, prompt);
   if (!result.passed) {

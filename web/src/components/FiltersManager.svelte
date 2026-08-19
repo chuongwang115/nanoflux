@@ -8,10 +8,21 @@
   const textareaClass = "min-h-48 resize-y " + inputClass;
 
   let prompt = $state("");
+  let enabled = $state(false);
+  let savedPrompt = $state("");
+  let savedEnabled = $state(false);
   let formError = $state("");
-  let savedHint = $state("");
   let loading = $state(true);
   let saving = $state(false);
+
+  const isDirty = $derived(prompt.trim() !== savedPrompt || enabled !== savedEnabled);
+  const saveDisabled = $derived(saving || loading || !isDirty);
+
+  function toggleClass(active: boolean): string {
+    return active
+      ? "text-neutral-900 underline underline-offset-4 decoration-neutral-900 dark:text-neutral-100 dark:decoration-neutral-100"
+      : "text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300";
+  }
 
   async function loadFilter() {
     formError = "";
@@ -19,6 +30,9 @@
     try {
       const filter = await fetchFilter();
       prompt = filter.prompt;
+      enabled = filter.enabled;
+      savedPrompt = filter.prompt;
+      savedEnabled = filter.enabled;
     } catch (e) {
       formError = e instanceof Error ? e.message : t("filters.loadFailed");
     } finally {
@@ -26,16 +40,20 @@
     }
   }
 
-  async function handleSubmit(e: SubmitEvent) {
-    e.preventDefault();
+  async function handleSave() {
+    if (saveDisabled) return;
     formError = "";
-    savedHint = "";
     saving = true;
 
     try {
-      const updated = await updateFilter({ prompt: prompt.trim() });
+      const updated = await updateFilter({
+        prompt: prompt.trim(),
+        enabled,
+      });
       prompt = updated.prompt;
-      savedHint = t("filters.saved");
+      enabled = updated.enabled;
+      savedPrompt = updated.prompt;
+      savedEnabled = updated.enabled;
     } catch (err) {
       formError = err instanceof Error ? err.message : t("filters.saveFailed");
     } finally {
@@ -49,31 +67,59 @@
 </script>
 
 <section class="mb-10">
-  <p class="mb-4 text-sm text-neutral-400 dark:text-neutral-500">
+  <p class="mb-6 text-sm text-neutral-400 dark:text-neutral-500">
     {t("filters.hint")}
   </p>
   {#if loading}
     <p class="text-sm text-neutral-300 dark:text-neutral-600">{t("items.loading")}</p>
   {:else}
-    <form class="space-y-3" onsubmit={handleSubmit}>
-      <textarea
-        bind:value={prompt}
-        placeholder={t("filters.prompt")}
-        class={textareaClass}
-      ></textarea>
-      <div class="flex items-center gap-4 pt-2">
-        <button
-          type="submit"
-          disabled={saving}
-          class="text-sm text-neutral-900 underline-offset-4 hover:underline disabled:opacity-50 dark:text-neutral-100"
+    <div class="space-y-8">
+      <div class="space-y-3">
+        <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
+          {t("filters.enabled")}
+        </span>
+        <div
+          class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm"
+          role="group"
+          aria-label={t("filters.enabled")}
         >
-          {saving ? t("filters.saving") : t("filters.save")}
-        </button>
-        {#if savedHint}
-          <span class="text-sm text-neutral-400 dark:text-neutral-500">{savedHint}</span>
-        {/if}
+          <button
+            type="button"
+            class="transition-colors {toggleClass(enabled)}"
+            aria-pressed={enabled}
+            disabled={saving}
+            onclick={() => (enabled = true)}
+          >
+            {t("filters.on")}
+          </button>
+          <button
+            type="button"
+            class="transition-colors {toggleClass(!enabled)}"
+            aria-pressed={!enabled}
+            disabled={saving}
+            onclick={() => (enabled = false)}
+          >
+            {t("filters.off")}
+          </button>
+        </div>
       </div>
-    </form>
+
+      <label class="block space-y-3">
+        <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
+          {t("filters.prompt")}
+        </span>
+        <textarea bind:value={prompt} class={textareaClass} disabled={saving}></textarea>
+      </label>
+
+      <button
+        type="button"
+        disabled={saveDisabled}
+        class="text-sm text-neutral-900 underline-offset-4 hover:underline disabled:opacity-50 dark:text-neutral-100"
+        onclick={() => void handleSave()}
+      >
+        {saving ? t("filters.saving") : t("filters.save")}
+      </button>
+    </div>
   {/if}
   {#if formError}
     <p class="mt-3 text-sm text-red-500">{formError}</p>
