@@ -1,13 +1,13 @@
 import { get, writable } from "svelte/store";
 
 /** Logical routes (not URL pathnames). */
-export type AppRoute = "/" | "/feeds" | "/filter" | "/export";
+export type AppRoute = "/" | "/feeds" | "/filter" | "/export" | "/fever";
 
 const scrollByRoute = new Map<string, number>();
 
 export const route = writable<AppRoute>("/");
 
-const SUBPAGE_PATH_SUFFIXES = ["/feeds/", "/filter/", "/export/"];
+const SUBPAGE_PATH_SUFFIXES = ["/feeds/", "/filter/", "/export/", "/fever/"];
 
 function isSubPagePath(path: string): boolean {
   return SUBPAGE_PATH_SUFFIXES.some((suffix) => path.endsWith(suffix));
@@ -19,6 +19,7 @@ function pathnameToRoute(pathname: string): AppRoute {
     return "/filter";
   }
   if (pathname.endsWith("/export")) return "/export";
+  if (pathname.endsWith("/fever")) return "/fever";
   return "/";
 }
 
@@ -26,6 +27,7 @@ function routeToRelativeHref(next: AppRoute): string {
   if (next === "/feeds") return "feeds";
   if (next === "/filter") return "filter";
   if (next === "/export") return "export";
+  if (next === "/fever") return "fever";
   if (isSubPagePath(window.location.pathname)) {
     return "..";
   }
@@ -53,6 +55,11 @@ export function filterHref(): string {
 /** Relative link to the export page. */
 export function exportHref(): string {
   return "export";
+}
+
+/** Relative link to the Fever page. */
+export function feverHref(): string {
+  return "fever";
 }
 
 function saveScroll(current: AppRoute) {

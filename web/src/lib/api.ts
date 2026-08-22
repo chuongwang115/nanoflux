@@ -3,7 +3,7 @@ import { localeState } from "./locale.svelte";
 export type FeedSort = "updated_desc" | "published_desc" | "published_asc";
 
 export type Feed = {
-  id: string;
+  id: number;
   title: string;
   url: string;
   description: string | null;
@@ -13,12 +13,13 @@ export type Feed = {
 };
 
 export type Item = {
-  id: string;
-  feed_id: string;
+  id: number;
+  feed_id: number;
   guid: string;
   title: string;
   link: string;
   content: string | null;
+  cover: string | null;
   published_at: string;
   is_read: boolean;
   feed_title: string;
@@ -208,7 +209,7 @@ export function createFeed(payload: {
 }
 
 export function updateFeed(
-  id: string,
+  id: number,
   payload: { 
     title: string; 
     url: string;
@@ -220,7 +221,7 @@ export function updateFeed(
   });
 }
 
-export function deleteFeed(id: string) {
+export function deleteFeed(id: number) {
   return request<{ success: boolean }>(`/api/feeds/${id}/delete`, {
     method: "POST",
   });
@@ -282,7 +283,7 @@ export async function markAllItemsRead(until: string) {
   assertApiOk(body);
 }
 
-export async function markItemRead(id: string) {
+export async function markItemRead(id: number) {
   const body = await request<ApiResult>(`/api/items/${id}/read`, {
     method: "POST",
   });
@@ -336,5 +337,68 @@ export function updateFilter(payload: { prompt?: string; enabled?: boolean }) {
       throw new Error(body.message || "Failed to update filter");
     }
     return normalizeFilterConfig(body.data, payload);
+  });
+}
+
+export type FeverConfig = {
+  enabled: boolean;
+  user: string;
+  hasPassword: boolean;
+};
+
+type FeverApiResult = {
+  code: number;
+  message: string;
+  data?: Partial<FeverConfig>;
+};
+
+function normalizeFeverConfig(
+  data: Partial<FeverConfig> | undefined,
+  defaults?: Partial<FeverConfig>,
+): FeverConfig {
+  return {
+    enabled:
+      typeof data?.enabled === "boolean"
+        ? data.enabled
+        : typeof defaults?.enabled === "boolean"
+          ? defaults.enabled
+          : false,
+    user: typeof data?.user === "string" ? data.user : (defaults?.user ?? ""),
+    hasPassword:
+      typeof data?.hasPassword === "boolean"
+        ? data.hasPassword
+        : typeof defaults?.hasPassword === "boolean"
+          ? defaults.hasPassword
+          : false,
+  };
+}
+
+export async function fetchFever(): Promise<FeverConfig> {
+  const body = await request<FeverApiResult>("/api/fever");
+  assertApiOk(body);
+  if (!body.data) {
+    throw new Error(body.message || "Failed to load fever config");
+  }
+  return normalizeFeverConfig(body.data);
+}
+
+export function updateFever(payload: {
+  enabled?: boolean;
+  user?: string;
+  password?: string;
+}) {
+  return request<FeverApiResult>("/api/fever", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }).then((body) => {
+    assertApiOk(body);
+    if (!body.data) {
+      throw new Error(body.message || "Failed to update fever config");
+    }
+    return normalizeFeverConfig(body.data, {
+      enabled: payload.enabled,
+      user: payload.user,
+      hasPassword: Boolean(payload.password) || undefined,
+    });
   });
 }

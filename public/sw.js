@@ -1,7 +1,7 @@
 (() => {
   // ../nanoflux/web/src/sw.ts
-  var CACHE_NAME = "nanoflux-v3";
-  var SHELL_URLS = ["/", "/feeds"];
+  var CACHE_NAME = "nanoflux-v4";
+  var SHELL_URLS = ["/", "/feeds", "/fever"];
   var PRECACHE_URLS = [
     ...SHELL_URLS,
     ...["/assets/main.js", "/assets/app.css"]
@@ -24,8 +24,13 @@
     const url = new URL(request.url);
     if (url.origin !== sw.location.origin)
       return;
+    if (request.method !== "GET")
+      return;
     if (isApiRequest(url))
       return;
+    if ((url.pathname === "/fever" || url.pathname === "/fever/") && url.searchParams.has("api")) {
+      return;
+    }
     if (isNavigation(request)) {
       event.respondWith(fetch(request).then((response) => {
         const copy = response.clone();

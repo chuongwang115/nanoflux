@@ -26,7 +26,7 @@
   let feeds = $state<Feed[]>([]);
   let cursor = $state<string | null>(null);
   let hasMore = $state(true);
-  let editId = $state<string | null>(null);
+  let editId = $state<number | null>(null);
   let title = $state("");
   let url = $state("");
   let description = $state("");
@@ -334,7 +334,7 @@
     }
   }
 
-  async function handleDelete(id: string) {
+  async function handleDelete(id: number) {
     if (!confirm(t("feeds.confirmDelete"))) return;
     listError = "";
     try {

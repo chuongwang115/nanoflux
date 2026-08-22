@@ -10,7 +10,7 @@ export function registerDeleteFeed(server: McpServer): void {
       description:
         "Delete an RSS feed by id. Associated news items are removed. WeChat RSS feeds are also unsubscribed remotely when configured.",
       inputSchema: {
-        id: z.string().min(1).describe("Feed id"),
+        id: z.coerce.number().int().positive().describe("Feed id"),
       },
     },
     async ({ id }) => {

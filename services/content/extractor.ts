@@ -1,9 +1,10 @@
 import { extractFromHtml } from "@extractus/article-extractor";
 import { decodeHtmlBytes } from "../../utils/encoding";
 import { countContentTokens } from "../../utils/text";
-import { stripHtml, stripSrcsetAttributes } from "../../utils/html";
+import { htmlToPlainText, stripSrcsetAttributes } from "../../utils/html";
 import { resolveArticleUrl } from "../google-news";
 import { httpGet } from "../http-fetcher";
+import { pickCoverFromHtml, pickCoverFromMeta } from "../feeds/cover";
 
 /** Unified token threshold; roughly ~200 Chinese chars / 80 English words. */
 const FULL_CONTENT_MIN_TOKENS = 80;
@@ -26,10 +27,9 @@ function needsFullContentScrape(content: string | null | undefined): boolean {
   return !hasFullContent(content);
 }
 
-async function fetchArticleContent(url: string): Promise<string | null> {
+async function fetchArticleHtml(url: string): Promise<string | null> {
   try {
-    const articleUrl = await resolveArticleUrl(url);
-    const response = await httpGet(articleUrl, {
+    const response = await httpGet(url, {
       headers: {
         "User-Agent": BROWSER_USER_AGENT,
         Accept:
@@ -41,37 +41,61 @@ async function fetchArticleContent(url: string): Promise<string | null> {
     if (!response.ok) return null;
 
     const bytes = Buffer.from(await response.arrayBuffer());
-    const html = stripSrcsetAttributes(
+    return stripSrcsetAttributes(
       decodeHtmlBytes(bytes, response.headers.get("content-type")),
     );
-    const article = await extractFromHtml(html, articleUrl, {
-      contentLengthThreshold: FULL_CONTENT_MIN_TOKENS,
-    });
-    if (!article?.content) return null;
-
-    const text = stripHtml(article.content);
-    return text || null;
   } catch {
     return null;
   }
 }
 
 async function enrichItemContent<
-  T extends { link: string; content: string | null },
+  T extends { link: string; content: string | null; cover: string | null },
 >(item: T): Promise<T> {
   const resolvedLink = await resolveArticleUrl(item.link);
-  const next = resolvedLink !== item.link ? { ...item, link: resolvedLink } : item;
+  let next = resolvedLink !== item.link ? { ...item, link: resolvedLink } : item;
 
-  if (!needsFullContentScrape(next.content)) return next;
+  const needCover = !next.cover;
+  const needContent = needsFullContentScrape(next.content);
+  if (!needCover && !needContent) return next;
 
-  const scraped = await fetchArticleContent(next.link);
-  if (!scraped) return next;
+  const html = await fetchArticleHtml(next.link);
+  if (!html) return next;
 
-  return { ...next, content: scraped };
+  if (needCover) {
+    const fromMeta = pickCoverFromMeta(html, next.link);
+    if (fromMeta) next = { ...next, cover: fromMeta };
+  }
+
+  const stillNeedCover = !next.cover;
+  if (!needContent && !stillNeedCover) return next;
+
+  let article: Awaited<ReturnType<typeof extractFromHtml>> = null;
+  try {
+    article = await extractFromHtml(html, next.link, {
+      contentLengthThreshold: FULL_CONTENT_MIN_TOKENS,
+    });
+  } catch {
+    article = null;
+  }
+
+  if (stillNeedCover) {
+    const fromBody =
+      pickCoverFromHtml(article?.content, next.link) ||
+      pickCoverFromHtml(html, next.link);
+    if (fromBody) next = { ...next, cover: fromBody };
+  }
+
+  if (needContent && article?.content) {
+    const text = htmlToPlainText(article.content);
+    if (text) next = { ...next, content: text };
+  }
+
+  return next;
 }
 
 export async function enrichItemsContent<
-  T extends { link: string; content: string | null },
+  T extends { link: string; content: string | null; cover: string | null },
 >(items: T[]): Promise<T[]> {
   const enriched: T[] = [];
 

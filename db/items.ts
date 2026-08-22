@@ -11,7 +11,7 @@ import {
 import { db } from "./database";
 import { getFeed } from "./feeds";
 import { feeds, items, DEFAULT_LIMIT, MAX_LIMIT } from "./schema";
-import { newItemId, decodeCursor, parseTimeRange, TimeUnit, toUtcIso } from "./utils";
+import { newItemId, decodeCursor, parseItemId, parseTimeRange, TimeUnit, toUtcIso } from "./utils";
 
 export function getItems(options?: {
   since?: string;
@@ -28,6 +28,10 @@ export function getItems(options?: {
     const decoded = options?.cursor ? decodeCursor(options.cursor) : null;
     if (options?.cursor && !decoded) {
       throw new Error(`Invalid cursor: ${options.cursor}`);
+    }
+    const cursorId = decoded ? parseItemId(decoded.id) : null;
+    if (decoded && cursorId === null) {
+      throw new Error(`Invalid cursor: ${options?.cursor}`);
     }
 
     const adjustedLimit = Math.min(
@@ -52,7 +56,7 @@ export function getItems(options?: {
     const cursorFilter = decoded
       ? or(
           lt(items.published_at, decoded.sortTime),
-          and(eq(items.published_at, decoded.sortTime), lt(items.id, decoded.id)),
+          and(eq(items.published_at, decoded.sortTime), lt(items.id, cursorId!)),
         )
       : undefined;
 
@@ -70,6 +74,7 @@ export function getItems(options?: {
         title: items.title,
         link: items.link,
         content: items.content,
+        cover: items.cover,
         published_at: items.published_at,
         is_read: items.is_read,
         created_at: items.created_at,
@@ -136,12 +141,13 @@ export function getExistingGuids(guids: string[]): Set<string> {
 }
 
 export function addItems(
-  feedId: string,
+  feedId: number,
   newItems: {
     guid: string;
     title: string;
     link: string;
     content: string | null;
+    cover: string | null;
     published_at: string;
     is_deleted: 0 | 1;
     deleted_reason: string | null;
@@ -175,6 +181,7 @@ export function addItems(
           title: newItem.title,
           link: newItem.link,
           content: newItem.content,
+          cover: newItem.cover,
           published_at: newItem.published_at,
           is_read: 0,
           is_deleted,
@@ -224,7 +231,7 @@ export function markItemsRead(until: string): void {
   }
 }
 
-export function deleteItem(id: string, reason: string): boolean {
+export function deleteItem(id: number, reason: string): boolean {
   try {
     const deletedReason = reason.trim();
     if (!deletedReason) {
@@ -257,7 +264,7 @@ export function deleteItem(id: string, reason: string): boolean {
   }
 }
 
-export function markItemRead(id: string): void {
+export function markItemRead(id: number): void {
 
   try {
 

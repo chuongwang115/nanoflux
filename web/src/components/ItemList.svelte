@@ -8,6 +8,7 @@
     type Item,
   } from "../lib/api";
   import { formatTime } from "../lib/utils";
+  import ItemFilterToggle from "./buttons/ItemFilterToggle.svelte";
   import MarkAllReadButton from "./buttons/MarkAllReadButton.svelte";
 
   const PAGE_SIZE = 20;
@@ -138,33 +139,11 @@
   });
 </script>
 
-<div class="mb-6 flex items-center justify-between gap-4">
-  <div
-    class="flex gap-3 text-xs"
-    role="group"
-    aria-label={t("items.filterBy")}
-  >
-      <button
-        type="button"
-        class="transition-colors {filter === 'unread'
-          ? 'text-neutral-900 dark:text-neutral-100'
-          : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}"
-        aria-pressed={filter === "unread"}
-        onclick={() => setReadFilter("unread")}
-      >
-        {t("items.filterUnread")}
-      </button>
-      <button
-        type="button"
-        class="transition-colors {filter === 'all'
-          ? 'text-neutral-900 dark:text-neutral-100'
-          : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}"
-        aria-pressed={filter === "all"}
-        onclick={() => setReadFilter("all")}
-      >
-        {t("items.filterAll")}
-      </button>
-  </div>
+<div class="mb-6 flex items-center justify-end gap-0.5">
+  <ItemFilterToggle
+    {filter}
+    onToggle={() => setReadFilter(filter === "unread" ? "all" : "unread")}
+  />
   <MarkAllReadButton onMarkAllRead={() => markAllRead()} />
 </div>
 
@@ -176,35 +155,56 @@
   <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
     {#each items as item (item.id)}
       <li class="py-5">
-        <article>
-          <div
-            class="flex items-baseline gap-1.5 text-xs text-neutral-400 dark:text-neutral-500"
-          >
-            <time datetime={item.published_at}>
-              {formatTime(item.published_at, now)}
-            </time>
-            <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true"
-              >·</span
+        <article class="flex items-start gap-4">
+          <div class="min-w-0 flex-1">
+            <div
+              class="flex items-baseline gap-1.5 text-xs text-neutral-400 dark:text-neutral-500"
             >
-            <span>{item.feed_title}</span>
+              <time datetime={item.published_at}>
+                {formatTime(item.published_at, now)}
+              </time>
+              <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true"
+                >·</span
+              >
+              <span>{item.feed_title}</span>
+            </div>
+            <a
+              href={item.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              onclick={() => handleOpenItem(item)}
+              class="mt-1 block text-sm leading-snug hover:text-neutral-600 dark:hover:text-neutral-300 {item.is_read
+                ? 'font-normal text-neutral-500 dark:text-neutral-500'
+                : 'font-medium text-neutral-900 dark:text-neutral-100'}"
+            >
+              {item.title}
+            </a>
+            {#if item.content}
+              <p
+                class="mt-2 line-clamp-2 text-sm text-neutral-400 dark:text-neutral-500"
+              >
+                {item.content}
+              </p>
+            {/if}
           </div>
-          <a
-            href={item.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            onclick={() => handleOpenItem(item)}
-            class="mt-1 block text-sm leading-snug hover:text-neutral-600 dark:hover:text-neutral-300 {item.is_read
-              ? 'font-normal text-neutral-500 dark:text-neutral-500'
-              : 'font-medium text-neutral-900 dark:text-neutral-100'}"
-          >
-            {item.title}
-          </a>
-          {#if item.content}
-            <p
-              class="mt-2 line-clamp-2 text-sm text-neutral-400 dark:text-neutral-500"
+          {#if item.cover}
+            <a
+              href={item.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              onclick={() => handleOpenItem(item)}
+              class="block aspect-[4/3] w-40 shrink-0 overflow-hidden rounded-md"
+              tabindex="-1"
+              aria-hidden="true"
             >
-              {item.content}
-            </p>
+              <img
+                src={item.cover}
+                alt=""
+                class="h-full w-full bg-neutral-100 object-cover dark:bg-neutral-800"
+                loading="lazy"
+                referrerpolicy="no-referrer"
+              />
+            </a>
           {/if}
         </article>
       </li>

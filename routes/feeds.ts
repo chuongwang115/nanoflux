@@ -9,7 +9,7 @@ import {
   feedCursorSortTime,
   type FeedSort,
 } from "../db/feeds";
-import { encodeCursor } from "../db/utils";
+import { encodeCursor, parseFeedId } from "../db/utils";
 import { DEFAULT_LIMIT, MAX_LIMIT } from "../db/schema";
 import { enqueueNewFeedFetch, fetchFeedMetadata } from "../services/feeds/fetcher";
 import { feedsToOpml } from "../services/feeds/opml";
@@ -96,10 +96,18 @@ async function getFeedMetaHandler({ body }: { body: any; }) {
   }
 }
 
+function requireFeedId(raw: string): number {
+  const id = parseFeedId(raw);
+  if (id === null) {
+    throw new Error("Invalid feed id");
+  }
+  return id;
+}
+
 function getFeedHandler({ params }: { params: { id: string; }; }) {
 
   try {
-    const feed = getFeed(params.id);
+    const feed = getFeed(requireFeedId(params.id));
     return { code: 0, message: "ok", data: feed };
 
   } catch (error) {
@@ -126,7 +134,7 @@ function createFeedHandler({ body }: { body: any; }) {
 function updateFeedHandler({ params, body }: { params: { id: string; }; body: any; }) {
 
   try {
-    const feed = updateFeed(params.id, body);
+    const feed = updateFeed(requireFeedId(params.id), body);
     return { code: 0, message: "ok", data: feed };
 
   } catch (error) {
@@ -138,8 +146,9 @@ function updateFeedHandler({ params, body }: { params: { id: string; }; body: an
 
 async function deleteFeedHandler({ params }: { params: { id: string } }) {
   try {
-    const feed = getFeed(params.id);
-    deleteFeed(params.id);
+    const id = requireFeedId(params.id);
+    const feed = getFeed(id);
+    deleteFeed(id);
     if (feed?.url) {
       try {
         await unsubscribeWechatFeedUrl(feed.url);

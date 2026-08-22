@@ -44,4 +44,6 @@ data.sqlite-wal
 
 # filter.json
 filter.json
-filters.json
+
+# fever.json (credentials)
+fever.json

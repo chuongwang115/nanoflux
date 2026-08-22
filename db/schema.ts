@@ -11,7 +11,7 @@ import {
 export const feeds = sqliteTable(
   "t_feeds",
   {
-    id: text("id").primaryKey(),
+    id: integer("id").primaryKey({ autoIncrement: true }),
     title: text("title").notNull(),
     url: text("url").notNull().unique(),
     description: text("description"),
@@ -37,14 +37,15 @@ export const feeds = sqliteTable(
 export const items = sqliteTable(
   "t_items",
   {
-    id: text("id").primaryKey(),
-    feed_id: text("feed_id")
+    id: integer("id").primaryKey(),
+    feed_id: integer("feed_id")
       .notNull()
       .references(() => feeds.id, { onDelete: "cascade" }),
     guid: text("guid").notNull(),
     title: text("title").notNull(),
-    link: text("link").notNull(),
     content: text("content"),
+    link: text("link").notNull(),
+    cover: text("cover"),
     published_at: text("published_at").notNull(),
     created_at: text("created_at")
       .notNull()

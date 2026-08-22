@@ -12,7 +12,7 @@ import {
 } from "drizzle-orm";
 import { db } from "./database";
 import { feeds, type Feed, DEFAULT_LIMIT, MAX_LIMIT } from "./schema";
-import { decodeCursor, feedIdFromUrl } from "./utils";
+import { decodeCursor, parseFeedId } from "./utils";
 
 export type FeedSort = "updated_desc" | "published_desc" | "published_asc";
 
@@ -51,6 +51,10 @@ export function getFeeds(
     if (options?.cursor && !decoded) {
       throw new Error(`Invalid cursor: ${options.cursor}`);
     }
+    const cursorId = decoded ? parseFeedId(decoded.id) : null;
+    if (decoded && cursorId === null) {
+      throw new Error(`Invalid cursor: ${options?.cursor}`);
+    }
 
     let cursorFilter;
     if (decoded) {
@@ -59,7 +63,7 @@ export function getFeeds(
           gt(publishedSortKeyAsc, decoded.sortTime),
           and(
             eq(publishedSortKeyAsc, decoded.sortTime),
-            gt(feeds.id, decoded.id),
+            gt(feeds.id, cursorId!),
           ),
         );
       } else if (sort === "published_desc") {
@@ -67,7 +71,7 @@ export function getFeeds(
           lt(publishedSortKeyDesc, decoded.sortTime),
           and(
             eq(publishedSortKeyDesc, decoded.sortTime),
-            lt(feeds.id, decoded.id),
+            lt(feeds.id, cursorId!),
           ),
         );
       } else {
@@ -75,7 +79,7 @@ export function getFeeds(
           lt(feeds.updated_at, decoded.sortTime),
           and(
             eq(feeds.updated_at, decoded.sortTime),
-            lt(feeds.id, decoded.id),
+            lt(feeds.id, cursorId!),
           ),
         );
       }
@@ -127,7 +131,7 @@ export function getAllFeeds(): Feed[] {
   }
 }
 
-export function getFeed(id: string): Feed | null {
+export function getFeed(id: number): Feed | null {
 
   try {
 
@@ -148,6 +152,15 @@ export function getFeed(id: string): Feed | null {
   }
 }
 
+export function getFeedByUrl(url: string): Feed | null {
+  try {
+    return db.select().from(feeds).where(eq(feeds.url, url)).get() ?? null;
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to get feed: ${detail}`);
+  }
+}
+
 export function createFeed(
   input: {
     title: string;
@@ -158,16 +171,13 @@ export function createFeed(
 
   try {
 
-    const id = feedIdFromUrl(input.url);
-
-    const existing = getFeed(id);
+    const existing = getFeedByUrl(input.url);
     if (existing) {
       return existing;
     }
 
     const created = db.insert(feeds)
       .values({
-        id,
         title: input.title,
         url: input.url,
         description: input.description ?? null,
@@ -175,16 +185,24 @@ export function createFeed(
       .returning()
       .get();
 
+    if (!created) {
+      throw new Error("Failed to create feed");
+    }
+
     return created;
       
   } catch (error) {
+    const existing = getFeedByUrl(input.url);
+    if (existing) {
+      return existing;
+    }
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to create feed: ${detail}`);
   }
 }
 
 export function updateFeed(
-  id: string,
+  id: number,
   input: {
     title?: string;
     url?: string;
@@ -222,7 +240,7 @@ export function updateFeed(
   }
 }
 
-export function deleteFeed(id: string): boolean {
+export function deleteFeed(id: number): boolean {
 
   try {
 
@@ -272,7 +290,7 @@ export function getDueFeeds(): Feed[] {
 }
 
 export function updateFeedFetchState(
-  id: string,
+  id: number,
   input: {
     next_fetched_at: string;
     fetch_interval_min: number;

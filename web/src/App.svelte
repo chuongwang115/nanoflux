@@ -3,6 +3,7 @@
   import FeedsManager from "./components/FeedsManager.svelte";
   import FiltersManager from "./components/FiltersManager.svelte";
   import ExportPage from "./components/ExportPage.svelte";
+  import FeverManager from "./components/FeverManager.svelte";
   import NewsList from "./components/ItemList.svelte";
   import { route } from "./lib/router";
 </script>
@@ -17,6 +18,8 @@
         <FiltersManager />
       {:else if $route === "/export"}
         <ExportPage />
+      {:else if $route === "/fever"}
+        <FeverManager />
       {:else}
         <NewsList />
       {/if}

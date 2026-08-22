@@ -2,8 +2,8 @@
 
 declare const BUILD_PRECACHE: string[];
 
-const CACHE_NAME = "nanoflux-v3";
-const SHELL_URLS = ["/", "/feeds"];
+const CACHE_NAME = "nanoflux-v4";
+const SHELL_URLS = ["/", "/feeds", "/fever"];
 const PRECACHE_URLS: string[] = [
   ...SHELL_URLS,
   ...BUILD_PRECACHE,
@@ -49,7 +49,16 @@ sw.addEventListener("fetch", (event) => {
 
   if (url.origin !== sw.location.origin) return;
 
+  if (request.method !== "GET") return;
+
   if (isApiRequest(url)) return;
+
+  if (
+    (url.pathname === "/fever" || url.pathname === "/fever/") &&
+    url.searchParams.has("api")
+  ) {
+    return;
+  }
 
   if (isNavigation(request)) {
     event.respondWith(

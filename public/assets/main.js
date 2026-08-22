@@ -6283,7 +6283,7 @@ enable_legacy_mode_flag();
 // ../nanoflux/web/src/lib/router.ts
 var scrollByRoute = new Map;
 var route = writable("/");
-var SUBPAGE_PATH_SUFFIXES = ["/feeds/", "/filter/", "/export/"];
+var SUBPAGE_PATH_SUFFIXES = ["/feeds/", "/filter/", "/export/", "/fever/"];
 function isSubPagePath(path) {
   return SUBPAGE_PATH_SUFFIXES.some((suffix) => path.endsWith(suffix));
 }
@@ -6295,6 +6295,8 @@ function pathnameToRoute(pathname) {
   }
   if (pathname.endsWith("/export"))
     return "/export";
+  if (pathname.endsWith("/fever"))
+    return "/fever";
   return "/";
 }
 function routeToRelativeHref(next2) {
@@ -6304,6 +6306,8 @@ function routeToRelativeHref(next2) {
     return "filter";
   if (next2 === "/export")
     return "export";
+  if (next2 === "/fever")
+    return "fever";
   if (isSubPagePath(window.location.pathname)) {
     return "..";
   }
@@ -6323,6 +6327,9 @@ function filterHref() {
 }
 function exportHref() {
   return "export";
+}
+function feverHref() {
+  return "fever";
 }
 function saveScroll(current) {
   scrollByRoute.set(current, window.scrollY);
@@ -6634,7 +6641,8 @@ var messages = {
   zh: {
     "items.latest": "最新资讯",
     "items.feeds": "Feed 管理",
-    "items.filters": "Filter 管理",
+    "items.filter": "Filter 设置",
+    "items.fever": "Fever 设置",
     "items.export": "导出",
     "items.noItems": "暂无资讯",
     "items.loading": "加载中…",
@@ -6644,6 +6652,8 @@ var messages = {
     "items.filterBy": "筛选",
     "items.filterUnread": "未读",
     "items.filterAll": "全部",
+    "items.switchToAll": "切换到全部",
+    "items.switchToUnread": "切换到未读",
     "feeds.name": "名称",
     "feeds.descriptionOptional": "描述（可选）",
     "feeds.addFeed": "添加 Feed",
@@ -6702,6 +6712,20 @@ var messages = {
     "export.exporting": "导出中…",
     "export.failed": "导出失败",
     "export.invalidRange": "起始时间不能晚于截止时间",
+    "fever.hint": "开启后可用 Fever API 给 Reeder 等阅读器同步资讯。关闭服务后客户端将无法认证。",
+    "fever.enabled": "Fever API",
+    "fever.on": "开启",
+    "fever.off": "关闭",
+    "fever.user": "User",
+    "fever.password": "Password",
+    "fever.passwordKeep": "留空则保留原密码",
+    "fever.endpoint": "API 地址",
+    "fever.save": "保存",
+    "fever.saving": "保存中…",
+    "fever.loadFailed": "加载失败",
+    "fever.saveFailed": "保存失败",
+    "fever.userRequired": "开启 Fever API 时需要填写 User",
+    "fever.passwordRequired": "开启 Fever API 时需要设置 Password",
     "theme.switchToLight": "切换到浅色模式",
     "theme.switchToDark": "切换到深色模式",
     "theme.lightMode": "浅色模式",
@@ -6723,8 +6747,9 @@ var messages = {
   en: {
     "items.latest": "Latest",
     "items.feeds": "Feeds",
-    "items.filters": "Filter",
+    "items.filter": "Filter",
     "items.export": "Export",
+    "items.fever": "Fever",
     "items.noItems": "No news yet",
     "items.loading": "Loading…",
     "items.noMore": "No more news",
@@ -6733,6 +6758,8 @@ var messages = {
     "items.filterBy": "Filter",
     "items.filterUnread": "Unread",
     "items.filterAll": "All",
+    "items.switchToAll": "Show all",
+    "items.switchToUnread": "Unread only",
     "feeds.name": "Name",
     "feeds.descriptionOptional": "Description (optional)",
     "feeds.addFeed": "Add feed",
@@ -6791,6 +6818,20 @@ var messages = {
     "export.exporting": "Exporting…",
     "export.failed": "Export failed",
     "export.invalidRange": "Start time cannot be later than end time",
+    "fever.hint": "When enabled, RSS apps such as Reeder can sync via the Fever API. Turning it off rejects client authentication.",
+    "fever.enabled": "Fever API",
+    "fever.on": "On",
+    "fever.off": "Off",
+    "fever.user": "User",
+    "fever.password": "Password",
+    "fever.passwordKeep": "Leave blank to keep the current password",
+    "fever.endpoint": "API URL",
+    "fever.save": "Save",
+    "fever.saving": "Saving…",
+    "fever.loadFailed": "Failed to load",
+    "fever.saveFailed": "Failed to save",
+    "fever.userRequired": "User is required when Fever API is on",
+    "fever.passwordRequired": "Password is required when Fever API is on",
     "theme.switchToLight": "Switch to light mode",
     "theme.switchToDark": "Switch to dark mode",
     "theme.lightMode": "Light mode",
@@ -7152,6 +7193,7 @@ var root9 = from_html(`
     <a> </a>
     <a> </a>
     <a> </a>
+    <a> </a>
   </nav>
 
   <div class="mt-4 flex shrink-0 items-center gap-0.5 md:mt-auto">
@@ -7185,9 +7227,13 @@ function Header($$anchor, $$props) {
   var text_2 = child(a_3);
   reset(a_3);
   var a_4 = sibling(a_3, 2);
-  var event_handler_4 = user_derived(() => navClick("/export"));
+  var event_handler_4 = user_derived(() => navClick("/fever"));
   var text_3 = child(a_4);
   reset(a_4);
+  var a_5 = sibling(a_4, 2);
+  var event_handler_5 = user_derived(() => navClick("/export"));
+  var text_4 = child(a_5);
+  reset(a_5);
   next();
   reset(nav);
   var div = sibling(nav, 2);
@@ -7201,7 +7247,7 @@ function Header($$anchor, $$props) {
   reset(div);
   next();
   reset(aside);
-  template_effect(($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) => {
+  template_effect(($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) => {
     set_attribute2(a, "href", $0);
     set_attribute2(nav, "aria-label", $1);
     set_attribute2(a_1, "href", $2);
@@ -7224,9 +7270,15 @@ function Header($$anchor, $$props) {
     `);
     set_attribute2(a_4, "href", $11);
     set_class(a_4, 1, $12);
-    set_attribute2(a_4, "aria-current", $route() === "/export" ? "page" : undefined);
+    set_attribute2(a_4, "aria-current", $route() === "/fever" ? "page" : undefined);
     set_text(text_3, `
       ${$13 ?? ""}
+    `);
+    set_attribute2(a_5, "href", $14);
+    set_class(a_5, 1, $15);
+    set_attribute2(a_5, "aria-current", $route() === "/export" ? "page" : undefined);
+    set_text(text_4, `
+      ${$16 ?? ""}
     `);
   }, [
     () => homeHref(),
@@ -7239,7 +7291,10 @@ function Header($$anchor, $$props) {
     () => t("items.feeds"),
     () => filterHref(),
     () => clsx2(navClass($route() === "/filter")),
-    () => t("items.filters"),
+    () => t("items.filter"),
+    () => feverHref(),
+    () => clsx2(navClass($route() === "/fever")),
+    () => t("items.fever"),
     () => exportHref(),
     () => clsx2(navClass($route() === "/export")),
     () => t("items.export")
@@ -7258,6 +7313,9 @@ function Header($$anchor, $$props) {
   });
   delegated("click", a_4, function(...$$args) {
     get2(event_handler_4)?.apply(this, $$args);
+  });
+  delegated("click", a_5, function(...$$args) {
+    get2(event_handler_5)?.apply(this, $$args);
   });
   append($$anchor, fragment);
   pop();
@@ -7585,6 +7643,37 @@ function updateFilter(payload) {
       throw new Error(body.message || "Failed to update filter");
     }
     return normalizeFilterConfig(body.data, payload);
+  });
+}
+function normalizeFeverConfig(data, defaults) {
+  return {
+    enabled: typeof data?.enabled === "boolean" ? data.enabled : typeof defaults?.enabled === "boolean" ? defaults.enabled : false,
+    user: typeof data?.user === "string" ? data.user : defaults?.user ?? "",
+    hasPassword: typeof data?.hasPassword === "boolean" ? data.hasPassword : typeof defaults?.hasPassword === "boolean" ? defaults.hasPassword : false
+  };
+}
+async function fetchFever() {
+  const body = await request("/api/fever");
+  assertApiOk(body);
+  if (!body.data) {
+    throw new Error(body.message || "Failed to load fever config");
+  }
+  return normalizeFeverConfig(body.data);
+}
+function updateFever(payload) {
+  return request("/api/fever", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  }).then((body) => {
+    assertApiOk(body);
+    if (!body.data) {
+      throw new Error(body.message || "Failed to update fever config");
+    }
+    return normalizeFeverConfig(body.data, {
+      enabled: payload.enabled,
+      user: payload.user,
+      hasPassword: Boolean(payload.password) || undefined
+    });
   });
 }
 
@@ -9149,9 +9238,425 @@ if (undefined) {}
 var ExportPage_default = ExportPage;
 delegate(["click"]);
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/check-check.svelte
+// ../nanoflux/web/src/components/FeverManager.svelte
+var root16 = from_html(`
+    <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
+  `, 1);
+var root_113 = from_html(`
+    <div class="space-y-8">
+      <div class="space-y-3">
+        <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm" role="group">
+          <button type="button"> </button>
+          <button type="button"> </button>
+        </div>
+      </div>
+
+      <label class="block space-y-3">
+        <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
+        <input type="text" autocomplete="username"/>
+      </label>
+
+      <label class="block space-y-3">
+        <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
+        <input type="password" autocomplete="new-password"/>
+      </label>
+
+      <div class="space-y-2">
+        <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
+        <p class="break-all text-sm text-neutral-600 dark:text-neutral-300"> </p>
+      </div>
+
+      <button type="button" class="text-sm text-neutral-900 underline-offset-4 hover:underline disabled:opacity-50 dark:text-neutral-100"> </button>
+    </div>
+  `, 1);
+var root_23 = from_html(`
+    <p class="mt-3 text-sm text-red-500"> </p>
+  `, 1);
+var root_33 = from_html(`
+
+<section class="mb-10">
+  <p class="mb-6 text-sm text-neutral-400 dark:text-neutral-500"> </p>
+  <!>
+  <!>
+</section>`, 1);
+function FeverManager($$anchor, $$props) {
+  push($$props, true);
+  const inputClass = "w-full border-0 border-b border-neutral-200 bg-transparent py-2 text-sm outline-none placeholder:text-neutral-300 focus:border-neutral-900 dark:border-neutral-700 dark:placeholder:text-neutral-600 dark:focus:border-neutral-100";
+  let enabled = state(false);
+  let user = state("");
+  let password = state("");
+  let hasPassword = state(false);
+  let savedEnabled = state(false);
+  let savedUser = state("");
+  let formError = state("");
+  let loading = state(true);
+  let saving = state(false);
+  const endpointUrl = user_derived(() => typeof window === "undefined" ? "/fever/" : `${window.location.origin}/fever/`);
+  const isDirty = user_derived(() => get2(enabled) !== get2(savedEnabled) || get2(user).trim() !== get2(savedUser) || get2(password).length > 0);
+  const saveDisabled = user_derived(() => get2(saving) || get2(loading) || !get2(isDirty));
+  function toggleClass(active) {
+    return active ? "text-neutral-900 underline underline-offset-4 decoration-neutral-900 dark:text-neutral-100 dark:decoration-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300";
+  }
+  async function loadFever() {
+    set(formError, "");
+    set(loading, true);
+    try {
+      const config = await fetchFever();
+      set(enabled, config.enabled, true);
+      set(user, config.user, true);
+      set(hasPassword, config.hasPassword, true);
+      set(password, "");
+      set(savedEnabled, config.enabled, true);
+      set(savedUser, config.user, true);
+    } catch (e) {
+      set(formError, e instanceof Error ? e.message : t("fever.loadFailed"), true);
+    } finally {
+      set(loading, false);
+    }
+  }
+  async function handleSave() {
+    if (get2(saveDisabled))
+      return;
+    set(formError, "");
+    if (get2(enabled) && !get2(user).trim()) {
+      set(formError, t("fever.userRequired"), true);
+      return;
+    }
+    if (get2(enabled) && !get2(hasPassword) && !get2(password)) {
+      set(formError, t("fever.passwordRequired"), true);
+      return;
+    }
+    set(saving, true);
+    try {
+      const payload = { enabled: get2(enabled), user: get2(user).trim() };
+      if (get2(password).length > 0) {
+        payload.password = get2(password);
+      }
+      const updated = await updateFever(payload);
+      set(enabled, updated.enabled, true);
+      set(user, updated.user, true);
+      set(hasPassword, updated.hasPassword, true);
+      set(password, "");
+      set(savedEnabled, updated.enabled, true);
+      set(savedUser, updated.user, true);
+    } catch (err) {
+      set(formError, err instanceof Error ? err.message : t("fever.saveFailed"), true);
+    } finally {
+      set(saving, false);
+    }
+  }
+  onMount(() => {
+    loadFever();
+  });
+  next();
+  var fragment = root_33();
+  var section = sibling(first_child(fragment));
+  var p = sibling(child(section));
+  var text2 = child(p);
+  reset(p);
+  var node = sibling(p, 2);
+  {
+    var consequent = ($$anchor2) => {
+      var fragment_1 = root16();
+      var p_1 = sibling(first_child(fragment_1));
+      var text_1 = child(p_1, true);
+      reset(p_1);
+      next();
+      template_effect(($0) => set_text(text_1, $0), [() => t("items.loading")]);
+      append($$anchor2, fragment_1);
+    };
+    var alternate = ($$anchor2) => {
+      var fragment_2 = root_113();
+      var div = sibling(first_child(fragment_2));
+      var div_1 = sibling(child(div));
+      var span = sibling(child(div_1));
+      var text_2 = child(span);
+      reset(span);
+      var div_2 = sibling(span, 2);
+      var button = sibling(child(div_2));
+      var text_3 = child(button);
+      reset(button);
+      var button_1 = sibling(button, 2);
+      var text_4 = child(button_1);
+      reset(button_1);
+      next();
+      reset(div_2);
+      next();
+      reset(div_1);
+      var label = sibling(div_1, 2);
+      var span_1 = sibling(child(label));
+      var text_5 = child(span_1);
+      reset(span_1);
+      var input = sibling(span_1, 2);
+      remove_input_defaults(input);
+      set_class(input, 1, clsx2(inputClass));
+      next();
+      reset(label);
+      var label_1 = sibling(label, 2);
+      var span_2 = sibling(child(label_1));
+      var text_6 = child(span_2);
+      reset(span_2);
+      var input_1 = sibling(span_2, 2);
+      remove_input_defaults(input_1);
+      set_class(input_1, 1, clsx2(inputClass));
+      next();
+      reset(label_1);
+      var div_3 = sibling(label_1, 2);
+      var span_3 = sibling(child(div_3));
+      var text_7 = child(span_3);
+      reset(span_3);
+      var p_2 = sibling(span_3, 2);
+      var text_8 = child(p_2, true);
+      reset(p_2);
+      next();
+      reset(div_3);
+      var button_2 = sibling(div_3, 2);
+      var text_9 = child(button_2);
+      reset(button_2);
+      next();
+      reset(div);
+      next();
+      template_effect(($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10) => {
+        set_text(text_2, `
+          ${$0 ?? ""}
+        `);
+        set_attribute2(div_2, "aria-label", $1);
+        set_class(button, 1, `transition-colors ${$2 ?? ""}`);
+        set_attribute2(button, "aria-pressed", get2(enabled));
+        button.disabled = get2(saving);
+        set_text(text_3, `
+            ${$3 ?? ""}
+          `);
+        set_class(button_1, 1, `transition-colors ${$4 ?? ""}`);
+        set_attribute2(button_1, "aria-pressed", !get2(enabled));
+        button_1.disabled = get2(saving);
+        set_text(text_4, `
+            ${$5 ?? ""}
+          `);
+        set_text(text_5, `
+          ${$6 ?? ""}
+        `);
+        input.disabled = get2(saving);
+        set_text(text_6, `
+          ${$7 ?? ""}
+        `);
+        set_attribute2(input_1, "placeholder", $8);
+        input_1.disabled = get2(saving);
+        set_text(text_7, `
+          ${$9 ?? ""}
+        `);
+        set_text(text_8, get2(endpointUrl));
+        button_2.disabled = get2(saveDisabled);
+        set_text(text_9, `
+        ${$10 ?? ""}
+      `);
+      }, [
+        () => t("fever.enabled"),
+        () => t("fever.enabled"),
+        () => toggleClass(get2(enabled)),
+        () => t("fever.on"),
+        () => toggleClass(!get2(enabled)),
+        () => t("fever.off"),
+        () => t("fever.user"),
+        () => t("fever.password"),
+        () => get2(hasPassword) ? t("fever.passwordKeep") : "",
+        () => t("fever.endpoint"),
+        () => get2(saving) ? t("fever.saving") : t("fever.save")
+      ]);
+      delegated("click", button, () => set(enabled, true));
+      delegated("click", button_1, () => set(enabled, false));
+      bind_value(input, () => get2(user), ($$value) => set(user, $$value));
+      bind_value(input_1, () => get2(password), ($$value) => set(password, $$value));
+      delegated("click", button_2, () => void handleSave());
+      append($$anchor2, fragment_2);
+    };
+    if_block(node, ($$render) => {
+      if (get2(loading))
+        $$render(consequent);
+      else
+        $$render(alternate, -1);
+    });
+  }
+  var node_1 = sibling(node, 2);
+  {
+    var consequent_1 = ($$anchor2) => {
+      var fragment_3 = root_23();
+      var p_3 = sibling(first_child(fragment_3));
+      var text_10 = child(p_3, true);
+      reset(p_3);
+      next();
+      template_effect(() => set_text(text_10, get2(formError)));
+      append($$anchor2, fragment_3);
+    };
+    if_block(node_1, ($$render) => {
+      if (get2(formError))
+        $$render(consequent_1);
+    });
+  }
+  next();
+  reset(section);
+  template_effect(($0) => set_text(text2, `
+    ${$0 ?? ""}
+  `), [() => t("fever.hint")]);
+  append($$anchor, fragment);
+  pop();
+}
+if (undefined) {}
+var FeverManager_default = FeverManager;
+delegate(["click"]);
+
+// ../nanoflux/node_modules/@lucide/svelte/dist/icons/eye.svelte
 var rest_excludes9 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root16 = from_html(`<!--
+var root17 = from_html(`<!--
+@lucide/svelte v1.33.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMi4wNjIgMTIuMzQ4YTEgMSAwIDAgMSAwLS42OTYgMTAuNzUgMTAuNzUgMCAwIDEgMTkuODc2IDAgMSAxIDAgMCAxIDAgLjY5NiAxMC43NSAxMC43NSAwIDAgMS0xOS44NzYgMCIgLz4KICA8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIzIiAvPgo8L3N2Zz4K) - https://lucide.dev/icons/eye
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Eye($$anchor, $$props) {
+  let props = rest_props($$props, rest_excludes9);
+  const iconNode = [
+    [
+      "path",
+      {
+        d: "M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"
+      }
+    ],
+    ["circle", { cx: "12", cy: "12", r: "3" }]
+  ];
+  var fragment = root17();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "eye" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var eye_default = Eye;
+// ../nanoflux/node_modules/@lucide/svelte/dist/icons/eye-closed.svelte
+var rest_excludes10 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root18 = from_html(`<!--
+@lucide/svelte v1.33.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJtMTUgMTgtLjcyMi0zLjI1IiAvPgogIDxwYXRoIGQ9Ik0yIDhhMTAuNjQ1IDEwLjY0NSAwIDAgMCAyMCAwIiAvPgogIDxwYXRoIGQ9Im0yMCAxNS0xLjcyNi0yLjA1IiAvPgogIDxwYXRoIGQ9Im00IDE1IDEuNzI2LTIuMDUiIC8+CiAgPHBhdGggZD0ibTkgMTggLjcyMi0zLjI1IiAvPgo8L3N2Zz4K) - https://lucide.dev/icons/eye-closed
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Eye_closed($$anchor, $$props) {
+  let props = rest_props($$props, rest_excludes10);
+  const iconNode = [
+    ["path", { d: "m15 18-.722-3.25" }],
+    ["path", { d: "M2 8a10.645 10.645 0 0 0 20 0" }],
+    ["path", { d: "m20 15-1.726-2.05" }],
+    ["path", { d: "m4 15 1.726-2.05" }],
+    ["path", { d: "m9 18 .722-3.25" }]
+  ];
+  var fragment = root18();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "eye-closed" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var eye_closed_default = Eye_closed;
+// ../nanoflux/web/src/components/buttons/ItemFilterToggle.svelte
+var root19 = from_html(`
+    <!>
+  `, 1);
+var root_114 = from_html(`
+
+<button type="button">
+  <!>
+</button>`, 1);
+function ItemFilterToggle($$anchor, $$props) {
+  push($$props, true);
+  const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
+  const label = user_derived(() => $$props.filter === "unread" ? t("items.switchToAll") : t("items.switchToUnread"));
+  const title = user_derived(() => $$props.filter === "unread" ? t("items.filterUnread") : t("items.filterAll"));
+  next();
+  var fragment = root_114();
+  var button = sibling(first_child(fragment));
+  var node = sibling(child(button));
+  {
+    var consequent = ($$anchor2) => {
+      var fragment_1 = root19();
+      var node_1 = sibling(first_child(fragment_1));
+      eye_default(node_1, spread_props(() => iconProps));
+      next();
+      append($$anchor2, fragment_1);
+    };
+    var alternate = ($$anchor2) => {
+      var fragment_2 = root19();
+      var node_2 = sibling(first_child(fragment_2));
+      eye_closed_default(node_2, spread_props(() => iconProps));
+      next();
+      append($$anchor2, fragment_2);
+    };
+    if_block(node, ($$render) => {
+      if ($$props.filter === "unread")
+        $$render(consequent);
+      else
+        $$render(alternate, -1);
+    });
+  }
+  next();
+  reset(button);
+  template_effect(() => {
+    set_class(button, 1, `inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 transition-colors ${$$props.filter === "unread" ? "text-neutral-900 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-800" : "text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"}`);
+    set_attribute2(button, "aria-label", get2(label));
+    set_attribute2(button, "aria-pressed", $$props.filter === "unread");
+    set_attribute2(button, "title", get2(title));
+  });
+  delegated("click", button, function(...$$args) {
+    $$props.onToggle?.apply(this, $$args);
+  });
+  append($$anchor, fragment);
+  pop();
+}
+if (undefined) {}
+var ItemFilterToggle_default = ItemFilterToggle;
+delegate(["click"]);
+
+// ../nanoflux/node_modules/@lucide/svelte/dist/icons/check-check.svelte
+var rest_excludes11 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root20 = from_html(`<!--
 @lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -9172,12 +9677,12 @@ Lucide SVG icon component, renders SVG Element with children.
 
 <!>`, 1);
 function Check_check($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes9);
+  let props = rest_props($$props, rest_excludes11);
   const iconNode = [
     ["path", { d: "M18 6 7 17l-5-5" }],
     ["path", { d: "m22 10-7.5 7.5L13 16" }]
   ];
-  var fragment = root16();
+  var fragment = root20();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -9191,7 +9696,7 @@ function Check_check($$anchor, $$props) {
 if (undefined) {}
 var check_check_default = Check_check;
 // ../nanoflux/web/src/components/buttons/MarkAllReadButton.svelte
-var root17 = from_html(`
+var root21 = from_html(`
 
 <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
   <!>
@@ -9201,7 +9706,7 @@ function MarkAllReadButton($$anchor, $$props) {
   const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
   const label = user_derived(() => t("items.markAllRead"));
   next();
-  var fragment = root17();
+  var fragment = root21();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   check_check_default(node, spread_props(() => iconProps));
@@ -9220,43 +9725,48 @@ var MarkAllReadButton_default = MarkAllReadButton;
 delegate(["click"]);
 
 // ../nanoflux/web/src/components/ItemList.svelte
-var root18 = from_html(`
+var root22 = from_html(`
   <p class="py-6 text-sm text-red-500"> </p>
 `, 1);
-var root_113 = from_html(`
+var root_115 = from_html(`
   <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root_23 = from_html(`
-            <p class="mt-2 line-clamp-2 text-sm text-neutral-400 dark:text-neutral-500"> </p>
+var root_24 = from_html(`
+              <p class="mt-2 line-clamp-2 text-sm text-neutral-400 dark:text-neutral-500"> </p>
+            `, 1);
+var root_34 = from_html(`
+            <a target="_blank" rel="noopener noreferrer" class="block aspect-[4/3] w-40 shrink-0 overflow-hidden rounded-md" tabindex="-1" aria-hidden="true">
+              <img alt="" class="h-full w-full bg-neutral-100 object-cover dark:bg-neutral-800" loading="lazy" referrerpolicy="no-referrer"/>
+            </a>
           `, 1);
-var root_33 = from_html(`
+var root_42 = from_html(`
       <li class="py-5">
-        <article>
-          <div class="flex items-baseline gap-1.5 text-xs text-neutral-400 dark:text-neutral-500">
-            <time> </time>
-            <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
-            <span> </span>
+        <article class="flex items-start gap-4">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-baseline gap-1.5 text-xs text-neutral-400 dark:text-neutral-500">
+              <time> </time>
+              <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
+              <span> </span>
+            </div>
+            <a target="_blank" rel="noopener noreferrer"> </a>
+            <!>
           </div>
-          <a target="_blank" rel="noopener noreferrer"> </a>
           <!>
         </article>
       </li>
     `, 1);
-var root_42 = from_html(`
+var root_52 = from_html(`
   <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
     <!>
   </ul>
 `, 1);
-var root_52 = from_html(`
+var root_62 = from_html(`
   <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root_62 = from_html(`
+var root_72 = from_html(`
 
-<div class="mb-6 flex items-center justify-between gap-4">
-  <div class="flex gap-3 text-xs" role="group">
-      <button type="button"> </button>
-      <button type="button"> </button>
-  </div>
+<div class="mb-6 flex items-center justify-end gap-0.5">
+  <!>
   <!>
 </div>
 
@@ -9378,78 +9888,100 @@ function ItemList($$anchor, $$props) {
   });
   var $$exports = { markAllRead };
   next();
-  var fragment = root_62();
+  var fragment = root_72();
   var div = sibling(first_child(fragment));
-  var div_1 = sibling(child(div));
-  var button = sibling(child(div_1));
-  var text2 = child(button);
-  reset(button);
-  var button_1 = sibling(button, 2);
-  var text_1 = child(button_1);
-  reset(button_1);
-  next();
-  reset(div_1);
-  var node = sibling(div_1, 2);
-  MarkAllReadButton_default(node, { onMarkAllRead: () => markAllRead() });
+  var node = sibling(child(div));
+  ItemFilterToggle_default(node, {
+    get filter() {
+      return get2(filter);
+    },
+    onToggle: () => setReadFilter(get2(filter) === "unread" ? "all" : "unread")
+  });
+  var node_1 = sibling(node, 2);
+  MarkAllReadButton_default(node_1, { onMarkAllRead: () => markAllRead() });
   next();
   reset(div);
-  var node_1 = sibling(div, 2);
+  var node_2 = sibling(div, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root18();
+      var fragment_1 = root22();
       var p = sibling(first_child(fragment_1));
-      var text_2 = child(p, true);
+      var text2 = child(p, true);
       reset(p);
       next();
-      template_effect(() => set_text(text_2, get2(error)));
+      template_effect(() => set_text(text2, get2(error)));
       append($$anchor2, fragment_1);
     };
     var consequent_1 = ($$anchor2) => {
-      var fragment_2 = root_113();
+      var fragment_2 = root_115();
       var p_1 = sibling(first_child(fragment_2));
-      var text_3 = child(p_1, true);
+      var text_1 = child(p_1, true);
       reset(p_1);
       next();
-      template_effect(($0) => set_text(text_3, $0), [() => t("items.noItems")]);
+      template_effect(($0) => set_text(text_1, $0), [() => t("items.noItems")]);
       append($$anchor2, fragment_2);
     };
     var alternate = ($$anchor2) => {
-      var fragment_3 = root_42();
+      var fragment_3 = root_52();
       var ul = sibling(first_child(fragment_3));
-      var node_2 = sibling(child(ul));
-      each(node_2, 17, () => get2(items), (item) => item.id, ($$anchor3, item) => {
+      var node_3 = sibling(child(ul));
+      each(node_3, 17, () => get2(items), (item) => item.id, ($$anchor3, item) => {
         next();
-        var fragment_4 = root_33();
+        var fragment_4 = root_42();
         var li = sibling(first_child(fragment_4));
         var article = sibling(child(li));
-        var div_2 = sibling(child(article));
+        var div_1 = sibling(child(article));
+        var div_2 = sibling(child(div_1));
         var time = sibling(child(div_2));
-        var text_4 = child(time);
+        var text_2 = child(time);
         reset(time);
         var span = sibling(time, 4);
-        var text_5 = child(span, true);
+        var text_3 = child(span, true);
         reset(span);
         next();
         reset(div_2);
         var a_1 = sibling(div_2, 2);
-        var text_6 = child(a_1);
+        var text_4 = child(a_1);
         reset(a_1);
-        var node_3 = sibling(a_1, 2);
+        var node_4 = sibling(a_1, 2);
         {
           var consequent_2 = ($$anchor4) => {
-            var fragment_5 = root_23();
+            var fragment_5 = root_24();
             var p_2 = sibling(first_child(fragment_5));
-            var text_7 = child(p_2);
+            var text_5 = child(p_2);
             reset(p_2);
             next();
-            template_effect(() => set_text(text_7, `
-              ${get2(item).content ?? ""}
-            `));
+            template_effect(() => set_text(text_5, `
+                ${get2(item).content ?? ""}
+              `));
             append($$anchor4, fragment_5);
           };
-          if_block(node_3, ($$render) => {
+          if_block(node_4, ($$render) => {
             if (get2(item).content)
               $$render(consequent_2);
+          });
+        }
+        next();
+        reset(div_1);
+        var node_5 = sibling(div_1, 2);
+        {
+          var consequent_3 = ($$anchor4) => {
+            var fragment_6 = root_34();
+            var a_2 = sibling(first_child(fragment_6));
+            var img = sibling(child(a_2));
+            next();
+            reset(a_2);
+            next();
+            template_effect(() => {
+              set_attribute2(a_2, "href", get2(item).link);
+              set_attribute2(img, "src", get2(item).cover);
+            });
+            delegated("click", a_2, () => handleOpenItem(get2(item)));
+            append($$anchor4, fragment_6);
+          };
+          if_block(node_5, ($$render) => {
+            if (get2(item).cover)
+              $$render(consequent_3);
           });
         }
         next();
@@ -9459,15 +9991,15 @@ function ItemList($$anchor, $$props) {
         next();
         template_effect(($0) => {
           set_attribute2(time, "datetime", get2(item).published_at);
-          set_text(text_4, `
-              ${$0 ?? ""}
-            `);
-          set_text(text_5, get2(item).feed_title);
+          set_text(text_2, `
+                ${$0 ?? ""}
+              `);
+          set_text(text_3, get2(item).feed_title);
           set_attribute2(a_1, "href", get2(item).link);
           set_class(a_1, 1, `mt-1 block text-sm leading-snug hover:text-neutral-600 dark:hover:text-neutral-300 ${get2(item).is_read ? "font-normal text-neutral-500 dark:text-neutral-500" : "font-medium text-neutral-900 dark:text-neutral-100"}`);
-          set_text(text_6, `
-            ${get2(item).title ?? ""}
-          `);
+          set_text(text_4, `
+              ${get2(item).title ?? ""}
+            `);
         }, [() => formatTime(get2(item).published_at, get2(now2))]);
         delegated("click", a_1, () => handleOpenItem(get2(item)));
         append($$anchor3, fragment_4);
@@ -9477,7 +10009,7 @@ function ItemList($$anchor, $$props) {
       next();
       append($$anchor2, fragment_3);
     };
-    if_block(node_1, ($$render) => {
+    if_block(node_2, ($$render) => {
       if (get2(error))
         $$render(consequent);
       else if (get2(items).length === 0 && !get2(loading))
@@ -9486,58 +10018,39 @@ function ItemList($$anchor, $$props) {
         $$render(alternate, -1);
     });
   }
-  var node_4 = sibling(node_1, 2);
+  var node_6 = sibling(node_2, 2);
   {
-    var consequent_3 = ($$anchor2) => {
-      var fragment_6 = root_52();
-      var p_3 = sibling(first_child(fragment_6));
-      var text_8 = child(p_3);
+    var consequent_4 = ($$anchor2) => {
+      var fragment_7 = root_62();
+      var p_3 = sibling(first_child(fragment_7));
+      var text_6 = child(p_3);
       reset(p_3);
       next();
-      template_effect(($0) => set_text(text_8, `
+      template_effect(($0) => set_text(text_6, `
     ${$0 ?? ""}
   `), [() => t("items.loading")]);
-      append($$anchor2, fragment_6);
-    };
-    var consequent_4 = ($$anchor2) => {
-      var fragment_7 = root_52();
-      var p_4 = sibling(first_child(fragment_7));
-      var text_9 = child(p_4);
-      reset(p_4);
-      next();
-      template_effect(($0) => set_text(text_9, `
-    ${$0 ?? ""}
-  `), [() => t("items.noMore")]);
       append($$anchor2, fragment_7);
     };
-    if_block(node_4, ($$render) => {
+    var consequent_5 = ($$anchor2) => {
+      var fragment_8 = root_62();
+      var p_4 = sibling(first_child(fragment_8));
+      var text_7 = child(p_4);
+      reset(p_4);
+      next();
+      template_effect(($0) => set_text(text_7, `
+    ${$0 ?? ""}
+  `), [() => t("items.noMore")]);
+      append($$anchor2, fragment_8);
+    };
+    if_block(node_6, ($$render) => {
       if (get2(loading))
-        $$render(consequent_3);
+        $$render(consequent_4);
       else if (!get2(hasMore) && get2(items).length > 0)
-        $$render(consequent_4, 1);
+        $$render(consequent_5, 1);
     });
   }
-  var div_3 = sibling(node_4, 2);
+  var div_3 = sibling(node_6, 2);
   bind_this(div_3, ($$value) => set(sentinel, $$value), () => get2(sentinel));
-  template_effect(($0, $1, $2) => {
-    set_attribute2(div_1, "aria-label", $0);
-    set_class(button, 1, `transition-colors ${get2(filter) === "unread" ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"}`);
-    set_attribute2(button, "aria-pressed", get2(filter) === "unread");
-    set_text(text2, `
-        ${$1 ?? ""}
-      `);
-    set_class(button_1, 1, `transition-colors ${get2(filter) === "all" ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"}`);
-    set_attribute2(button_1, "aria-pressed", get2(filter) === "all");
-    set_text(text_1, `
-        ${$2 ?? ""}
-      `);
-  }, [
-    () => t("items.filterBy"),
-    () => t("items.filterUnread"),
-    () => t("items.filterAll")
-  ]);
-  delegated("click", button, () => setReadFilter("unread"));
-  delegated("click", button_1, () => setReadFilter("all"));
   append($$anchor, fragment);
   return pop($$exports);
 }
@@ -9546,10 +10059,10 @@ var ItemList_default = ItemList;
 delegate(["click"]);
 
 // ../nanoflux/web/src/App.svelte
-var root19 = from_html(`
+var root23 = from_html(`
         <!>
       `, 1);
-var root_114 = from_html(`
+var root_116 = from_html(`
 
 <main class="w-full font-sans md:flex">
   <!>
@@ -9563,7 +10076,7 @@ function App($$anchor) {
   const $route = () => store_get(route, "$route", $$stores);
   const [$$stores, $$cleanup] = setup_stores();
   next();
-  var fragment = root_114();
+  var fragment = root_116();
   var main = sibling(first_child(fragment));
   var node = sibling(child(main));
   Header_default(node, {});
@@ -9572,32 +10085,39 @@ function App($$anchor) {
   var node_1 = sibling(child(div_1));
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root19();
+      var fragment_1 = root23();
       var node_2 = sibling(first_child(fragment_1));
       FeedsManager_default(node_2, {});
       next();
       append($$anchor2, fragment_1);
     };
     var consequent_1 = ($$anchor2) => {
-      var fragment_2 = root19();
+      var fragment_2 = root23();
       var node_3 = sibling(first_child(fragment_2));
       FiltersManager_default(node_3, {});
       next();
       append($$anchor2, fragment_2);
     };
     var consequent_2 = ($$anchor2) => {
-      var fragment_3 = root19();
+      var fragment_3 = root23();
       var node_4 = sibling(first_child(fragment_3));
       ExportPage_default(node_4, {});
       next();
       append($$anchor2, fragment_3);
     };
-    var alternate = ($$anchor2) => {
-      var fragment_4 = root19();
+    var consequent_3 = ($$anchor2) => {
+      var fragment_4 = root23();
       var node_5 = sibling(first_child(fragment_4));
-      ItemList_default(node_5, {});
+      FeverManager_default(node_5, {});
       next();
       append($$anchor2, fragment_4);
+    };
+    var alternate = ($$anchor2) => {
+      var fragment_5 = root23();
+      var node_6 = sibling(first_child(fragment_5));
+      ItemList_default(node_6, {});
+      next();
+      append($$anchor2, fragment_5);
     };
     if_block(node_1, ($$render) => {
       if ($route() === "/feeds")
@@ -9606,6 +10126,8 @@ function App($$anchor) {
         $$render(consequent_1, 1);
       else if ($route() === "/export")
         $$render(consequent_2, 2);
+      else if ($route() === "/fever")
+        $$render(consequent_3, 3);
       else
         $$render(alternate, -1);
     });

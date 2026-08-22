@@ -9,7 +9,7 @@ export function registerDeleteItem(server: McpServer): void {
       description:
         "Soft-delete a news item by id. The item is hidden from news queries and the UI, but is kept so the same article is not fetched again. A reason is required and stored as deleted_reason.",
       inputSchema: {
-        id: z.string().min(1).describe("Item id"),
+        id: z.coerce.number().int().positive().describe("Item id"),
         reason: z
           .string()
           .trim()

@@ -4,15 +4,54 @@ export enum TimeUnit {
     DAY = 24 * 60 * 60 * 1000,
 }
 
-export function feedIdFromUrl(url: string): string {
-    return Bun.hash.xxHash32(url).toString(16).padStart(8, "0");
+let lastItemId = 0;
+
+const ITEM_ID_SEQ_DIGITS = 2;
+const ITEM_ID_SEQ_MOD = 10 ** ITEM_ID_SEQ_DIGITS;
+
+/** UTC `YYYYMMDDHHMMSS` as an integer (14 digits). */
+function utcCompactSecond(date: Date): number {
+  return (
+    date.getUTCFullYear() * 10000000000 +
+    (date.getUTCMonth() + 1) * 100000000 +
+    date.getUTCDate() * 1000000 +
+    date.getUTCHours() * 10000 +
+    date.getUTCMinutes() * 100 +
+    date.getUTCSeconds()
+  );
 }
 
-export function newItemId(): string {
-    return Bun.randomUUIDv7();
+/**
+ * Integer item id that grows with ingest time (`created_at`), not `published_at`.
+ * Format: UTC `YYYYMMDDHHMMSS` + 2-digit per-second sequence (16 digits, JSON-safe).
+ */
+export function newItemId(): number {
+  const candidate = utcCompactSecond(new Date()) * ITEM_ID_SEQ_MOD;
+  lastItemId = candidate > lastItemId ? candidate : lastItemId + 1;
+  return lastItemId;
 }
 
-export function encodeCursor(sortTime: string, id: string): string {
+/** Parse a positive integer feed id from a route/MCP value. */
+export function parseFeedId(value: string | number): number | null {
+  return parsePositiveId(value);
+}
+
+/** Parse a positive integer item id from a route/MCP value. */
+export function parseItemId(value: string | number): number | null {
+  return parsePositiveId(value);
+}
+
+function parsePositiveId(value: string | number): number | null {
+    if (typeof value === "number") {
+        return Number.isSafeInteger(value) && value > 0 ? value : null;
+    }
+    const trimmed = value.trim();
+    if (!/^\d+$/.test(trimmed)) return null;
+    const n = Number.parseInt(trimmed, 10);
+    return Number.isSafeInteger(n) && n > 0 ? n : null;
+}
+
+export function encodeCursor(sortTime: string, id: string | number): string {
     return `${sortTime}|${id}`;
 }
 

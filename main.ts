@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { Elysia } from "elysia";
 import { resolveHost, resolvePort } from "./shared/env";
 import {
+  isLocalhostAddress,
   isLocalhostRestricted,
   localhostOnly,
 } from "./shared/localhost-only";
@@ -11,7 +12,13 @@ import { closeDatabase } from "./db/database";
 import { routes as itemsRoutes } from "./routes/items";
 import { routes as feedsRoutes } from "./routes/feeds";
 import { routes as filterRoutes } from "./routes/filter";
+import { routes as feverRoutes } from "./routes/fever";
+import {
+  handleFeverRequest,
+  isFeverApiQuery,
+} from "./routes/fever-api";
 import { routes as mcpRoutes } from "./mcp/route";
+import { loadFeverConfig, isFeverEnabled } from "./fever";
 import {
   startScheduler,
   stopScheduler,
@@ -55,6 +62,8 @@ await loadFilters();
     `[filter] config loaded enabled=${enabled} promptChars=${prompt.trim().length}`,
   );
 }
+await loadFeverConfig();
+console.log(`[fever] config loaded enabled=${isFeverEnabled()}`);
 
 const host = resolveHost();
 const restrictLocalhost = isLocalhostRestricted(host);
@@ -63,18 +72,74 @@ const backendRoutes = new Elysia()
   .use(itemsRoutes)
   .use(feedsRoutes)
   .use(filterRoutes)
+  .use(feverRoutes)
   .use(mcpRoutes);
 
 const protectedBackendRoutes = restrictLocalhost
   ? new Elysia().use(localhostOnly).use(backendRoutes)
   : backendRoutes;
 
+function forbidIfRemote(ctx: {
+  request: Request;
+  server: { requestIP: (request: Request) => { address: string } | null } | null;
+  set: { status?: number | string };
+}): { error: string } | null {
+  if (!restrictLocalhost) return null;
+  const address = ctx.server?.requestIP(ctx.request)?.address;
+  if (isLocalhostAddress(address)) return null;
+  ctx.set.status = 403;
+  return { error: "Forbidden" };
+}
+
+async function feverGet(ctx: {
+  request: Request;
+  query: Record<string, string | undefined>;
+  server: { requestIP: (request: Request) => { address: string } | null } | null;
+  set: { status?: number | string; headers: Record<string, unknown> };
+}) {
+  if (!isFeverApiQuery(ctx.query)) {
+    return indexHtml();
+  }
+  const forbidden = forbidIfRemote(ctx);
+  if (forbidden) return forbidden;
+  return handleFeverRequest(ctx);
+}
+
+async function feverPost(ctx: {
+  request: Request;
+  query: Record<string, string | undefined>;
+  body?: unknown;
+  server: { requestIP: (request: Request) => { address: string } | null } | null;
+  set: { status?: number | string; headers: Record<string, unknown> };
+}) {
+  const forbidden = forbidIfRemote(ctx);
+  if (forbidden) return forbidden;
+  return handleFeverRequest(ctx);
+}
+
 const publicRoutes = new Elysia()
+  .onParse(async ({ request }, contentType) => {
+    if (contentType.includes("application/x-www-form-urlencoded")) {
+      return Object.fromEntries(new URLSearchParams(await request.text()));
+    }
+    if (contentType.includes("multipart/form-data")) {
+      const form = await request.formData();
+      const params: Record<string, string> = {};
+      for (const [key, value] of form.entries()) {
+        if (typeof value === "string") params[key] = value;
+      }
+      return params;
+    }
+  })
   .get("/", indexHtml)
   .get("/feeds", indexHtml)
   .get("/filter", indexHtml)
   .get("/filters", ({ redirect }) => redirect("/filter"))
   .get("/export", indexHtml)
+  .get("/fever", feverGet)
+  .get("/fever/", feverGet)
+  .post("/fever", feverPost)
+  .post("/fever/", feverPost)
   .get("/manifest.webmanifest", ({ query, set }) => {
     set.headers["content-type"] = "application/manifest+json; charset=utf-8";
     return JSON.stringify(buildWebManifest(manifestLocale(query)));

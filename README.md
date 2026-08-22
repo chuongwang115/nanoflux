@@ -2,9 +2,9 @@
 
 **News Service for AI Agents**
 
-NanoFlux is a local news ingestion and query service built for AI agents. It continuously fetches RSS/Atom (and related) sources, extracts article text, optionally scores relevance with an LLM, and exposes the result over **MCP** and a small REST API so agents can subscribe to sources, pull unread news, soft-delete items, manage the filter prompt, and optionally push headlines or HTML daily reports to a Telegram channel.
+NanoFlux is a local news ingestion and query service built for AI agents. It continuously fetches RSS/Atom (and related) sources, extracts article text and cover images, optionally scores relevance with an LLM, and exposes the result over **MCP** and a small REST API so agents can subscribe to sources, pull unread news, soft-delete items, manage the filter prompt, and optionally push headlines or HTML daily reports to a Telegram channel.
 
-A minimal web UI is included for operators to inspect feeds, tweak the filter, and export data — not as a full-featured RSS reader.
+A **Fever API** (`/fever`) is also available so RSS readers such as Reeder can sync the same store. A minimal web UI is included for operators to inspect feeds, tweak the filter, configure Fever, and export data — not as a full-featured RSS reader.
 
 Built on [Bun](https://bun.sh), [Elysia](https://elysiajs.com), and [Svelte 5](https://svelte.dev).
 
@@ -20,6 +20,7 @@ Built on [Bun](https://bun.sh), [Elysia](https://elysiajs.com), and [Svelte 5](h
 - [Background & Service Mode](#background--service-mode)
 - [MCP](#mcp)
 - [REST API](#rest-api)
+- [Fever API](#fever-api)
 - [How Feed Fetching Works](#how-feed-fetching-works)
 - [Project Structure](#project-structure)
 - [License](#license)
@@ -31,9 +32,9 @@ Typical RSS readers optimize for human browsing. NanoFlux optimizes for **agent 
 1. **Ingest** — adaptive polling of RSS/Atom, Google News keyword feeds, and WeChat official accounts
 2. **Normalize** — GUID dedupe, Google News link resolution, full-text extraction when the feed summary is thin
 3. **Filter** — optional single LLM prompt plus an on/off switch that marks relevant items for agents
-4. **Serve** — MCP and REST so agents can consume unread items (marking them read), soft-delete items, manage feeds / the filter prompt, and push Telegram headlines or HTML digests
+4. **Serve** — MCP and REST so agents can consume unread items (marking them read), soft-delete items, manage feeds / the filter prompt, and push Telegram headlines or HTML digests; Fever API so RSS readers can pull the same feeds and articles
 
-Run it on localhost next to your agent runtime. When `HOST=127.0.0.1`, API and MCP accept only local clients.
+Run it on localhost next to your agent runtime. When `HOST=127.0.0.1`, API, MCP, and Fever accept only local clients.
 
 ## Features
 
@@ -41,12 +42,17 @@ Run it on localhost next to your agent runtime. When `HOST=127.0.0.1`, API and M
 
 - MCP at `/mcp` — feed CRUD, keyword / WeChat subscribe, unread consumption, item soft-delete, filter prompt read/write, Telegram channel push (headline or daily digest), current time
 - REST API with the same data model (`{ code, message, data }` JSON)
-- Persistent SQLite store with cursor pagination so agents can page through large result sets
+- Persistent SQLite store with integer IDs and cursor pagination so agents can page through large result sets
+
+**For RSS readers**
+
+- Fever API 3 at `/fever` for Reeder and other Fever-compatible clients (optional; enable on `/fever`). Read-only: feeds and items, not mark-read or saved/unread mutation
 
 **News pipeline**
 
 - Newly created feeds are fetched immediately (no wait for the next cron tick)
 - Adaptive polling (5–30 min per feed) based on publish frequency; each minute tick processes at most 3 due feeds, and each feed processes at most 10 new items per run (backlog requeues in ~1 min)
+- Cover images stored on each item (RSS media / enclosure / iTunes / item HTML first, then Open Graph / Twitter / `image_src` / first body image when the article page is fetched)
 - Full-text extraction when an RSS summary is too short; Google News article links are resolved to the publisher URL first; HTML is decoded with charset detection (Content-Type, BOM, meta/`<?xml` encoding, with UTF-8 / GB18030 fallback)
 - AI filter runs only when `enabled` is true and `prompt` is non-empty; you can turn filtering off without clearing the prompt
 - AI-rejected items are soft-deleted (`is_deleted = 1`) with `deleted_reason` set to the model’s reason when present; they stay in the database so the same `guid` is not ingested again
@@ -57,7 +63,8 @@ Run it on localhost next to your agent runtime. When `HOST=127.0.0.1`, API and M
 
 - Home list: **Unread** / **All**. Unread marks those items as read in bulk; both tabs omit soft-deleted (including AI-rejected) items
 - `/feeds`: preview, CRUD, sort, **add by keyword** (Google News RSS for the last 3 days; language inferred from the keyword), **subscribe WeChat 公众号**, **OPML export**
-- `/filter`: prompt editor and enable/disable toggle; `/export`: Excel by time range
+- `/filter`: prompt editor and enable/disable toggle; `/fever`: Fever API enable switch, user/password, and endpoint URL; `/export`: Excel by time range
+- Home list shows cover thumbnails when an item has a `cover` URL
 - PWA shell (installable; manifest at `/manifest.webmanifest`), bilingual UI (English / Chinese), light/dark theme, adjustable font size
 
 ## Tech Stack
@@ -112,7 +119,7 @@ Create a `.env` file at the project root (see `.env.example`).
 | Variable | Default | Description |
 | --- | --- | --- |
 | `PORT` | `3000` in `.env.example` | HTTP listen port (required; startup fails when omitted) |
-| `HOST` | `127.0.0.1` | Bind address. `127.0.0.1` also restricts API/MCP to localhost. Use `0.0.0.0` to listen on all interfaces without restriction. |
+| `HOST` | `127.0.0.1` | Bind address. `127.0.0.1` also restricts API/MCP/Fever to localhost. Use `0.0.0.0` to listen on all interfaces without restriction. |
 | `DB_PATH` | `data.sqlite` | SQLite database file path |
 
 ### AI filter (optional)
@@ -188,6 +195,28 @@ Filtering is **active** only when both `enabled` is true and `prompt` is non-emp
 
 On load, a legacy `filters.json` file (or a multi-filter array in `filter.json`) is migrated to `{ prompt, enabled }`; the first non-empty `prompt` is kept and `enabled` is set to true.
 
+### `fever.json`
+
+Fever credentials live in `fever.json` at the project root (created or updated via the UI or REST). Loaded on startup. The file is gitignored.
+
+| Field | Description |
+| --- | --- |
+| `enabled` | Whether the Fever endpoint authenticates clients. Defaults to false if the file is missing. |
+| `user` | Fever username (trimmed). Required when `enabled` is true. |
+| `password` | Fever password. Required when `enabled` is true. Leave the password field blank in the UI/REST update body to keep the stored value. |
+
+The Fever `api_key` is `md5("<user>:<password>")` (lowercase hex), matching the original Fever protocol. Enabling Fever without both user and password is rejected.
+
+```json
+{
+  "enabled": true,
+  "user": "reeder",
+  "password": "your-password"
+}
+```
+
+The public REST/UI payload is `{ enabled, user, hasPassword }` — the password is never returned.
+
 ## Background & Service Mode
 
 Keep NanoFlux running as a long-lived local service next to your agent host.
@@ -221,7 +250,7 @@ Service logs are written to the `logs/` directory on both platforms.
 
 Primary interface: `http://localhost:<PORT>/mcp` (JSON response mode enabled; `PORT` from `.env`).
 
-When `HOST=127.0.0.1`, only localhost clients can reach the MCP endpoint.
+When `HOST=127.0.0.1`, only localhost clients can reach the MCP endpoint (same restriction as REST and Fever).
 
 ### Client configuration
 
@@ -250,7 +279,7 @@ Typical WeChat flow: call `add_wechat_feed` with a `query` (it always searches f
 
 ### Tools
 
-News query tools return stored items from the database. Each item includes `id`, `title`, `link`, `content`, `published_at`, and `feed_title`. Soft-deleted items (including AI rejects) are excluded.
+News query tools return stored items from the database. Each item includes integer `id`, `title`, `link`, `content`, `published_at`, and `feed_title`. Soft-deleted items (including AI rejects) are excluded. Feed and item IDs are integers (feeds autoincrement; item IDs are UTC `YYYYMMDDHHMMSS` plus a 2-digit per-second sequence, 16 digits, JSON-safe).
 
 Relative window `unit` values: `minute` / `min` / `分`, `hour` / `h` / `时`, `day` / `d` / `天`.
 
@@ -283,7 +312,7 @@ Relative window `unit` values: `minute` / `min` / `分`, `hour` / `h` / `时`, `
 
 ## REST API
 
-REST is available for scripts and the operator UI. JSON endpoints return `{ code, message, data }` unless noted otherwise (e.g. OPML / Excel downloads). `code` is `0` on success. When `HOST=127.0.0.1`, these routes are localhost-only.
+REST is available for scripts and the operator UI. JSON endpoints return `{ code, message, data }` unless noted otherwise (e.g. OPML / Excel downloads). `code` is `0` on success. When `HOST=127.0.0.1`, these routes are localhost-only (Fever `/fever` uses the same restriction).
 
 ### Feeds — `/api/feeds`
 
@@ -310,7 +339,7 @@ Query parameters for `GET /api/feeds`:
 
 ### Items — `/api/items`
 
-Each item includes `content` (RSS summary or scraped full text). Soft-deleted rows are omitted from list and export responses.
+Each item includes `content` (RSS summary or scraped full text) and optional `cover` (image URL). Soft-deleted rows are omitted from list and export responses. Excel export still writes published time, title, content, and original link (no cover column).
 
 | Method | Path | Description |
 | --- | --- | --- |
@@ -348,14 +377,53 @@ Exported columns: published time, title, content, and original link.
 | `GET` | `/api/filter` | Get the AI filter config (`{ prompt, enabled }`) |
 | `POST` | `/api/filter` | Update the AI filter (body: optional `{ prompt, enabled }`; omit a field to leave it unchanged) |
 
+### Fever config — `/api/fever`
+
+Does not serve the Fever protocol itself (that is [`/fever`](#fever-api)). This route only reads and writes `fever.json`.
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/api/fever` | Public Fever config (`{ enabled, user, hasPassword }`) |
+| `POST` | `/api/fever` | Update Fever config (body: optional `{ enabled, user, password }`; omit a field to leave it unchanged). Empty `password` keeps the stored password. Enabling requires a user and a password (new or already stored). |
+
+## Fever API
+
+Fever-compatible readers (for example [Reeder](https://reederapp.com)) can sync NanoFlux as a Fever server.
+
+**Endpoint:** `http://localhost:<PORT>/fever/` (trailing slash optional). GET is used when the query looks like a Fever request (`api`, `feeds`, `groups`, `items`, `unread_item_ids`, or `saved_item_ids`); otherwise GET `/fever` serves the operator UI. POST always goes to the API. `api_version` is `3`.
+
+When `HOST=127.0.0.1`, only localhost clients can reach this endpoint. Bind `0.0.0.0` if a reader on another device must connect, and keep Fever disabled until credentials are set.
+
+### Client setup
+
+1. Open `/fever` in the operator UI (or `POST /api/fever`) and set **User**, **Password**, then turn Fever **On**
+2. In the reader, add a Fever account:
+   - Server: `http://localhost:<PORT>/fever/` (or `http://<lan-host>:<PORT>/fever/` when not localhost-restricted)
+   - Email / username and password: the same values stored in `fever.json`
+3. The reader sends `api_key` as `md5("<user>:<password>")`. Auth failure returns `{ "api_version": 3, "auth": 0 }`
+
+### Supported request flags
+
+Authenticated responses include `auth: 1` and `last_refreshed_on_time` (unix seconds). Extra flags add fields:
+
+| Flag | Response |
+| --- | --- |
+| `groups` | One group `{ id: 1, title: "NanoFlux" }` plus `feeds_groups` |
+| `feeds` | All feeds (`id`, `favicon_id`, `title`, `url`, `site_url`, `is_spark`, `last_updated_on_time`) plus `feeds_groups`. `site_url` is the feed URL origin; every feed uses `favicon_id` `1` |
+| `items` | Up to **50** items. Optional `since_id` (newer than), `max_id` (older than), or `with_ids` (comma-separated, max 50). Each item: integer `id` / `feed_id`, `title`, empty `author`, `html`, `url`, `is_saved: 0`, `created_on_time`. Soft-deleted items are omitted. `html` is escaped article text as `<p>` blocks, with a cover `<img>` prepended when `cover` is set. Also returns `total_items` |
+| `unread_item_ids` | Always `""` (NanoFlux does not expose unread IDs over Fever) |
+| `saved_item_ids` | Always `""` (starring is not implemented) |
+
+Mark-as-read, saved/unread mutations, favicons, links, and unread counts over Fever are **not** implemented. Use MCP/REST (and the operator UI) for read state. Fever is a **read-only** feed and article dump for compatible clients.
+
 ## How Feed Fetching Works
 
 1. On startup and every minute (UTC cron), the scheduler loads feeds whose `next_fetched_at` is due. Cron is registered before the startup fetch so a long first run cannot block later ticks; overlapping due-fetch runs are skipped.
 2. Each tick takes at most **3** due feeds. Creating a feed via REST or MCP also enqueues an immediate fetch when `next_fetched_at` is still unset.
 3. Each feed is fetched over HTTP with the `NanoFlux/1.0` user agent (15 s timeout) and parsed as RSS/Atom. Concurrent fetches of the same feed id are ignored.
 4. Each entry gets a normalized GUID: MD5 hex of the article link (feeds that already provide an MD5 GUID are kept as-is). Per-feed known GUIDs are stored in the `last_guids` column; entries already seen by this feed or already present in the database (global GUID uniqueness, including soft-deleted rows) are skipped.
-5. At most **10** unseen candidates are enriched and inserted per feed per run. For each of those, Google News article links (`news.google.com/.../articles/...`) are resolved to the publisher URL (embedded token decode, or Google's batchexecute RPC) and the stored `link` is updated when resolution succeeds. If the RSS summary is shorter than ~80 word tokens (counted with `Intl.Segmenter` for Chinese and English — roughly ~200 Chinese characters or ~80 English words), the article page is fetched (desktop browser user agent, 15 s timeout, up to 3 concurrent requests), decoded with charset detection, and parsed with `@extractus/article-extractor` to fill in `content`. Already-known entries skip scraping. Unprocessed backlog entries stay out of `last_guids` so the next catch-up run can pick them up.
-6. New items are deduplicated globally by `guid` (same article from different feeds is stored once), evaluated by the AI filter when it is active (`enabled` and non-empty prompt), and inserted into SQLite. On pass (or when filtering is off, or fail-open), `is_deleted = 0` and `deleted_reason` is `null`. On AI reject, `is_deleted = 1` and `deleted_reason` stores the model’s reason when present.
+5. At most **10** unseen candidates are enriched and inserted per feed per run. For each of those, Google News article links (`news.google.com/.../articles/...`) are resolved to the publisher URL (embedded token decode, or Google's batchexecute RPC) and the stored `link` is updated when resolution succeeds. Cover is taken from the RSS item when present (media thumbnail/content, image enclosure, iTunes image, or an image in the item HTML). If the RSS summary is shorter than ~80 word tokens (counted with `Intl.Segmenter` for Chinese and English — roughly ~200 Chinese characters or ~80 English words), or cover is still missing, the article page is fetched (desktop browser user agent, 15 s timeout, up to 3 concurrent requests), decoded with charset detection, and parsed with `@extractus/article-extractor` to fill in `content` and, if needed, `cover` from Open Graph / Twitter / `link rel=image_src` / first suitable `<img>`. Already-known entries skip scraping. Unprocessed backlog entries stay out of `last_guids` so the next catch-up run can pick them up.
+6. New items are assigned an integer `id` (UTC compact datetime + per-second sequence), deduplicated globally by `guid` (same article from different feeds is stored once), evaluated by the AI filter when it is active (`enabled` and non-empty prompt), and inserted into SQLite. On pass (or when filtering is off, or fail-open), `is_deleted = 0` and `deleted_reason` is `null`. On AI reject, `is_deleted = 1` and `deleted_reason` stores the model’s reason when present.
 7. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear. If a feed still has unprocessed new items after the 10-item cap, the next fetch is scheduled in **1 minute** (catch-up) while keeping the adaptive interval for later.
 8. Daily at 01:00 UTC, items older than 90 days are hard-deleted.
 
@@ -366,11 +434,11 @@ Agents then consume this store through MCP / REST; they do not scrape feeds them
 ```
 ├── web/              Operator UI (Svelte)
 ├── public/           Built static assets (generated)
-├── routes/           REST API routes (feeds, items, filter)
+├── routes/           REST API routes (feeds, items, filter, fever) and Fever protocol (`fever-api.ts`)
 ├── mcp/              MCP server and tools (agent interface)
 ├── services/
 │   ├── ai/           LangChain chat client (OpenAI-compatible)
-│   ├── feeds/        Feed fetching, adaptive polling intervals, and OPML export
+│   ├── feeds/        Feed fetching, cover extraction, adaptive polling intervals, and OPML export
 │   ├── export/       Excel (.xlsx) article export
 │   ├── content/      Full-text article extraction
 │   ├── filters/      AI relevance filter
@@ -384,8 +452,10 @@ Agents then consume this store through MCP / REST; they do not scrape feeds them
 ├── utils/            Date, hash, HTML, text, and charset-decoding helpers
 ├── shared/           Shared types and utilities
 ├── drizzle/          SQL migrations
-├── filter.json       AI filter prompt
+├── filter.json       AI filter prompt (gitignored)
 ├── filter.ts         Filter load and persist
+├── fever.json        Fever API credentials (gitignored)
+├── fever.ts          Fever config load and persist
 ├── main.ts           Application entry point
 ├── dev.ts            Concurrent frontend/backend watch for `bun run dev`
 └── build.ts          Frontend build (Tailwind CLI + Bun/Svelte)

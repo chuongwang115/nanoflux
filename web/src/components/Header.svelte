@@ -2,6 +2,7 @@
   import {
     exportHref,
     feedsHref,
+    feverHref,
     filterHref,
     homeHref,
     navClick,
@@ -57,7 +58,15 @@
       class={navClass($route === "/filter")}
       aria-current={$route === "/filter" ? "page" : undefined}
     >
-      {t("items.filters")}
+      {t("items.filter")}
+    </a>
+    <a
+      href={feverHref()}
+      onclick={navClick("/fever")}
+      class={navClass($route === "/fever")}
+      aria-current={$route === "/fever" ? "page" : undefined}
+    >
+      {t("items.fever")}
     </a>
     <a
       href={exportHref()}

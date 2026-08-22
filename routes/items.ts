@@ -6,7 +6,7 @@ import {
 } from "../db/items";
 import { buildItemsExport, type ExportLocale } from "../services/export/items-export";
 import { DEFAULT_LIMIT, MAX_LIMIT } from "../db/schema";
-import { encodeCursor, parseTimeUnit } from "../db/utils";
+import { encodeCursor, parseItemId, parseTimeUnit } from "../db/utils";
 
 function parseIsRead(raw: unknown): 0 | 1 | undefined {
   if (raw === 0 || raw === "0") return 0;
@@ -136,7 +136,11 @@ function markItemReadHandler({ params }: {
   };
 }) {
   try {
-    markItemRead(params.id);
+    const id = parseItemId(params.id);
+    if (id === null) {
+      return { code: 400, message: "Invalid item id" };
+    }
+    markItemRead(id);
     return { code: 0, message: "ok" };
   } catch (error) {
     const message =

@@ -9,23 +9,38 @@ import { stripHtml } from "../../utils/html";
 import { enrichItemsContent } from "../content/extractor";
 import { filterItems } from "../filters";
 import { fetchRssFeed } from "../rss";
+import { pickCoverFromRss } from "./cover";
 import {
   DEFAULT_FETCH_INTERVAL_MIN,
   nextFetchedAtIso,
   nextFetchIntervalMin,
 } from "./interval";
 
-const rssParser = new Parser();
+type RssItemFields = {
+  mediaContent?: unknown;
+  mediaThumbnail?: unknown;
+  image?: unknown;
+};
+
+const rssParser = new Parser<Record<string, unknown>, RssItemFields>({
+  customFields: {
+    item: [
+      ["media:content", "mediaContent", { keepArray: true }],
+      ["media:thumbnail", "mediaThumbnail", { keepArray: true }],
+      "image",
+    ],
+  },
+});
 
 /** Keep each tick finite when many feeds are overdue or a feed has a large backlog. */
 const MAX_FEEDS_PER_TICK = 3;
 const MAX_NEW_ITEMS_PER_FEED = 10;
 const CATCH_UP_INTERVAL_MIN = 1;
 
-const inFlightFeedIds = new Set<string>();
+const inFlightFeedIds = new Set<number>();
 let dueFetchRunning = false;
 
-function toStoredItem(entry: Parser.Item) {
+function toStoredItem(entry: Parser.Item & RssItemFields) {
   const link = entry.link?.trim();
   if (!link) return null;
 
@@ -49,11 +64,15 @@ function toStoredItem(entry: Parser.Item) {
     title,
     link,
     content: description && description != title ? description : null,
+    cover: pickCoverFromRss(entry, link),
     published_at,
   };
 }
 
-function feedBuildDate(parsed: Record<string, unknown>): string | null {
+function feedBuildDate(parsed: {
+  pubDate?: unknown;
+  lastBuildDate?: unknown;
+}): string | null {
   const pubDate =
     typeof parsed.pubDate === "string" ? parsed.pubDate : undefined;
   const lastBuildDate =

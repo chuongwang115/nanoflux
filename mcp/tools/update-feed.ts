@@ -5,7 +5,7 @@ import {
 } from "../../db/feeds";
 
 function formatFeed(feed: {
-  id: string;
+  id: number;
   title: string;
   url: string;
   description: string | null;
@@ -29,7 +29,7 @@ export function registerUpdateFeed(server: McpServer): void {
       description:
         "Update an existing RSS feed by id. Provide at least one of title or description.",
       inputSchema: {
-        id: z.string().min(1).describe("Feed id"),
+        id: z.coerce.number().int().positive().describe("Feed id"),
         title: z
           .string()
           .min(1)
