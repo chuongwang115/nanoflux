@@ -17,7 +17,7 @@ import {
   stopScheduler,
 } from "./services/scheduler";
 import { httpGet } from "./services/http-fetcher";
-import { loadFilters } from "./filter";
+import { getFilterConfig, loadFilters } from "./filter";
 
 const PUBLIC_DIR = join(import.meta.dir, "public");
 const GOOGLE_CONNECTIVITY_URL = "https://www.google.com/generate_204";
@@ -48,16 +48,13 @@ function manifestLocale(query: Record<string, string | undefined>): Locale {
 }
 
 await ensureGoogleConnectivity();
-
-const filterReady = loadFilters().then(() => {
-  console.log("[filter] config loaded");
-});
-
-void filterReady.then(() => {
-  void startScheduler().catch((error) => {
-    console.error("[scheduler]", error);
-  });
-});
+await loadFilters();
+{
+  const { prompt, enabled } = getFilterConfig();
+  console.log(
+    `[filter] config loaded enabled=${enabled} promptChars=${prompt.trim().length}`,
+  );
+}
 
 const host = resolveHost();
 const restrictLocalhost = isLocalhostRestricted(host);
@@ -94,14 +91,36 @@ const publicRoutes = new Elysia()
 const app = new Elysia().use(publicRoutes);
 
 const port = resolvePort();
-app.listen({ port, hostname: host });
+try {
+  app.listen({ port, hostname: host });
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(
+    `[listen] failed on ${host}:${port} — another NanoFlux instance may already be running: ${message}`,
+  );
+  process.exit(1);
+}
+
+if (!app.server) {
+  console.error(`[listen] failed on ${host}:${port} — server did not start`);
+  process.exit(1);
+}
 
 if (restrictLocalhost) {
   console.log(
-    `Listening on http://localhost:${app.server?.port} (API/MCP: localhost only)`,
+    `Listening on http://localhost:${app.server.port} (API/MCP: localhost only)`,
   );
 } else {
-  console.log(`Listening on http://${host}:${app.server?.port}/`);
+  console.log(`Listening on http://${host}:${app.server.port}/`);
+}
+
+// Start cron only after we own the listen port, so a failed bind cannot leave
+// orphan fetchers writing to the same SQLite database.
+try {
+  await startScheduler();
+} catch (error) {
+  console.error("[scheduler]", error);
+  process.exit(1);
 }
 
 let shuttingDown = false;

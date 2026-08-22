@@ -34,6 +34,36 @@ function createChatModel(
   });
 }
 
+function textFromContent(content: unknown): string {
+  if (typeof content === "string") return content.trim();
+  if (!Array.isArray(content)) return "";
+  return content
+    .map((part) =>
+      typeof part === "string"
+        ? part
+        : part &&
+            typeof part === "object" &&
+            "type" in part &&
+            part.type === "text" &&
+            "text" in part &&
+            typeof part.text === "string"
+          ? part.text
+          : "",
+    )
+    .join("")
+    .trim();
+}
+
+/** Some reasoning models put the final JSON in reasoning when content is empty. */
+function textFromReasoning(response: {
+  additional_kwargs?: Record<string, unknown>;
+}): string {
+  const reasoning = response.additional_kwargs?.reasoning_content;
+  if (typeof reasoning !== "string" || !reasoning.trim()) return "";
+  const jsonMatch = reasoning.match(/\{[\s\S]*"pass"\s*:[\s\S]*\}/);
+  return (jsonMatch?.[0] ?? reasoning).trim();
+}
+
 export async function chatCompletion(
   system: string,
   user: string,
@@ -51,20 +81,7 @@ export async function chatCompletion(
   ]);
 
   const text =
-    typeof response.content === "string"
-      ? response.content.trim()
-      : Array.isArray(response.content)
-        ? response.content
-            .map((part) =>
-              typeof part === "string"
-                ? part
-                : part.type === "text"
-                  ? part.text
-                  : "",
-            )
-            .join("")
-            .trim()
-        : "";
+    textFromContent(response.content) || textFromReasoning(response);
 
   if (!text) throw new Error("Empty AI response");
   return text;

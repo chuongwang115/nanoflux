@@ -8,12 +8,6 @@ import { buildItemsExport, type ExportLocale } from "../services/export/items-ex
 import { DEFAULT_LIMIT, MAX_LIMIT } from "../db/schema";
 import { encodeCursor, parseTimeUnit } from "../db/utils";
 
-function parseFilterPassed(raw: unknown): 0 | 1 | undefined {
-  if (raw === 0 || raw === "0") return 0;
-  if (raw === 1 || raw === "1") return 1;
-  return undefined;
-}
-
 function parseIsRead(raw: unknown): 0 | 1 | undefined {
   if (raw === 0 || raw === "0") return 0;
   if (raw === 1 || raw === "1") return 1;
@@ -28,7 +22,6 @@ function getItemsHandler({ query }: {
     until?: string;
     unit?: string;
     count?: number;
-    filter_passed?: number;
     is_read?: number;
   }
 }) {
@@ -45,7 +38,6 @@ function getItemsHandler({ query }: {
       return { code: 400, message: `Invalid time unit: ${query.unit}` };
     }
 
-    const filterPassed = parseFilterPassed(query?.filter_passed);
     const isRead = parseIsRead(query?.is_read);
 
     const selected = getItems({
@@ -55,7 +47,6 @@ function getItemsHandler({ query }: {
       until: query?.until,
       unit: unit ? unit.toString() : undefined,
       count: query?.count,
-      filterPassed,
       isRead,
     });
 
@@ -95,20 +86,17 @@ function exportItemsHandler({ query }: {
   query?: {
     since?: string;
     until?: string;
-    filter_passed?: number;
     tz_offset?: number;
     lang?: string;
   };
 }) {
   try {
-    const filterPassed = parseFilterPassed(query?.filter_passed);
     const since = query?.since?.trim() || undefined;
     const until = query?.until?.trim() || undefined;
 
     const xlsx = buildItemsExport({
       since,
       until,
-      filterPassed,
       tzOffsetMin: parseTzOffset(query?.tz_offset),
       locale: parseExportLocale(query?.lang),
     });
@@ -130,12 +118,10 @@ function exportItemsHandler({ query }: {
 function markItemsReadHandler({ body }: {
   body: {
     until?: string;
-    filter_passed?: number;
   };
 }) {
   try {
-    const filterPassed = parseFilterPassed(body.filter_passed);
-    markItemsRead(body.until ?? "", { filterPassed });
+    markItemsRead(body.until ?? "");
     return { code: 0, message: "ok" };
   } catch (error) {
     const message =

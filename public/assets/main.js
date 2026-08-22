@@ -6695,12 +6695,9 @@ var messages = {
     "filters.loadFailed": "加载失败",
     "filters.saveFailed": "保存失败",
     "filters.confirmClearPrompt": "提示词为空，保存会清空已有内容。确定继续？",
-    "export.hint": "选择起始与截止时间及过滤条件，将范围内的文章导出为 Excel 文件。",
+    "export.hint": "选择起始与截止时间，将范围内的文章导出为 Excel 文件。",
     "export.startTime": "起始时间",
     "export.endTime": "截止时间",
-    "export.scope": "过滤条件",
-    "export.scopeAll": "全部文章",
-    "export.scopePassed": "通过过滤",
     "export.button": "导出 Excel",
     "export.exporting": "导出中…",
     "export.failed": "导出失败",
@@ -6787,12 +6784,9 @@ var messages = {
     "filters.loadFailed": "Failed to load",
     "filters.saveFailed": "Failed to save",
     "filters.confirmClearPrompt": "The prompt is empty. Saving will clear the existing prompt. Continue?",
-    "export.hint": "Pick a start and end time and a filter, then export the matching articles to an Excel file.",
+    "export.hint": "Pick a start and end time, then export the matching articles to an Excel file.",
     "export.startTime": "Start time",
     "export.endTime": "End time",
-    "export.scope": "Filter",
-    "export.scopeAll": "All articles",
-    "export.scopePassed": "Passed",
     "export.button": "Export Excel",
     "export.exporting": "Exporting…",
     "export.failed": "Export failed",
@@ -7414,9 +7408,7 @@ function assertApiOk(body) {
 function normalizeItem(raw) {
   return {
     ...raw,
-    is_read: Boolean(raw.is_read),
-    filter_passed: Number(raw.filter_passed) === 1 ? 1 : 0,
-    passed_reason: raw.passed_reason === null || raw.passed_reason === undefined ? null : String(raw.passed_reason)
+    is_read: Boolean(raw.is_read)
   };
 }
 async function request(url, options = {}) {
@@ -7431,13 +7423,10 @@ async function request(url, options = {}) {
   }
   return body;
 }
-async function fetchItemsPage(cursor, limit = 20, filterPassed, isRead) {
+async function fetchItemsPage(cursor, limit = 20, isRead) {
   const params = new URLSearchParams({
     limit: String(limit)
   });
-  if (filterPassed === 0 || filterPassed === 1) {
-    params.set("filter_passed", String(filterPassed));
-  }
   if (cursor)
     params.set("cursor", cursor);
   if (isRead === 0 || isRead === 1)
@@ -7537,9 +7526,6 @@ async function downloadItemsExcel(options) {
     params.set("since", options.since);
   if (options.until)
     params.set("until", options.until);
-  if (options.filterPassed === 0 || options.filterPassed === 1) {
-    params.set("filter_passed", String(options.filterPassed));
-  }
   params.set("tz_offset", String(new Date().getTimezoneOffset()));
   params.set("lang", localeState.locale);
   const res = await fetch(`/api/items/export.xlsx?${params}`);
@@ -7558,17 +7544,13 @@ async function downloadItemsExcel(options) {
     URL.revokeObjectURL(url);
   }
 }
-async function markAllItemsRead(until, options) {
+async function markAllItemsRead(until) {
   if (!until) {
     throw new Error("Missing until timestamp");
   }
-  const payload = { until };
-  if (options?.filterPassed === 0 || options?.filterPassed === 1) {
-    payload.filter_passed = options.filterPassed;
-  }
   const body = await request("/api/items/read-all", {
     method: "POST",
-    body: JSON.stringify(payload)
+    body: JSON.stringify({ until })
   });
   assertApiOk(body);
 }
@@ -9019,18 +9001,9 @@ delegate(["click"]);
 
 // ../nanoflux/web/src/components/ExportPage.svelte
 var root15 = from_html(`
-    <div class="space-y-3">
-      <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
-      <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm" role="group">
-        <button type="button"> </button>
-        <button type="button"> </button>
-      </div>
-    </div>
-  `, 1);
-var root_112 = from_html(`
       <p class="text-sm text-red-500"> </p>
     `, 1);
-var root_23 = from_html(`
+var root_112 = from_html(`
 
 <section class="space-y-8">
   <p class="text-sm text-neutral-400 dark:text-neutral-500"> </p>
@@ -9047,8 +9020,6 @@ var root_23 = from_html(`
     </label>
   </div>
 
-  <!>
-
   <div class="flex items-center gap-4">
     <button type="button" class="inline-flex items-center gap-1.5 text-sm text-neutral-900 underline-offset-4 hover:underline disabled:opacity-50 dark:text-neutral-100">
       <!> </button>
@@ -9057,23 +9028,16 @@ var root_23 = from_html(`
 </section>`, 1);
 function ExportPage($$anchor, $$props) {
   push($$props, true);
-  const SCOPE_ALL = "__all__";
-  const SCOPE_PASSED = "__passed__";
   function toDatetimeLocal(date) {
     const pad = (n) => String(n).padStart(2, "0");
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` + `T${pad(date.getHours())}:${pad(date.getMinutes())}`;
   }
   const nowDate = new Date;
-  let filterEnabled = state(false);
-  let scope = state(SCOPE_ALL);
   let start = state(proxy(toDatetimeLocal(new Date(nowDate.getTime() - 24 * 60 * 60 * 1000))));
   let end = state(proxy(toDatetimeLocal(nowDate)));
   let exporting = state(false);
   let error = state("");
   const inputClass = "w-full border-0 border-b border-neutral-200 bg-transparent py-2 text-sm outline-none placeholder:text-neutral-300 focus:border-neutral-900 dark:border-neutral-700 dark:placeholder:text-neutral-600 dark:focus:border-neutral-100";
-  function scopeButtonClass(active) {
-    return active ? "text-neutral-900 underline underline-offset-4 decoration-neutral-900 dark:text-neutral-100 dark:decoration-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300";
-  }
   function toIso(local) {
     if (!local)
       return;
@@ -9081,11 +9045,6 @@ function ExportPage($$anchor, $$props) {
     if (Number.isNaN(ms))
       return;
     return new Date(ms).toISOString();
-  }
-  function scopeParams() {
-    if (get2(scope) === SCOPE_PASSED)
-      return { filterPassed: 1 };
-    return {};
   }
   async function handleExport() {
     if (get2(exporting))
@@ -9099,25 +9058,15 @@ function ExportPage($$anchor, $$props) {
     }
     set(exporting, true);
     try {
-      await downloadItemsExcel({ since, until, ...scopeParams() });
+      await downloadItemsExcel({ since, until });
     } catch (e) {
       set(error, e instanceof Error ? e.message : t("export.failed"), true);
     } finally {
       set(exporting, false);
     }
   }
-  onMount(() => {
-    (async () => {
-      try {
-        const filter = await fetchFilter();
-        set(filterEnabled, filter.enabled && Boolean(filter.prompt.trim()), true);
-      } catch {
-        set(filterEnabled, false);
-      }
-    })();
-  });
   next();
-  var fragment = root_23();
+  var fragment = root_112();
   var section = sibling(first_child(fragment));
   var p = sibling(child(section));
   var text2 = child(p);
@@ -9144,82 +9093,30 @@ function ExportPage($$anchor, $$props) {
   reset(label_1);
   next();
   reset(div);
-  var node_1 = sibling(div, 2);
+  var div_1 = sibling(div, 2);
+  var button = sibling(child(div_1));
+  var node_1 = sibling(child(button));
+  download_default(node_1, { size: 16, strokeWidth: 1.5, "aria-hidden": "true" });
+  var text_3 = sibling(node_1);
+  reset(button);
+  var node_2 = sibling(button, 2);
   {
     var consequent = ($$anchor2) => {
       var fragment_1 = root15();
-      var div_1 = sibling(first_child(fragment_1));
-      var span_2 = sibling(child(div_1));
-      var text_3 = child(span_2);
-      reset(span_2);
-      var div_2 = sibling(span_2, 2);
-      var button = sibling(child(div_2));
-      var text_4 = child(button);
-      reset(button);
-      var button_1 = sibling(button, 2);
-      var text_5 = child(button_1);
-      reset(button_1);
+      var p_1 = sibling(first_child(fragment_1));
+      var text_4 = child(p_1, true);
+      reset(p_1);
       next();
-      reset(div_2);
-      next();
-      reset(div_1);
-      next();
-      template_effect(($0, $1, $2, $3, $4, $5) => {
-        set_text(text_3, `
-        ${$0 ?? ""}
-      `);
-        set_attribute2(div_2, "aria-label", $1);
-        set_class(button, 1, `transition-colors ${$2 ?? ""}`);
-        set_attribute2(button, "aria-pressed", get2(scope) === SCOPE_ALL);
-        set_text(text_4, `
-          ${$3 ?? ""}
-        `);
-        set_class(button_1, 1, `transition-colors ${$4 ?? ""}`);
-        set_attribute2(button_1, "aria-pressed", get2(scope) === SCOPE_PASSED);
-        set_text(text_5, `
-          ${$5 ?? ""}
-        `);
-      }, [
-        () => t("export.scope"),
-        () => t("export.scope"),
-        () => scopeButtonClass(get2(scope) === SCOPE_ALL),
-        () => t("export.scopeAll"),
-        () => scopeButtonClass(get2(scope) === SCOPE_PASSED),
-        () => t("export.scopePassed")
-      ]);
-      delegated("click", button, () => set(scope, SCOPE_ALL));
-      delegated("click", button_1, () => set(scope, SCOPE_PASSED));
+      template_effect(() => set_text(text_4, get2(error)));
       append($$anchor2, fragment_1);
     };
-    if_block(node_1, ($$render) => {
-      if (get2(filterEnabled))
+    if_block(node_2, ($$render) => {
+      if (get2(error))
         $$render(consequent);
     });
   }
-  var div_3 = sibling(node_1, 2);
-  var button_2 = sibling(child(div_3));
-  var node_2 = sibling(child(button_2));
-  download_default(node_2, { size: 16, strokeWidth: 1.5, "aria-hidden": "true" });
-  var text_6 = sibling(node_2);
-  reset(button_2);
-  var node_3 = sibling(button_2, 2);
-  {
-    var consequent_1 = ($$anchor2) => {
-      var fragment_2 = root_112();
-      var p_1 = sibling(first_child(fragment_2));
-      var text_7 = child(p_1, true);
-      reset(p_1);
-      next();
-      template_effect(() => set_text(text_7, get2(error)));
-      append($$anchor2, fragment_2);
-    };
-    if_block(node_3, ($$render) => {
-      if (get2(error))
-        $$render(consequent_1);
-    });
-  }
   next();
-  reset(div_3);
+  reset(div_1);
   next();
   reset(section);
   template_effect(($0, $1, $2, $3) => {
@@ -9232,8 +9129,8 @@ function ExportPage($$anchor, $$props) {
     set_text(text_2, `
         ${$2 ?? ""}
       `);
-    button_2.disabled = get2(exporting);
-    set_text(text_6, `
+    button.disabled = get2(exporting);
+    set_text(text_3, `
       ${$3 ?? ""}
     `);
   }, [
@@ -9244,19 +9141,13 @@ function ExportPage($$anchor, $$props) {
   ]);
   bind_value(input, () => get2(start), ($$value) => set(start, $$value));
   bind_value(input_1, () => get2(end), ($$value) => set(end, $$value));
-  delegated("click", button_2, () => void handleExport());
+  delegated("click", button, () => void handleExport());
   append($$anchor, fragment);
   pop();
 }
 if (undefined) {}
 var ExportPage_default = ExportPage;
 delegate(["click"]);
-
-// ../nanoflux/web/src/lib/highlight.ts
-function getItemAiReason(item) {
-  const reason = item.passed_reason?.trim();
-  return reason || null;
-}
 
 // ../nanoflux/node_modules/@lucide/svelte/dist/icons/check-check.svelte
 var rest_excludes9 = new Set(["$$slots", "$$events", "$$legacy"]);
@@ -9328,65 +9219,17 @@ if (undefined) {}
 var MarkAllReadButton_default = MarkAllReadButton;
 delegate(["click"]);
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/circle-check.svelte
-var rest_excludes10 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root18 = from_html(`<!--
-@lucide/svelte v1.33.0 - ISC
-
-This source code is licensed under the ISC license.
-See the LICENSE file in the root directory of this source tree.
--->
-
-
-
-
-<!--
-@component
-
-Lucide SVG icon component, renders SVG Element with children.
-
-@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIgLz4KICA8cGF0aCBkPSJtOSAxMiAyIDIgNC00IiAvPgo8L3N2Zz4K) - https://lucide.dev/icons/circle-check
-@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
--->
-
-<!>`, 1);
-function Circle_check($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes10);
-  const iconNode = [
-    ["circle", { cx: "12", cy: "12", r: "10" }],
-    ["path", { d: "m9 12 2 2 4-4" }]
-  ];
-  var fragment = root18();
-  var node = first_child(fragment);
-  var node_1 = sibling(node, 2);
-  var node_2 = sibling(node_1, 2);
-  Icon_default(node_2, spread_props({ name: "circle-check" }, () => props, {
-    get iconNode() {
-      return iconNode;
-    }
-  }));
-  append($$anchor, fragment);
-}
-if (undefined) {}
-var circle_check_default = Circle_check;
 // ../nanoflux/web/src/components/ItemList.svelte
-var root19 = from_html(`
+var root18 = from_html(`
   <p class="py-6 text-sm text-red-500"> </p>
 `, 1);
 var root_113 = from_html(`
   <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root_24 = from_html(`
+var root_23 = from_html(`
             <p class="mt-2 line-clamp-2 text-sm text-neutral-400 dark:text-neutral-500"> </p>
           `, 1);
 var root_33 = from_html(`
-            <div class="mt-1.5 flex items-start gap-1 text-xs text-neutral-400 dark:text-neutral-500">
-              <!>
-              <span class="line-clamp-2"> </span>
-            </div>
-          `, 1);
-var root_42 = from_html(`
-      
       <li class="py-5">
         <article>
           <div class="flex items-baseline gap-1.5 text-xs text-neutral-400 dark:text-neutral-500">
@@ -9396,19 +9239,18 @@ var root_42 = from_html(`
           </div>
           <a target="_blank" rel="noopener noreferrer"> </a>
           <!>
-          <!>
         </article>
       </li>
     `, 1);
-var root_52 = from_html(`
+var root_42 = from_html(`
   <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
     <!>
   </ul>
 `, 1);
-var root_62 = from_html(`
+var root_52 = from_html(`
   <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root_72 = from_html(`
+var root_62 = from_html(`
 
 <div class="mb-6 flex items-center justify-between gap-4">
   <div class="flex gap-3 text-xs" role="group">
@@ -9436,7 +9278,6 @@ function ItemList($$anchor, $$props) {
   let loadGeneration = 0;
   let now2 = state(proxy(Date.now()));
   const filterIsRead = user_derived(() => get2(filter) === "unread" ? 0 : undefined);
-  const filterPassed = user_derived(() => get2(filter) === "unread" ? 1 : undefined);
   function resetList() {
     set(items, [], true);
     set(cursor, null);
@@ -9451,7 +9292,7 @@ function ItemList($$anchor, $$props) {
     set(loading, true);
     set(error, "");
     try {
-      const page = await fetchItemsPage(get2(cursor) ?? undefined, PAGE_SIZE, get2(filterPassed), get2(filterIsRead));
+      const page = await fetchItemsPage(get2(cursor) ?? undefined, PAGE_SIZE, get2(filterIsRead));
       if (gen !== loadGeneration)
         return;
       set(items, [...get2(items), ...page.data], true);
@@ -9519,7 +9360,7 @@ function ItemList($$anchor, $$props) {
     }, undefined);
     if (!until)
       return;
-    await markAllItemsRead(until, { filterPassed: get2(filter) === "unread" ? 1 : undefined });
+    await markAllItemsRead(until);
     if (get2(filter) === "unread") {
       set(items, get2(items).filter((item) => item.published_at > until), true);
     } else {
@@ -9537,7 +9378,7 @@ function ItemList($$anchor, $$props) {
   });
   var $$exports = { markAllRead };
   next();
-  var fragment = root_72();
+  var fragment = root_62();
   var div = sibling(first_child(fragment));
   var div_1 = sibling(child(div));
   var button = sibling(child(div_1));
@@ -9555,7 +9396,7 @@ function ItemList($$anchor, $$props) {
   var node_1 = sibling(div, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root19();
+      var fragment_1 = root18();
       var p = sibling(first_child(fragment_1));
       var text_2 = child(p, true);
       reset(p);
@@ -9573,13 +9414,12 @@ function ItemList($$anchor, $$props) {
       append($$anchor2, fragment_2);
     };
     var alternate = ($$anchor2) => {
-      var fragment_3 = root_52();
+      var fragment_3 = root_42();
       var ul = sibling(first_child(fragment_3));
       var node_2 = sibling(child(ul));
       each(node_2, 17, () => get2(items), (item) => item.id, ($$anchor3, item) => {
-        const aiReason = user_derived(() => getItemAiReason(get2(item)));
         next();
-        var fragment_4 = root_42();
+        var fragment_4 = root_33();
         var li = sibling(first_child(fragment_4));
         var article = sibling(child(li));
         var div_2 = sibling(child(article));
@@ -9597,7 +9437,7 @@ function ItemList($$anchor, $$props) {
         var node_3 = sibling(a_1, 2);
         {
           var consequent_2 = ($$anchor4) => {
-            var fragment_5 = root_24();
+            var fragment_5 = root_23();
             var p_2 = sibling(first_child(fragment_5));
             var text_7 = child(p_2);
             reset(p_2);
@@ -9610,33 +9450,6 @@ function ItemList($$anchor, $$props) {
           if_block(node_3, ($$render) => {
             if (get2(item).content)
               $$render(consequent_2);
-          });
-        }
-        var node_4 = sibling(node_3, 2);
-        {
-          var consequent_3 = ($$anchor4) => {
-            var fragment_6 = root_33();
-            var div_3 = sibling(first_child(fragment_6));
-            var node_5 = sibling(child(div_3));
-            circle_check_default(node_5, {
-              class: "mt-0.5 size-3 shrink-0 text-emerald-500/80 dark:text-emerald-400/70",
-              "aria-hidden": "true"
-            });
-            var span_1 = sibling(node_5, 2);
-            var text_8 = child(span_1, true);
-            reset(span_1);
-            next();
-            reset(div_3);
-            next();
-            template_effect(() => {
-              set_attribute2(span_1, "title", get2(aiReason));
-              set_text(text_8, get2(aiReason));
-            });
-            append($$anchor4, fragment_6);
-          };
-          if_block(node_4, ($$render) => {
-            if (get2(aiReason))
-              $$render(consequent_3);
           });
         }
         next();
@@ -9673,39 +9486,39 @@ function ItemList($$anchor, $$props) {
         $$render(alternate, -1);
     });
   }
-  var node_6 = sibling(node_1, 2);
+  var node_4 = sibling(node_1, 2);
   {
-    var consequent_4 = ($$anchor2) => {
-      var fragment_7 = root_62();
-      var p_3 = sibling(first_child(fragment_7));
-      var text_9 = child(p_3);
+    var consequent_3 = ($$anchor2) => {
+      var fragment_6 = root_52();
+      var p_3 = sibling(first_child(fragment_6));
+      var text_8 = child(p_3);
       reset(p_3);
+      next();
+      template_effect(($0) => set_text(text_8, `
+    ${$0 ?? ""}
+  `), [() => t("items.loading")]);
+      append($$anchor2, fragment_6);
+    };
+    var consequent_4 = ($$anchor2) => {
+      var fragment_7 = root_52();
+      var p_4 = sibling(first_child(fragment_7));
+      var text_9 = child(p_4);
+      reset(p_4);
       next();
       template_effect(($0) => set_text(text_9, `
     ${$0 ?? ""}
-  `), [() => t("items.loading")]);
+  `), [() => t("items.noMore")]);
       append($$anchor2, fragment_7);
     };
-    var consequent_5 = ($$anchor2) => {
-      var fragment_8 = root_62();
-      var p_4 = sibling(first_child(fragment_8));
-      var text_10 = child(p_4);
-      reset(p_4);
-      next();
-      template_effect(($0) => set_text(text_10, `
-    ${$0 ?? ""}
-  `), [() => t("items.noMore")]);
-      append($$anchor2, fragment_8);
-    };
-    if_block(node_6, ($$render) => {
+    if_block(node_4, ($$render) => {
       if (get2(loading))
-        $$render(consequent_4);
+        $$render(consequent_3);
       else if (!get2(hasMore) && get2(items).length > 0)
-        $$render(consequent_5, 1);
+        $$render(consequent_4, 1);
     });
   }
-  var div_4 = sibling(node_6, 2);
-  bind_this(div_4, ($$value) => set(sentinel, $$value), () => get2(sentinel));
+  var div_3 = sibling(node_4, 2);
+  bind_this(div_3, ($$value) => set(sentinel, $$value), () => get2(sentinel));
   template_effect(($0, $1, $2) => {
     set_attribute2(div_1, "aria-label", $0);
     set_class(button, 1, `transition-colors ${get2(filter) === "unread" ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"}`);
@@ -9733,7 +9546,7 @@ var ItemList_default = ItemList;
 delegate(["click"]);
 
 // ../nanoflux/web/src/App.svelte
-var root20 = from_html(`
+var root19 = from_html(`
         <!>
       `, 1);
 var root_114 = from_html(`
@@ -9759,28 +9572,28 @@ function App($$anchor) {
   var node_1 = sibling(child(div_1));
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root20();
+      var fragment_1 = root19();
       var node_2 = sibling(first_child(fragment_1));
       FeedsManager_default(node_2, {});
       next();
       append($$anchor2, fragment_1);
     };
     var consequent_1 = ($$anchor2) => {
-      var fragment_2 = root20();
+      var fragment_2 = root19();
       var node_3 = sibling(first_child(fragment_2));
       FiltersManager_default(node_3, {});
       next();
       append($$anchor2, fragment_2);
     };
     var consequent_2 = ($$anchor2) => {
-      var fragment_3 = root20();
+      var fragment_3 = root19();
       var node_4 = sibling(first_child(fragment_3));
       ExportPage_default(node_4, {});
       next();
       append($$anchor2, fragment_3);
     };
     var alternate = ($$anchor2) => {
-      var fragment_4 = root20();
+      var fragment_4 = root19();
       var node_5 = sibling(first_child(fragment_4));
       ItemList_default(node_5, {});
       next();

@@ -49,10 +49,9 @@ export const items = sqliteTable(
     created_at: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),
-    filter_passed: integer("filter_passed").notNull().default(0),
-    passed_reason: text("passed_reason"),
-    is_read: integer("is_read").notNull().default(0),
     is_deleted: integer("is_deleted").notNull().default(0),
+    deleted_reason: text("deleted_reason"),
+    is_read: integer("is_read").notNull().default(0),
   },
   (table) => [
     unique().on(table.guid),

@@ -7,14 +7,19 @@ export function registerDeleteItem(server: McpServer): void {
     "delete_item",
     {
       description:
-        "Soft-delete a news item by id. The item is hidden from news queries and the UI, but is kept so the same article is not fetched again.",
+        "Soft-delete a news item by id. The item is hidden from news queries and the UI, but is kept so the same article is not fetched again. A reason is required and stored as deleted_reason.",
       inputSchema: {
         id: z.string().min(1).describe("Item id"),
+        reason: z
+          .string()
+          .trim()
+          .min(1)
+          .describe("Why this item is being deleted"),
       },
     },
-    async ({ id }) => {
+    async ({ id, reason }) => {
       try {
-        const deleted = deleteItem(id);
+        const deleted = deleteItem(id, reason);
 
         return {
           content: [

@@ -21,10 +21,6 @@ export type Item = {
   content: string | null;
   published_at: string;
   is_read: boolean;
-  /** `1` when the item passed (or filtering was off); `0` when the AI rejected it. */
-  filter_passed: 0 | 1;
-  /** Pass reason text when the item passed the AI filter; `null` when rejected or filtering was off. */
-  passed_reason: string | null;
   feed_title: string;
 };
 
@@ -34,9 +30,8 @@ export type ItemsPage = {
   hasMore: boolean;
 };
 
-type RawItem = Omit<Item, "is_read" | "filter_passed"> & {
+type RawItem = Omit<Item, "is_read"> & {
   is_read: boolean | number;
-  filter_passed: boolean | number;
 };
 
 type ItemsApiResult = {
@@ -64,11 +59,6 @@ export function normalizeItem(raw: RawItem): Item {
   return {
     ...raw,
     is_read: Boolean(raw.is_read),
-    filter_passed: Number(raw.filter_passed) === 1 ? 1 : 0,
-    passed_reason:
-      raw.passed_reason === null || raw.passed_reason === undefined
-        ? null
-        : String(raw.passed_reason),
   };
 }
 
@@ -109,15 +99,11 @@ async function request<T>(
 export async function fetchItemsPage(
   cursor?: string,
   limit = 20,
-  filterPassed?: 0 | 1,
   isRead?: 0 | 1,
 ): Promise<ItemsPage> {
   const params = new URLSearchParams({
     limit: String(limit),
   });
-  if (filterPassed === 0 || filterPassed === 1) {
-    params.set("filter_passed", String(filterPassed));
-  }
   if (cursor) params.set("cursor", cursor);
   if (isRead === 0 || isRead === 1) params.set("is_read", String(isRead));
   const body = await request<ItemsApiResult>(`/api/items?${params}`);
@@ -261,14 +247,10 @@ export async function downloadFeedsOpml(): Promise<void> {
 export async function downloadItemsExcel(options: {
   since?: string;
   until?: string;
-  filterPassed?: 0 | 1;
 }): Promise<void> {
   const params = new URLSearchParams();
   if (options.since) params.set("since", options.since);
   if (options.until) params.set("until", options.until);
-  if (options.filterPassed === 0 || options.filterPassed === 1) {
-    params.set("filter_passed", String(options.filterPassed));
-  }
   params.set("tz_offset", String(new Date().getTimezoneOffset()));
   params.set("lang", localeState.locale);
 
@@ -289,25 +271,13 @@ export async function downloadItemsExcel(options: {
   }
 }
 
-export async function markAllItemsRead(
-  until: string,
-  options?: {
-    filterPassed?: 0 | 1;
-  },
-) {
+export async function markAllItemsRead(until: string) {
   if (!until) {
     throw new Error("Missing until timestamp");
   }
-  const payload: {
-    until: string;
-    filter_passed?: 0 | 1;
-  } = { until };
-  if (options?.filterPassed === 0 || options?.filterPassed === 1) {
-    payload.filter_passed = options.filterPassed;
-  }
   const body = await request<ApiResult>("/api/items/read-all", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ until }),
   });
   assertApiOk(body);
 }

@@ -23,14 +23,12 @@ function formatPublishedAt(iso: string, tzOffsetMin: number): string {
 export function buildItemsExport(options: {
   since?: string;
   until?: string;
-  filterPassed?: number;
   tzOffsetMin?: number;
   locale?: ExportLocale;
 }): Uint8Array<ArrayBuffer> {
   const rows = getItemsForExport({
     since: options.since,
     until: options.until,
-    filterPassed: options.filterPassed,
   });
 
   const tzOffset = options.tzOffsetMin ?? 0;

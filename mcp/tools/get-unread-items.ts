@@ -35,7 +35,6 @@ export function registerGetUnreadItems(server: McpServer): void {
           count,
           limit: adjustedLimit,
           isRead: 0,
-          filterPassed: 1,
         });
 
         const hasMore = selected.length > adjustedLimit;

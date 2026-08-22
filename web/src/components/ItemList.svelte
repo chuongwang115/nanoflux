@@ -7,10 +7,8 @@
     markItemRead,
     type Item,
   } from "../lib/api";
-  import { getItemAiReason } from "../lib/highlight";
   import { formatTime } from "../lib/utils";
   import MarkAllReadButton from "./buttons/MarkAllReadButton.svelte";
-  import CircleCheck from "@lucide/svelte/icons/circle-check";
 
   const PAGE_SIZE = 20;
 
@@ -28,7 +26,6 @@
   let now = $state(Date.now());
 
   const filterIsRead = $derived(filter === "unread" ? (0 as const) : undefined);
-  const filterPassed = $derived(filter === "unread" ? (1 as const) : undefined);
 
   function resetList() {
     items = [];
@@ -48,7 +45,6 @@
       const page = await fetchItemsPage(
         cursor ?? undefined,
         PAGE_SIZE,
-        filterPassed,
         filterIsRead,
       );
       if (gen !== loadGeneration) return;
@@ -120,9 +116,7 @@
       return max;
     }, undefined);
     if (!until) return;
-    await markAllItemsRead(until, {
-      filterPassed: filter === "unread" ? 1 : undefined,
-    });
+    await markAllItemsRead(until);
     if (filter === "unread") {
       items = items.filter((item) => item.published_at > until);
     } else {
@@ -181,7 +175,6 @@
 {:else}
   <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
     {#each items as item (item.id)}
-      {@const aiReason = getItemAiReason(item)}
       <li class="py-5">
         <article>
           <div
@@ -212,17 +205,6 @@
             >
               {item.content}
             </p>
-          {/if}
-          {#if aiReason}
-            <div
-              class="mt-1.5 flex items-start gap-1 text-xs text-neutral-400 dark:text-neutral-500"
-            >
-              <CircleCheck
-                class="mt-0.5 size-3 shrink-0 text-emerald-500/80 dark:text-emerald-400/70"
-                aria-hidden="true"
-              />
-              <span class="line-clamp-2" title={aiReason}>{aiReason}</span>
-            </div>
           {/if}
         </article>
       </li>

@@ -7,25 +7,11 @@ import {
   lt,
   lte,
   or,
-  sql,
 } from "drizzle-orm";
-import { hasFilterPrompt } from "../filter";
 import { db } from "./database";
 import { getFeed } from "./feeds";
 import { feeds, items, DEFAULT_LIMIT, MAX_LIMIT } from "./schema";
 import { newItemId, decodeCursor, parseTimeRange, TimeUnit, toUtcIso } from "./utils";
-
-function buildPassedFilter(filterPassed?: number) {
-  const filtering = hasFilterPrompt();
-  if (!filtering) {
-    return filterPassed === 0 ? sql`1 = 0` : undefined;
-  }
-
-  if (filterPassed === 0 || filterPassed === 1) {
-    return eq(items.filter_passed, filterPassed);
-  }
-  return undefined;
-}
 
 export function getItems(options?: {
   since?: string;
@@ -33,7 +19,6 @@ export function getItems(options?: {
   unit?: string;
   count?: number;
   isRead?: number;
-  filterPassed?: number;
   cursor?: string;
   limit?: number;
 }): any[] {
@@ -75,7 +60,6 @@ export function getItems(options?: {
       options?.isRead === 0 || options?.isRead === 1
         ? eq(items.is_read, options.isRead)
         : undefined;
-    const passedFilter = buildPassedFilter(options?.filterPassed);
     const deletedFilter = eq(items.is_deleted, 0);
 
     const selected = db
@@ -88,14 +72,12 @@ export function getItems(options?: {
         content: items.content,
         published_at: items.published_at,
         is_read: items.is_read,
-        filter_passed: items.filter_passed,
-        passed_reason: items.passed_reason,
         created_at: items.created_at,
         feed_title: feeds.title,
       })
       .from(items)
       .innerJoin(feeds, eq(items.feed_id, feeds.id))
-      .where(and(timeFilter, cursorFilter, readFilter, passedFilter, deletedFilter))
+      .where(and(timeFilter, cursorFilter, readFilter, deletedFilter))
       .orderBy(desc(items.published_at), desc(items.id))
       .limit(adjustedLimit + 1)
       .all();
@@ -114,7 +96,6 @@ export function getItems(options?: {
 export function getItemsForExport(options: {
   since?: string;
   until?: string;
-  filterPassed?: number;
 }): { published_at: string; title: string; content: string | null; link: string }[] {
   try {
     const sinceFilter = options.since
@@ -123,7 +104,6 @@ export function getItemsForExport(options: {
     const untilFilter = options.until
       ? lte(items.published_at, options.until)
       : undefined;
-    const passedFilter = buildPassedFilter(options.filterPassed);
     const deletedFilter = eq(items.is_deleted, 0);
 
     return db
@@ -134,7 +114,7 @@ export function getItemsForExport(options: {
         link: items.link,
       })
       .from(items)
-      .where(and(sinceFilter, untilFilter, passedFilter, deletedFilter))
+      .where(and(sinceFilter, untilFilter, deletedFilter))
       .orderBy(desc(items.published_at), desc(items.id))
       .all();
   } catch (error) {
@@ -163,8 +143,8 @@ export function addItems(
     link: string;
     content: string | null;
     published_at: string;
-    filter_passed: 0 | 1;
-    passed_reason: string | null;
+    is_deleted: 0 | 1;
+    deleted_reason: string | null;
   }[],
 ): any[] {
 
@@ -185,7 +165,7 @@ export function addItems(
       if (existingGuids.has(newItem.guid)) continue;
 
       const id = newItemId();
-      const { filter_passed, passed_reason } = newItem;
+      const { is_deleted, deleted_reason } = newItem;
 
       const inserted = db.insert(items)
         .values({
@@ -197,8 +177,8 @@ export function addItems(
           content: newItem.content,
           published_at: newItem.published_at,
           is_read: 0,
-          filter_passed,
-          passed_reason,
+          is_deleted,
+          deleted_reason,
         })
         .onConflictDoNothing({ target: items.guid })
         .returning()
@@ -223,16 +203,9 @@ export function addItems(
   }
 }
 
-export function markItemsRead(
-  until: string,
-  options?: {
-    filterPassed?: number;
-  },
-): void {
+export function markItemsRead(until: string): void {
   
   try {
-
-    const passedFilter = buildPassedFilter(options?.filterPassed);
 
     db.update(items)
     .set({ is_read: 1 })
@@ -241,7 +214,6 @@ export function markItemsRead(
         lte(items.published_at, until),
         eq(items.is_read, 0),
         eq(items.is_deleted, 0),
-        passedFilter,
       ),
     )
     .run();
@@ -252,8 +224,13 @@ export function markItemsRead(
   }
 }
 
-export function deleteItem(id: string): boolean {
+export function deleteItem(id: string, reason: string): boolean {
   try {
+    const deletedReason = reason.trim();
+    if (!deletedReason) {
+      throw new Error("Delete reason is required");
+    }
+
     const existing = db
       .select({ id: items.id, is_deleted: items.is_deleted })
       .from(items)
@@ -269,7 +246,7 @@ export function deleteItem(id: string): boolean {
     }
 
     db.update(items)
-      .set({ is_deleted: 1 })
+      .set({ is_deleted: 1, deleted_reason: deletedReason })
       .where(eq(items.id, id))
       .run();
 
