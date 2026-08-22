@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, lt, desc, asc, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, lt, lte, desc, asc, sql } from "drizzle-orm";
 import { getAllFeeds } from "./feeds";
 import { db } from "./database";
 import { items } from "./schema";
@@ -27,6 +27,7 @@ export type FeverItem = {
   html: string;
   url: string;
   is_saved: number;
+  is_read: number;
   created_on_time: number;
 };
 
@@ -121,6 +122,7 @@ type ItemRow = {
   content: string | null;
   cover: string | null;
   published_at: string;
+  is_read: number;
 };
 
 function toFeverItem(row: ItemRow): FeverItem {
@@ -132,6 +134,7 @@ function toFeverItem(row: ItemRow): FeverItem {
     html: feverItemHtml(row.content, row.cover),
     url: row.link,
     is_saved: 0,
+    is_read: row.is_read ? 1 : 0,
     created_on_time: toUnix(row.published_at),
   };
 }
@@ -144,6 +147,7 @@ const itemColumns = {
   content: items.content,
   cover: items.cover,
   published_at: items.published_at,
+  is_read: items.is_read,
 };
 
 export function countFeverItems(): number {
@@ -153,6 +157,80 @@ export function countFeverItems(): number {
     .where(eq(items.is_deleted, 0))
     .get();
   return Number(row?.n ?? 0);
+}
+
+export function listFeverUnreadItemIds(): string {
+  const rows = db
+    .select({ id: items.id })
+    .from(items)
+    .where(and(eq(items.is_deleted, 0), eq(items.is_read, 0)))
+    .orderBy(asc(items.id))
+    .all();
+  return rows.map((row) => String(row.id)).join(",");
+}
+
+function unixToIso(unix: number): string {
+  return new Date(unix * 1000).toISOString();
+}
+
+export function markFeverReadState(options: {
+  mark: string;
+  as: string;
+  id: number;
+  before: number;
+}): void {
+  const kind = options.mark.trim().toLowerCase();
+  const action = options.as.trim().toLowerCase();
+
+  if (kind === "item") {
+    if (options.id <= 0) return;
+    if (action === "read") {
+      db.update(items)
+        .set({ is_read: 1 })
+        .where(and(eq(items.id, options.id), eq(items.is_deleted, 0)))
+        .run();
+    } else if (action === "unread") {
+      db.update(items)
+        .set({ is_read: 0 })
+        .where(and(eq(items.id, options.id), eq(items.is_deleted, 0)))
+        .run();
+    }
+    return;
+  }
+
+  if (action !== "read") return;
+
+  const beforeUnix = options.before > 0 ? options.before : Math.floor(Date.now() / 1000);
+  const until = unixToIso(beforeUnix);
+
+  if (kind === "feed") {
+    if (options.id <= 0) return;
+    db.update(items)
+      .set({ is_read: 1 })
+      .where(
+        and(
+          eq(items.feed_id, options.id),
+          lte(items.published_at, until),
+          eq(items.is_read, 0),
+          eq(items.is_deleted, 0),
+        ),
+      )
+      .run();
+    return;
+  }
+
+  if (kind === "group" && options.id === FEVER_GROUP_ID) {
+    db.update(items)
+      .set({ is_read: 1 })
+      .where(
+        and(
+          lte(items.published_at, until),
+          eq(items.is_read, 0),
+          eq(items.is_deleted, 0),
+        ),
+      )
+      .run();
+  }
 }
 
 export function listFeverItems(options: {

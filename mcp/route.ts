@@ -8,7 +8,7 @@ import { registerAddWechatFeed } from "./tools/add-wechat-feed";
 import { registerUpdateFeed } from "./tools/update-feed";
 import { registerDeleteFeed } from "./tools/delete-feed";
 import { registerSearchFeeds } from "./tools/search-feeds";
-import { registerGetUnreadItems } from "./tools/get-unread-items";
+import { registerGetUndealtItems } from "./tools/get-undealt-items";
 import { registerDeleteItem } from "./tools/delete-item";
 import { registerGetFilterPrompt } from "./tools/get-filter-prompt";
 import { registerUpdateFilterPrompt } from "./tools/update-filter-prompt";
@@ -23,7 +23,7 @@ function registerMcpTools(server: McpServer): void {
   registerUpdateFeed(server);
   registerDeleteFeed(server);
   registerSearchFeeds(server);
-  registerGetUnreadItems(server);
+  registerGetUndealtItems(server);
   registerDeleteItem(server);
   registerGetFilterPrompt(server);
   registerUpdateFilterPrompt(server);

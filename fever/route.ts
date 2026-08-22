@@ -8,6 +8,8 @@ import {
   lastRefreshedOnTime,
   listFeverFeeds,
   listFeverItems,
+  listFeverUnreadItemIds,
+  markFeverReadState,
 } from "../db/fever";
 
 const API_VERSION = 3;
@@ -39,7 +41,8 @@ export function isFeverApiQuery(query: Record<string, unknown> | undefined): boo
     "feeds" in query ||
     "items" in query ||
     "unread_item_ids" in query ||
-    "saved_item_ids" in query
+    "saved_item_ids" in query ||
+    "mark" in query
   );
 }
 
@@ -106,7 +109,19 @@ function bodyToParams(body: unknown): FeverParams {
   return {};
 }
 
+function applyFeverMark(params: FeverParams): void {
+  if (!hasFlag(params, "mark") || !hasFlag(params, "as")) return;
+  markFeverReadState({
+    mark: params.mark,
+    as: params.as,
+    id: parsePositiveInt(params.id),
+    before: parsePositiveInt(params.before),
+  });
+}
+
 function buildAuthenticatedPayload(params: FeverParams): Record<string, unknown> {
+  applyFeverMark(params);
+
   const payload: Record<string, unknown> = {
     api_version: API_VERSION,
     auth: 1,
@@ -133,7 +148,7 @@ function buildAuthenticatedPayload(params: FeverParams): Record<string, unknown>
   }
 
   if (hasFlag(params, "unread_item_ids")) {
-    payload.unread_item_ids = "";
+    payload.unread_item_ids = listFeverUnreadItemIds();
   }
 
   if (hasFlag(params, "saved_item_ids")) {

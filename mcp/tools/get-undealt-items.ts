@@ -1,14 +1,14 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { getItems, markItemRead } from "../../db/items";
+import { getItems, markItemDealt } from "../../db/items";
 import { DEFAULT_LIMIT, MAX_LIMIT } from "../../db/schema";
 
-export function registerGetUnreadItems(server: McpServer): void {
+export function registerGetUndealtItems(server: McpServer): void {
   server.registerTool(
-    "get_unread_news",
+    "get_undealt_news",
     {
       description:
-        "Fetch unread news within a relative time window before now. Returned news are marked as read. When hasMore is true, call again with the same unit/count (and limit) to fetch the next batch until hasMore is false.",
+        "Fetch undealt news within a relative time window before now. Returned news are marked as dealt. When hasMore is true, call again with the same unit/count (and limit) to fetch the next batch until hasMore is false.",
       inputSchema: {
         unit: z.string().describe("Time unit; use with count for a relative range from now"),
         count: z.number().int().min(1).describe("Number of units (e.g. unit=hour, count=2 for the last 2 hours)"),
@@ -34,25 +34,25 @@ export function registerGetUnreadItems(server: McpServer): void {
           unit,
           count,
           limit: adjustedLimit,
-          isRead: 0,
+          isDealt: 0,
         });
 
         const hasMore = selected.length > adjustedLimit;
         const returned = selected.slice(0, adjustedLimit);
 
         for (const item of returned) {
-          markItemRead(item.id);
+          markItemDealt(item.id);
         }
 
         const message = hasMore
           ? [
-              "More unread news remain.",
-              "Call get_unread_news again with the same parameters:",
+              "More undealt news remain.",
+              "Call get_undealt_news again with the same parameters:",
               `unit=${unit}`,
               `count=${count}`,
               `limit=${adjustedLimit}`,
             ].join(" ")
-          : "No more unread news in this window.";
+          : "No more undealt news in this window.";
 
         return {
           content: [
@@ -75,7 +75,7 @@ export function registerGetUnreadItems(server: McpServer): void {
         };
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "Failed to get unread news";
+          error instanceof Error ? error.message : "Failed to get undealt news";
         return {
           content: [
             { type: "text", text: JSON.stringify({ error: message }) },

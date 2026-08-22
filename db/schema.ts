@@ -52,6 +52,7 @@ export const items = sqliteTable(
       .default(sql`(datetime('now'))`),
     is_deleted: integer("is_deleted").notNull().default(0),
     deleted_reason: text("deleted_reason"),
+    is_dealt: integer("is_dealt").notNull().default(0),
     is_read: integer("is_read").notNull().default(0),
   },
   (table) => [

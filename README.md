@@ -2,9 +2,9 @@
 
 **News Service for AI Agents**
 
-NanoFlux is a local news ingestion and query service built for AI agents. It continuously fetches RSS/Atom (and related) sources, extracts article text and cover images, optionally scores relevance with an LLM, and exposes the result over **MCP** and a small REST API so agents can subscribe to sources, pull unread news, soft-delete items, manage the filter prompt, and optionally push headlines or HTML daily reports to a Telegram channel.
+NanoFlux is a local news ingestion and query service built for AI agents. It continuously fetches RSS/Atom (and related) sources, extracts article text and cover images, optionally scores relevance with an LLM, and exposes the result over **MCP** and a small REST API so agents can subscribe to sources, pull undealt news, soft-delete items, manage the filter prompt, and optionally push headlines or HTML daily reports to a Telegram channel.
 
-A **Fever API** (`/fever`) is also available so RSS readers such as Reeder can sync the same store. A minimal web UI is included for operators to inspect feeds, tweak the filter, configure Fever, and export data — not as a full-featured RSS reader.
+A **Fever API** (`/fever`) is also available so RSS readers such as Reeder can sync the same store (feeds, items, unread IDs, and mark-read). A minimal web UI is included for operators to inspect feeds, tweak the filter, configure Fever, and export data — not as a full-featured RSS reader.
 
 Built on [Bun](https://bun.sh), [Elysia](https://elysiajs.com), and [Svelte 5](https://svelte.dev).
 
@@ -32,7 +32,9 @@ Typical RSS readers optimize for human browsing. NanoFlux optimizes for **agent 
 1. **Ingest** — adaptive polling of RSS/Atom, Google News keyword feeds, and WeChat official accounts
 2. **Normalize** — GUID dedupe, Google News link resolution, full-text extraction when the feed summary is thin
 3. **Filter** — optional single LLM prompt plus an on/off switch that marks relevant items for agents
-4. **Serve** — MCP and REST so agents can consume unread items (marking them read), soft-delete items, manage feeds / the filter prompt, and push Telegram headlines or HTML digests; Fever API so RSS readers can pull the same feeds and articles
+4. **Serve** — MCP so agents can consume **undealt** items (marking them `is_dealt`), soft-delete items, manage feeds / the filter prompt, and push Telegram headlines or HTML digests; REST and the operator UI for the same store; Fever API so RSS readers can pull feeds and articles and mark them **read** (`is_read`)
+
+Read state (`is_read`) and agent consumption (`is_dealt`) are independent. Opening an article in the UI or Reeder does not mark it dealt for MCP, and `get_undealt_news` does not mark it read for Fever/UI.
 
 Run it on localhost next to your agent runtime. When `HOST=127.0.0.1`, API, MCP, and Fever accept only local clients.
 
@@ -40,13 +42,13 @@ Run it on localhost next to your agent runtime. When `HOST=127.0.0.1`, API, MCP,
 
 **For agents (primary)**
 
-- MCP at `/mcp` — feed CRUD, keyword / WeChat subscribe, unread consumption, item soft-delete, filter prompt read/write, Telegram channel push (headline or daily digest), current time
+- MCP at `/mcp` — feed CRUD, keyword / WeChat subscribe, undealt consumption (`get_undealt_news` → `is_dealt`), item soft-delete, filter prompt read/write, Telegram channel push (headline or daily digest), current time
 - REST API with the same data model (`{ code, message, data }` JSON)
 - Persistent SQLite store with integer IDs and cursor pagination so agents can page through large result sets
 
 **For RSS readers**
 
-- Fever API 3 at `/fever` for Reeder and other Fever-compatible clients (optional; enable on `/fever`). Read-only: feeds and items, not mark-read or saved/unread mutation
+- Fever API 3 at `/fever` for Reeder and other Fever-compatible clients (optional; enable on `/fever`). Feeds, items, unread IDs, and mark-read/unread; starring is not implemented
 
 **News pipeline**
 
@@ -270,7 +272,7 @@ Add to your MCP client config (e.g. Cursor or Claude Desktop):
 
 1. Ensure sources exist (`add_feed`, `add_feed_by_keyword`, or `add_wechat_feed`)
 2. Optionally set relevance criteria with `update_filter_prompt` (prompt and/or `enabled`)
-3. Call `get_unread_news` on a schedule; page with `hasMore` until caught up
+3. Call `get_undealt_news` on a schedule; page with `hasMore` until caught up
 4. Use returned `title`, `content`, `link`, and `published_at` in your agent workflow
 5. Optionally `delete_item` (with `reason`) to hide a stored article without allowing it to be fetched again
 6. Optionally push a headline + URL with `send_telegram_message`, or compose an HTML daily report and push it with `send_telegram_digest` (requires bot credentials)
@@ -279,7 +281,7 @@ Typical WeChat flow: call `add_wechat_feed` with a `query` (it always searches f
 
 ### Tools
 
-News query tools return stored items from the database. Each item includes integer `id`, `title`, `link`, `content`, `published_at`, and `feed_title`. Soft-deleted items (including AI rejects) are excluded. Feed and item IDs are integers (feeds autoincrement; item IDs are UTC `YYYYMMDDHHMMSS` plus a 2-digit per-second sequence, 16 digits, JSON-safe).
+News query tools return stored items from the database. Each item includes integer `id`, `title`, `link`, `content`, `published_at`, and `feed_title`. Soft-deleted items (including AI rejects) are excluded. `get_undealt_news` filters on `is_dealt = 0` and sets `is_dealt = 1` on returned rows; it does not change `is_read`. Feed and item IDs are integers (feeds autoincrement; item IDs are UTC `YYYYMMDDHHMMSS` plus a 2-digit per-second sequence, 16 digits, JSON-safe).
 
 Relative window `unit` values: `minute` / `min` / `分`, `hour` / `h` / `时`, `day` / `d` / `天`.
 
@@ -291,7 +293,7 @@ Relative window `unit` values: `minute` / `min` / `分`, `hour` / `h` / `时`, `
 | `update_feed` | Update feed title, URL, or description |
 | `delete_feed` | Remove a feed (also unsubscribes WeChat RSS feeds remotely when configured) |
 | `search_feeds` | Search feeds by keyword in title |
-| `get_unread_news` | Fetch unread news in a relative time window (`unit` / `count`) and mark returned articles as read. When `hasMore` is true, call again with the same `unit`/`count` (and `limit`) until `hasMore` is false. `limit` defaults to 20, max 50 |
+| `get_undealt_news` | Fetch undealt news in a relative time window (`unit` / `count`) and mark returned articles as dealt (`is_dealt=1`). When `hasMore` is true, call again with the same `unit`/`count` (and `limit`) until `hasMore` is false. `limit` defaults to 20, max 50 |
 | `delete_item` | Soft-delete a news item by `id` with a required `reason` (stored as `deleted_reason`). Hidden from queries; the same `guid` will not be fetched again |
 | `get_filter_prompt` | Get the AI content filter (`prompt`, `enabled`, `active`). `enabled` is the stored switch; `active` is true only when filtering will actually run (`enabled` and non-empty prompt) |
 | `update_filter_prompt` | Set `prompt` and/or `enabled` (both optional). Empty prompt or `enabled: false` skips LLM filtering. Applies to newly fetched items only |
@@ -339,7 +341,7 @@ Query parameters for `GET /api/feeds`:
 
 ### Items — `/api/items`
 
-Each item includes `content` (RSS summary or scraped full text) and optional `cover` (image URL). Soft-deleted rows are omitted from list and export responses. Excel export still writes published time, title, content, and original link (no cover column).
+Each item includes `content` (RSS summary or scraped full text), optional `cover` (image URL), `is_read`, and `is_dealt`. Soft-deleted rows are omitted from list and export responses. REST mark-read endpoints update `is_read` only; they do not set `is_dealt`. Excel export still writes published time, title, content, and original link (no cover column).
 
 | Method | Path | Description |
 | --- | --- | --- |
@@ -390,7 +392,7 @@ Does not serve the Fever protocol itself (that is [`/fever`](#fever-api)). This 
 
 Fever-compatible readers (for example [Reeder](https://reederapp.com)) can sync NanoFlux as a Fever server.
 
-**Endpoint:** `http://localhost:<PORT>/fever/` (trailing slash optional). GET is used when the query looks like a Fever request (`api`, `feeds`, `groups`, `items`, `unread_item_ids`, or `saved_item_ids`); otherwise GET `/fever` serves the operator UI. POST always goes to the API. `api_version` is `3`.
+**Endpoint:** `http://localhost:<PORT>/fever/` (trailing slash optional). GET is used when the query looks like a Fever request (`api`, `feeds`, `groups`, `items`, `unread_item_ids`, `saved_item_ids`, or `mark`); otherwise GET `/fever` serves the operator UI. POST always goes to the API. `api_version` is `3`.
 
 When `HOST=127.0.0.1`, only localhost clients can reach this endpoint. Bind `0.0.0.0` if a reader on another device must connect, and keep Fever disabled until credentials are set.
 
@@ -410,11 +412,12 @@ Authenticated responses include `auth: 1` and `last_refreshed_on_time` (unix sec
 | --- | --- |
 | `groups` | One group `{ id: 1, title: "NanoFlux" }` plus `feeds_groups` |
 | `feeds` | All feeds (`id`, `favicon_id`, `title`, `url`, `site_url`, `is_spark`, `last_updated_on_time`) plus `feeds_groups`. `site_url` is the feed URL origin; every feed uses `favicon_id` `1` |
-| `items` | Up to **50** items. Optional `since_id` (newer than), `max_id` (older than), or `with_ids` (comma-separated, max 50). Each item: integer `id` / `feed_id`, `title`, empty `author`, `html`, `url`, `is_saved: 0`, `created_on_time`. Soft-deleted items are omitted. `html` is escaped article text as `<p>` blocks, with a cover `<img>` prepended when `cover` is set. Also returns `total_items` |
-| `unread_item_ids` | Always `""` (NanoFlux does not expose unread IDs over Fever) |
+| `items` | Up to **50** items. Optional `since_id` (newer than), `max_id` (older than), or `with_ids` (comma-separated, max 50). Each item: integer `id` / `feed_id`, `title`, empty `author`, `html`, `url`, `is_saved: 0`, `is_read` (`0` or `1` from the store), `created_on_time`. Soft-deleted items are omitted. `html` is escaped article text as `<p>` blocks, with a cover `<img>` prepended when `cover` is set. Also returns `total_items` |
+| `unread_item_ids` | Comma-separated IDs of undeleted items with `is_read = 0`, oldest first. Empty string when none |
 | `saved_item_ids` | Always `""` (starring is not implemented) |
+| `mark` | Mutation (typically POST). Requires `as` and `id`. `mark=item&as=read\|unread&id=<item>` sets `is_read` on that undeleted item. `mark=feed&as=read&id=<feed>` and `mark=group&as=read&id=1` mark matching undeleted unread items as read when `published_at` is at or before `before` (unix seconds; omitted means now). Other `as` values (including saved/unsaved) are ignored. Applied before other flags so a combined `unread_item_ids` request sees the new state |
 
-Mark-as-read, saved/unread mutations, favicons, links, and unread counts over Fever are **not** implemented. Use MCP/REST (and the operator UI) for read state. Fever is a **read-only** feed and article dump for compatible clients.
+Favicons, links, unread counts, and starring over Fever are **not** implemented.
 
 ## How Feed Fetching Works
 
@@ -423,7 +426,7 @@ Mark-as-read, saved/unread mutations, favicons, links, and unread counts over Fe
 3. Each feed is fetched over HTTP with the `NanoFlux/1.0` user agent (15 s timeout) and parsed as RSS/Atom. Concurrent fetches of the same feed id are ignored.
 4. Each entry gets a normalized GUID: MD5 hex of the article link (feeds that already provide an MD5 GUID are kept as-is). Per-feed known GUIDs are stored in the `last_guids` column; entries already seen by this feed or already present in the database (global GUID uniqueness, including soft-deleted rows) are skipped.
 5. At most **10** unseen candidates are enriched and inserted per feed per run. For each of those, Google News article links (`news.google.com/.../articles/...`) are resolved to the publisher URL (embedded token decode, or Google's batchexecute RPC) and the stored `link` is updated when resolution succeeds. Cover is taken from the RSS item when present (media thumbnail/content, image enclosure, iTunes image, or an image in the item HTML). If the RSS summary is shorter than ~80 word tokens (counted with `Intl.Segmenter` for Chinese and English — roughly ~200 Chinese characters or ~80 English words), or cover is still missing, the article page is fetched (desktop browser user agent, 15 s timeout, up to 3 concurrent requests), decoded with charset detection, and parsed with `@extractus/article-extractor` to fill in `content` and, if needed, `cover` from Open Graph / Twitter / `link rel=image_src` / first suitable `<img>`. Already-known entries skip scraping. Unprocessed backlog entries stay out of `last_guids` so the next catch-up run can pick them up.
-6. New items are assigned an integer `id` (UTC compact datetime + per-second sequence), deduplicated globally by `guid` (same article from different feeds is stored once), evaluated by the AI filter when it is active (`enabled` and non-empty prompt), and inserted into SQLite. On pass (or when filtering is off, or fail-open), `is_deleted = 0` and `deleted_reason` is `null`. On AI reject, `is_deleted = 1` and `deleted_reason` stores the model’s reason when present.
+6. New items are assigned an integer `id` (UTC compact datetime + per-second sequence), deduplicated globally by `guid` (same article from different feeds is stored once), evaluated by the AI filter when it is active (`enabled` and non-empty prompt), and inserted into SQLite with `is_read = 0` and `is_dealt = 0`. On pass (or when filtering is off, or fail-open), `is_deleted = 0` and `deleted_reason` is `null`. On AI reject, `is_deleted = 1` and `deleted_reason` stores the model’s reason when present.
 7. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear. If a feed still has unprocessed new items after the 10-item cap, the next fetch is scheduled in **1 minute** (catch-up) while keeping the adaptive interval for later.
 8. Daily at 01:00 UTC, items older than 90 days are hard-deleted.
 
