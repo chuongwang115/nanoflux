@@ -1,36 +1,69 @@
 <script lang="ts">
+  import Download from "@lucide/svelte/icons/download";
+  import Newspaper from "@lucide/svelte/icons/newspaper";
+  import PanelLeftClose from "@lucide/svelte/icons/panel-left-close";
+  import PanelLeftOpen from "@lucide/svelte/icons/panel-left-open";
+  import Rss from "@lucide/svelte/icons/rss";
   import {
     exportHref,
     feedsHref,
-    feverHref,
-    filterHref,
     homeHref,
     navClick,
     route,
   } from "../lib/router";
-  import FontSizeToggle from "./buttons/FontSizeToggle.svelte";
-  import LanguageToggle from "./buttons/LanguageToggle.svelte";
-  import ThemeToggle from "./buttons/ThemeToggle.svelte";
+  import SettingsButton from "./buttons/SettingsButton.svelte";
   import { t } from "../lib/locale.svelte";
+  import { sidebarState, toggleSidebar } from "../lib/sidebar.svelte";
+
+  const iconProps = { size: 16, strokeWidth: 1.5, "aria-hidden": true as const };
+  const toggleIconProps = { size: 16, strokeWidth: 1.5, "aria-hidden": true as const };
+
+  const collapsed = $derived(sidebarState.collapsed);
 
   const navClass = (active: boolean) =>
-    `block rounded-md px-2 py-1.5 transition-colors ${
+    `flex items-center rounded-md transition-colors ${
+      collapsed ? "justify-center p-2 md:justify-center" : "gap-2 px-2 py-1.5"
+    } ${
       active
-        ? "bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100"
-        : "text-neutral-400 hover:bg-neutral-50 hover:text-neutral-900 dark:text-neutral-500 dark:hover:bg-neutral-900 dark:hover:text-neutral-100"
+        ? "text-neutral-900 dark:text-neutral-100"
+        : "text-neutral-400 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-neutral-100"
     }`;
 </script>
 
 <aside
-  class="border-b border-neutral-100 px-5 py-5 dark:border-neutral-800 md:sticky md:top-4 md:m-4 md:flex md:h-[calc(100vh-2rem)] md:w-48 md:shrink-0 md:flex-col md:rounded-xl md:border md:bg-white md:px-5 md:py-8 md:shadow-sm md:dark:bg-neutral-950"
+  class="border-b border-neutral-100 px-5 py-5 transition-[width,padding] duration-200 dark:border-neutral-800 md:sticky md:top-4 md:m-4 md:flex md:h-[calc(100vh-2rem)] md:shrink-0 md:flex-col md:rounded-xl md:border md:bg-white md:py-8 md:shadow-sm md:dark:bg-neutral-950 {collapsed
+    ? 'md:w-14 md:px-2'
+    : 'md:w-48 md:px-5'}"
 >
-  <a
-    href={homeHref()}
-    onclick={navClick("/")}
-    class="text-lg font-medium tracking-tight hover:opacity-70"
+  <div
+    class="flex items-center {collapsed
+      ? 'md:flex-col md:gap-2'
+      : 'justify-between gap-2'}"
   >
-    NanoFlux
-  </a>
+    <a
+      href={homeHref()}
+      onclick={navClick("/")}
+      class="truncate text-lg font-medium tracking-tight hover:opacity-70 {collapsed
+        ? 'md:hidden'
+        : ''}"
+    >
+      NanoFlux
+    </a>
+
+    <button
+      type="button"
+      onclick={toggleSidebar}
+      class="hidden shrink-0 cursor-pointer rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 md:inline-flex dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+      aria-label={collapsed ? t("sidebar.expand") : t("sidebar.collapse")}
+      title={collapsed ? t("sidebar.expand") : t("sidebar.collapse")}
+    >
+      {#if collapsed}
+        <PanelLeftOpen {...toggleIconProps} />
+      {:else}
+        <PanelLeftClose {...toggleIconProps} />
+      {/if}
+    </button>
+  </div>
 
   <nav
     class="mt-4 flex min-w-0 gap-1 overflow-x-auto text-sm md:mt-8 md:flex-col md:overflow-visible"
@@ -41,46 +74,34 @@
       onclick={navClick("/")}
       class={navClass($route === "/")}
       aria-current={$route === "/" ? "page" : undefined}
+      title={collapsed ? t("items.latest") : undefined}
     >
-      {t("items.latest")}
+      <Newspaper {...iconProps} />
+      <span class={collapsed ? "md:sr-only" : ""}>{t("items.latest")}</span>
     </a>
     <a
       href={feedsHref()}
       onclick={navClick("/feeds")}
       class={navClass($route === "/feeds")}
       aria-current={$route === "/feeds" ? "page" : undefined}
+      title={collapsed ? t("items.feeds") : undefined}
     >
-      {t("items.feeds")}
-    </a>
-    <a
-      href={filterHref()}
-      onclick={navClick("/filter")}
-      class={navClass($route === "/filter")}
-      aria-current={$route === "/filter" ? "page" : undefined}
-    >
-      {t("items.filter")}
-    </a>
-    <a
-      href={feverHref()}
-      onclick={navClick("/fever")}
-      class={navClass($route === "/fever")}
-      aria-current={$route === "/fever" ? "page" : undefined}
-    >
-      {t("items.fever")}
+      <Rss {...iconProps} />
+      <span class={collapsed ? "md:sr-only" : ""}>{t("items.feeds")}</span>
     </a>
     <a
       href={exportHref()}
       onclick={navClick("/export")}
       class={navClass($route === "/export")}
       aria-current={$route === "/export" ? "page" : undefined}
+      title={collapsed ? t("items.export") : undefined}
     >
-      {t("items.export")}
+      <Download {...iconProps} />
+      <span class={collapsed ? "md:sr-only" : ""}>{t("items.export")}</span>
     </a>
   </nav>
 
-  <div class="mt-4 flex shrink-0 items-center gap-0.5 md:mt-auto">
-    <FontSizeToggle />
-    <LanguageToggle />
-    <ThemeToggle />
+  <div class="mt-4 shrink-0 md:mt-auto">
+    <SettingsButton {collapsed} />
   </div>
 </aside>

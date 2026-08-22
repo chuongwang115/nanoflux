@@ -42,8 +42,9 @@ data.sqlite-wal
 # cursor
 .cursor
 
-# filter.json
+# app config (filter / translate / fever credentials)
+config.json
 filter.json
-
-# fever.json (credentials)
+filters.json
+translate.json
 fever.json

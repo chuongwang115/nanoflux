@@ -7,24 +7,27 @@ import {
   localhostOnly,
 } from "./shared/localhost-only";
 import { buildWebManifest } from "./shared/manifest";
-import type { Locale } from "./shared/locale";
+import { DEFAULT_LOCALE, parseLocale, type Locale } from "./shared/locale";
 import { closeDatabase } from "./db/database";
 import { routes as itemsRoutes } from "./api/items";
 import { routes as feedsRoutes } from "./api/feeds";
 import { routes as filterRoutes } from "./api/filter";
+import { routes as translateRoutes } from "./api/translate";
 import { routes as feverRoutes } from "./api/fever";
 import {
   handleFeverRequest,
   isFeverApiQuery,
 } from "./fever/route";
 import { routes as mcpRoutes } from "./mcp/route";
-import { loadFeverConfig, isFeverEnabled } from "./fever";
+import { isFeverEnabled } from "./fever";
 import {
   startScheduler,
   stopScheduler,
 } from "./services/scheduler";
 import { httpGet } from "./services/http-fetcher";
-import { getFilterConfig, loadFilters } from "./filter";
+import { getFilterConfig } from "./filter";
+import { getTranslateConfig } from "./translate";
+import { loadAppConfig } from "./config";
 
 const PUBLIC_DIR = join(import.meta.dir, "public");
 const GOOGLE_CONNECTIVITY_URL = "https://www.google.com/generate_204";
@@ -49,20 +52,23 @@ async function ensureGoogleConnectivity(): Promise<void> {
 }
 
 function manifestLocale(query: Record<string, string | undefined>): Locale {
-  const v = query.locale ?? query.lang;
-  if (v === "en" || v === "zh") return v;
-  return "zh";
+  return parseLocale(query.locale ?? query.lang) ?? DEFAULT_LOCALE;
 }
 
 await ensureGoogleConnectivity();
-await loadFilters();
+await loadAppConfig();
 {
   const { prompt, enabled } = getFilterConfig();
   console.log(
     `[filter] config loaded enabled=${enabled} promptChars=${prompt.trim().length}`,
   );
 }
-await loadFeverConfig();
+{
+  const { prompt, enabled, targetLang } = getTranslateConfig();
+  console.log(
+    `[translate] config loaded enabled=${enabled} targetLang=${targetLang} promptChars=${prompt.trim().length}`,
+  );
+}
 console.log(`[fever] config loaded enabled=${isFeverEnabled()}`);
 
 const host = resolveHost();
@@ -72,6 +78,7 @@ const backendRoutes = new Elysia()
   .use(itemsRoutes)
   .use(feedsRoutes)
   .use(filterRoutes)
+  .use(translateRoutes)
   .use(feverRoutes)
   .use(mcpRoutes);
 
@@ -133,8 +140,10 @@ const publicRoutes = new Elysia()
   })
   .get("/", indexHtml)
   .get("/feeds", indexHtml)
+  .get("/settings", indexHtml)
   .get("/filter", indexHtml)
-  .get("/filters", ({ redirect }) => redirect("/filter"))
+  .get("/filters", ({ redirect }) => redirect("/settings"))
+  .get("/translate", indexHtml)
   .get("/export", indexHtml)
   .get("/fever", feverGet)
   .get("/fever/", feverGet)

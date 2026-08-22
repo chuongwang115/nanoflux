@@ -1,13 +1,23 @@
 import { get, writable } from "svelte/store";
 
 /** Logical routes (not URL pathnames). */
-export type AppRoute = "/" | "/feeds" | "/filter" | "/export" | "/fever";
+export type AppRoute = "/" | "/feeds" | "/settings" | "/export";
+
+export type SettingsTab = "preferences" | "filter" | "translate" | "fever";
 
 const scrollByRoute = new Map<string, number>();
 
 export const route = writable<AppRoute>("/");
 
-const SUBPAGE_PATH_SUFFIXES = ["/feeds/", "/filter/", "/export/", "/fever/"];
+const SUBPAGE_PATH_SUFFIXES = [
+  "/feeds/",
+  "/settings/",
+  "/filter/",
+  "/filters/",
+  "/translate/",
+  "/export/",
+  "/fever/",
+];
 
 function isSubPagePath(path: string): boolean {
   return SUBPAGE_PATH_SUFFIXES.some((suffix) => path.endsWith(suffix));
@@ -15,19 +25,23 @@ function isSubPagePath(path: string): boolean {
 
 function pathnameToRoute(pathname: string): AppRoute {
   if (pathname.endsWith("/feeds")) return "/feeds";
-  if (pathname.endsWith("/filter") || pathname.endsWith("/filters")) {
-    return "/filter";
-  }
   if (pathname.endsWith("/export")) return "/export";
-  if (pathname.endsWith("/fever")) return "/fever";
+  if (
+    pathname.endsWith("/settings") ||
+    pathname.endsWith("/filter") ||
+    pathname.endsWith("/filters") ||
+    pathname.endsWith("/translate") ||
+    pathname.endsWith("/fever")
+  ) {
+    return "/settings";
+  }
   return "/";
 }
 
 function routeToRelativeHref(next: AppRoute): string {
   if (next === "/feeds") return "feeds";
-  if (next === "/filter") return "filter";
+  if (next === "/settings") return "settings";
   if (next === "/export") return "export";
-  if (next === "/fever") return "fever";
   if (isSubPagePath(window.location.pathname)) {
     return "..";
   }
@@ -47,19 +61,45 @@ export function feedsHref(): string {
   return "feeds";
 }
 
-/** Relative link to the filter page. */
-export function filterHref(): string {
-  return "filter";
-}
-
 /** Relative link to the export page. */
 export function exportHref(): string {
   return "export";
 }
 
-/** Relative link to the Fever page. */
-export function feverHref(): string {
-  return "fever";
+/** Relative link to the settings page. */
+export function settingsHref(): string {
+  return "settings";
+}
+
+export function settingsTabFromLocation(): SettingsTab {
+  const path = window.location.pathname;
+  if (path.endsWith("/translate")) return "translate";
+  if (path.endsWith("/fever")) return "fever";
+  const hash = window.location.hash.replace(/^#/, "");
+  if (
+    hash === "preferences" ||
+    hash === "translate" ||
+    hash === "fever" ||
+    hash === "filter"
+  ) {
+    return hash;
+  }
+  return "preferences";
+}
+
+export function setSettingsTab(tab: SettingsTab) {
+  const url = new URL(window.location.href);
+  url.hash = tab;
+  if (
+    url.pathname.endsWith("/filter") ||
+    url.pathname.endsWith("/filters") ||
+    url.pathname.endsWith("/translate") ||
+    url.pathname.endsWith("/fever")
+  ) {
+    const settings = new URL(settingsHref(), window.location.href);
+    url.pathname = settings.pathname;
+  }
+  history.replaceState(null, "", url.pathname + url.search + url.hash);
 }
 
 function saveScroll(current: AppRoute) {

@@ -14,7 +14,7 @@ function countryCodeToFlag(country: string): string {
   const code = country.trim().toUpperCase();
   if (!/^[A-Z]{2}$/.test(code)) {
     throw new Error(
-      `Invalid country code "${country.trim()}": expected ISO 3166-1 alpha-2 (e.g. CN, US)`,
+      `Invalid country code "${country.trim()}": expected a single ISO 3166-1 alpha-2 code (e.g. CN)`,
     );
   }
   const base = 0x1f1e6; // Regional Indicator Symbol Letter A
@@ -41,7 +41,7 @@ export function registerSendTelegramMessage(server: McpServer): void {
     "send_telegram_message",
     {
       description:
-        "Post a title + URL message to the configured Telegram channel via Bot API. The title is rendered in bold (HTML). Optional country (ISO 3166-1 alpha-2) is shown as a flag emoji before the title. Uses TELEGRAM_BOT_TOKEN and TELEGRAM_CHANNEL_ID from the server environment. The bot must be an admin of that channel.",
+        "Post a title + URL message to the configured Telegram channel via Bot API. The title is rendered in bold (HTML). Optional country is at most one ISO 3166-1 alpha-2 code and is shown as a flag emoji before the title. Uses TELEGRAM_BOT_TOKEN and TELEGRAM_CHANNEL_ID from the server environment. The bot must be an admin of that channel.",
       inputSchema: {
         title: z
           .string()
@@ -55,11 +55,15 @@ export function registerSendTelegramMessage(server: McpServer): void {
           .describe("Link URL to include after the title"),
         country: z
           .string()
-          .max(2)
+          .trim()
+          .regex(/^$|^[A-Za-z]{2}$/, {
+            message:
+              "country must be a single ISO 3166-1 alpha-2 code (exactly one country, e.g. CN)",
+          })
           .optional()
           .nullable()
           .describe(
-            "Optional ISO 3166-1 alpha-2 country code (e.g. CN, US). Shown as a flag emoji before the title. Omit, null, or empty to skip",
+            "At most one ISO 3166-1 alpha-2 country code (exactly 2 letters, e.g. CN). Do not pass multiple countries or a list. Shown as a flag emoji before the title. Omit, null, or empty to skip",
           ),
         disable_notification: z
           .boolean()

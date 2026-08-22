@@ -1,9 +1,17 @@
 <script lang="ts">
+  import { nextLocale } from "../../../../shared/locale";
   import { localeState, toggleLocale, t } from "../../lib/locale.svelte";
 
-  const label = $derived(localeState.locale === "zh" ? "EN" : "中");
+  const next = $derived(nextLocale(localeState.locale));
+  const label = $derived(
+    next === "en" ? "EN" : next === "zh-Hans" ? "简" : "繁",
+  );
   const aria = $derived(
-    localeState.locale === "zh" ? t("lang.switchToEn") : t("lang.switchToZh"),
+    next === "en"
+      ? t("lang.switchToEn")
+      : next === "zh-Hans"
+        ? t("lang.switchToZhHans")
+        : t("lang.switchToZhHant"),
   );
 </script>
 

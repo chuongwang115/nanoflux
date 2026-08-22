@@ -50,8 +50,9 @@ export function initFontSize() {
   applyFontSize(fontSizeState.mode);
 }
 
-function setFontSize(f: FontSize) {
+export function setFontSize(f: FontSize) {
   fontSizeState.mode = f;
+  initDirection(f);
   try {
     localStorage.setItem(STORAGE_KEY, f);
   } catch {

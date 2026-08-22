@@ -1,10 +1,12 @@
 import { getItemsForExport } from "../../db/items";
+import { DEFAULT_LOCALE, type Locale } from "../../shared/locale";
 import { buildXlsx } from "./xlsx";
 
-export type ExportLocale = "zh" | "en";
+export type ExportLocale = Locale;
 
 const HEADERS: Record<ExportLocale, string[]> = {
-  zh: ["发布时间", "标题", "内容", "原文链接"],
+  "zh-Hans": ["发布时间", "标题", "内容", "原文链接"],
+  "zh-Hant": ["發布時間", "標題", "內容", "原文連結"],
   en: ["Published at", "Title", "Content", "Link"],
 };
 
@@ -32,7 +34,7 @@ export function buildItemsExport(options: {
   });
 
   const tzOffset = options.tzOffsetMin ?? 0;
-  const headers = HEADERS[options.locale ?? "zh"];
+  const headers = HEADERS[options.locale ?? DEFAULT_LOCALE];
 
   const dataRows = rows.map((row) => [
     formatPublishedAt(row.published_at, tzOffset),

@@ -1,3 +1,4 @@
+import { dateLocaleTag } from "../../../shared/locale";
 import { localeState, t, tf } from "./locale.svelte";
 
 export function formatTime(iso: string | null, nowMs: number = Date.now()): string {
@@ -17,7 +18,7 @@ export function formatTime(iso: string | null, nowMs: number = Date.now()): stri
   const days = Math.floor(hours / 24);
   if (days < 7) return tf("time.daysAgo", { n: days });
 
-  const tag = localeState.locale === "zh" ? "zh-CN" : "en-US";
+  const tag = dateLocaleTag(localeState.locale);
   return date.toLocaleDateString(tag, {
     month: "short",
     day: "numeric",

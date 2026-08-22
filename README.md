@@ -2,9 +2,9 @@
 
 **News Service for AI Agents**
 
-NanoFlux is a local news ingestion and query service built for AI agents. It continuously fetches RSS/Atom (and related) sources, extracts article text and cover images, optionally scores relevance with an LLM, and exposes the result over **MCP** and a small REST API so agents can subscribe to sources, pull undealt news, soft-delete items, manage the filter prompt, and optionally push headlines or HTML daily reports to a Telegram channel.
+NanoFlux is a local news ingestion and query service built for AI agents. It continuously fetches RSS/Atom (and related) sources, extracts article text and cover images, optionally scores relevance and translates titles with an LLM, and exposes the result over **MCP** and a small REST API so agents can subscribe to sources, pull undealt news, soft-delete items, manage the filter prompt, and optionally push headlines or HTML daily reports to a Telegram channel.
 
-A **Fever API** (`/fever`) is also available so RSS readers such as Reeder can sync the same store (feeds, items, unread IDs, and mark-read). A minimal web UI is included for operators to inspect feeds, tweak the filter, configure Fever, and export data — not as a full-featured RSS reader.
+A **Fever API** (`/fever`) is also available so RSS readers such as Reeder can sync the same store (feeds, items, unread IDs, and mark-read). A minimal web UI is included for operators to inspect feeds, tweak the filter and title translation, configure Fever, and export data — not as a full-featured RSS reader.
 
 Built on [Bun](https://bun.sh), [Elysia](https://elysiajs.com), and [Svelte 5](https://svelte.dev).
 
@@ -32,7 +32,8 @@ Typical RSS readers optimize for human browsing. NanoFlux optimizes for **agent 
 1. **Ingest** — adaptive polling of RSS/Atom, Google News keyword feeds, and WeChat official accounts
 2. **Normalize** — GUID dedupe, Google News link resolution, full-text extraction when the feed summary is thin
 3. **Filter** — optional single LLM prompt plus an on/off switch that marks relevant items for agents
-4. **Serve** — MCP so agents can consume **undealt** items (marking them `is_dealt`), soft-delete items, manage feeds / the filter prompt, and push Telegram headlines or HTML digests; REST and the operator UI for the same store; Fever API so RSS readers can pull feeds and articles and mark them **read** (`is_read`)
+4. **Translate** — optional LLM title translation into English, Simplified Chinese, or Traditional Chinese (skips titles already in the target language)
+5. **Serve** — MCP so agents can consume **undealt** items (marking them `is_dealt`), soft-delete items, manage feeds / the filter prompt, and push Telegram headlines or HTML digests; REST and the operator UI for the same store; Fever API so RSS readers can pull feeds and articles and mark them **read** (`is_read`)
 
 Read state (`is_read`) and agent consumption (`is_dealt`) are independent. Opening an article in the UI or Reeder does not mark it dealt for MCP, and `get_undealt_news` does not mark it read for Fever/UI.
 
@@ -57,6 +58,7 @@ Run it on localhost next to your agent runtime. When `HOST=127.0.0.1`, API, MCP,
 - Cover images stored on each item (RSS media / enclosure / iTunes / item HTML first, then Open Graph / Twitter / `image_src` / first body image when the article page is fetched)
 - Full-text extraction when an RSS summary is too short; Google News article links are resolved to the publisher URL first; HTML is decoded with charset detection (Content-Type, BOM, meta/`<?xml` encoding, with UTF-8 / GB18030 fallback)
 - AI filter runs only when `enabled` is true and `prompt` is non-empty; you can turn filtering off without clearing the prompt
+- Optional title translation runs after the filter when `translate.enabled` is true; titles already in the target language are skipped; LLM failure keeps the original title (**fail-open**)
 - AI-rejected items are soft-deleted (`is_deleted = 1`) with `deleted_reason` set to the model’s reason when present; they stay in the database so the same `guid` is not ingested again
 - Soft-delete (`is_deleted`) also covers operator/MCP deletes. Hidden items are omitted from MCP, REST, UI, and export
 - Items older than 90 days are hard-deleted (including previously soft-deleted rows)
@@ -65,9 +67,10 @@ Run it on localhost next to your agent runtime. When `HOST=127.0.0.1`, API, MCP,
 
 - Home list: **Unread** / **All**. Unread marks those items as read in bulk; both tabs omit soft-deleted (including AI-rejected) items
 - `/feeds`: preview, CRUD, sort, **add by keyword** (Google News RSS for the last 3 days; language inferred from the keyword), **subscribe WeChat 公众号**, **OPML export**
-- `/filter`: prompt editor and enable/disable toggle; `/fever`: Fever API enable switch, user/password, and endpoint URL; `/export`: Excel by time range
+- `/settings`: **Preferences** (font size, UI language, theme), **Filter**, **Translate**, and **Fever** (enable switch, user/password, endpoint URL). Legacy `/filter`, `/filters`, `/translate`, and `/fever` URLs open the same settings page
+- `/export`: Excel by time range
 - Home list shows cover thumbnails when an item has a `cover` URL
-- PWA shell (installable; manifest at `/manifest.webmanifest`), bilingual UI (English / Chinese), light/dark theme, adjustable font size
+- PWA shell (installable; manifest at `/manifest.webmanifest`), trilingual UI (English / Simplified Chinese / Traditional Chinese), light/dark theme, adjustable font size
 
 ## Tech Stack
 
@@ -81,7 +84,7 @@ Run it on localhost next to your agent runtime. When `HOST=127.0.0.1`, API, MCP,
 | HTTP | undici (`EnvHttpProxyAgent` for `HTTP_PROXY` / `HTTPS_PROXY`) |
 | Feed parsing | rss-parser |
 | Article extraction | @extractus/article-extractor |
-| AI relevance filter | LangChain (`@langchain/openai`) + OpenAI-compatible API |
+| AI filter / title translation | LangChain (`@langchain/openai`) + OpenAI-compatible API |
 
 ## Quick Start
 
@@ -124,9 +127,9 @@ Create a `.env` file at the project root (see `.env.example`).
 | `HOST` | `127.0.0.1` | Bind address. `127.0.0.1` also restricts API/MCP/Fever to localhost. Use `0.0.0.0` to listen on all interfaces without restriction. |
 | `DB_PATH` | `data.sqlite` | SQLite database file path |
 
-### AI filter (optional)
+### AI filter and title translation (optional)
 
-When filtering is active (`enabled` is true and `prompt` is non-empty), new items are scored via LangChain `ChatOpenAI` against an OpenAI-compatible endpoint.
+The same OpenAI-compatible endpoint is used for the relevance filter and for title translation. Filtering runs when `filter.enabled` is true and `filter.prompt` is non-empty. Translation runs when `translate.enabled` is true (the extra `translate.prompt` is optional).
 
 | Variable | Description |
 | --- | --- |
@@ -134,9 +137,9 @@ When filtering is active (`enabled` is true and `prompt` is non-empty), new item
 | `LLM_API_KEY` | Bearer token |
 | `LLM_MODEL_NAME` | Model ID (e.g. `gpt-4o-mini`) |
 
-If filtering is off, there is no LLM call and items are stored with `is_deleted = 0` and `deleted_reason = null`. If filtering is on but these variables are missing, or the API fails, items still pass through (**fail-open**: `is_deleted = 0`, `deleted_reason` null).
+If filtering is off, there is no filter LLM call and items are stored with `is_deleted = 0` and `deleted_reason = null`. If filtering is on but these variables are missing, or the API fails, items still pass through (**fail-open**: `is_deleted = 0`, `deleted_reason` null). Title translation is also fail-open: missing config or API errors leave the original title.
 
-Changes apply to **newly fetched** items only; existing rows are not re-evaluated.
+Changes apply to **newly fetched** items only; existing rows are not re-filtered or re-translated.
 
 ### WeChat official accounts (optional)
 
@@ -177,47 +180,47 @@ HTTPS_PROXY=http://127.0.0.1:9080
 
 On PowerShell, set session env vars with `$env:HTTPS_PROXY="http://127.0.0.1:9080"` (not `set VAR=...`). Prefer putting them in `.env` so Bun loads them automatically.
 
-### `filter.json`
+### `config.json`
 
-The filter is stored in `filter.json` at the project root (created or updated via the UI, REST, or MCP). Loaded on startup.
+Filter, title translation, and Fever credentials live in a single `config.json` at the project root (created or updated via the UI, REST, or MCP). Loaded on startup. The file is gitignored.
 
-| Field | Description |
-| --- | --- |
-| `prompt` | Instructions for the AI relevance filter. Leave empty to skip LLM scoring even if `enabled` is true. |
-| `enabled` | Whether the filter is turned on. Set `false` to skip scoring without clearing `prompt`. Defaults to true when migrating an old file that only had a non-empty prompt. |
+| Section | Field | Description |
+| --- | --- | --- |
+| `filter` | `prompt` | Instructions for the AI relevance filter. Leave empty to skip LLM scoring even if `enabled` is true. |
+| `filter` | `enabled` | Whether the filter is turned on. Set `false` to skip scoring without clearing `prompt`. |
+| `translate` | `prompt` | Instructions for title translation. |
+| `translate` | `enabled` | Whether new items get their titles translated. |
+| `translate` | `targetLang` | `en`, `zh-Hans`, or `zh-Hant`. |
+| `fever` | `enabled` | Whether the Fever endpoint authenticates clients. Defaults to false if missing. |
+| `fever` | `user` | Fever username (trimmed). Required when `enabled` is true. |
+| `fever` | `password` | Fever password. Required when `enabled` is true. Leave the password field blank in the UI/REST update body to keep the stored value. |
 
-Filtering is **active** only when both `enabled` is true and `prompt` is non-empty.
-
-```json
-{
-  "prompt": "Keep only news directly related to asset management regulation, product launches, or institutional fund flows.",
-  "enabled": true
-}
-```
-
-On load, a legacy `filters.json` file (or a multi-filter array in `filter.json`) is migrated to `{ prompt, enabled }`; the first non-empty `prompt` is kept and `enabled` is set to true.
-
-### `fever.json`
-
-Fever credentials live in `fever.json` at the project root (created or updated via the UI or REST). Loaded on startup. The file is gitignored.
-
-| Field | Description |
-| --- | --- |
-| `enabled` | Whether the Fever endpoint authenticates clients. Defaults to false if the file is missing. |
-| `user` | Fever username (trimmed). Required when `enabled` is true. |
-| `password` | Fever password. Required when `enabled` is true. Leave the password field blank in the UI/REST update body to keep the stored value. |
+Filtering is **active** only when both `filter.enabled` is true and `filter.prompt` is non-empty.
 
 The Fever `api_key` is `md5("<user>:<password>")` (lowercase hex), matching the original Fever protocol. Enabling Fever without both user and password is rejected.
 
 ```json
 {
-  "enabled": true,
-  "user": "reeder",
-  "password": "your-password"
+  "filter": {
+    "prompt": "Keep only news directly related to asset management regulation, product launches, or institutional fund flows.",
+    "enabled": true
+  },
+  "translate": {
+    "prompt": "Translate the news title accurately and naturally.",
+    "enabled": true,
+    "targetLang": "zh-Hans"
+  },
+  "fever": {
+    "enabled": true,
+    "user": "reeder",
+    "password": "your-password"
+  }
 }
 ```
 
-The public REST/UI payload is `{ enabled, user, hasPassword }` — the password is never returned.
+The public REST/UI Fever payload is `{ enabled, user, hasPassword }` — the password is never returned.
+
+On first load, a missing `config.json` is built from legacy `filter.json` / `filters.json`, `translate.json`, and `fever.json`. A multi-filter array is migrated to `{ prompt, enabled }`; the first non-empty `prompt` is kept and `enabled` is set to true.
 
 ## Background & Service Mode
 
@@ -379,9 +382,18 @@ Exported columns: published time, title, content, and original link.
 | `GET` | `/api/filter` | Get the AI filter config (`{ prompt, enabled }`) |
 | `POST` | `/api/filter` | Update the AI filter (body: optional `{ prompt, enabled }`; omit a field to leave it unchanged) |
 
+### Translate — `/api/translate`
+
+Title translation config in `config.json`. Applies to newly fetched items only; the stored `title` is overwritten when translation succeeds.
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/api/translate` | Get `{ prompt, enabled, targetLang }` |
+| `POST` | `/api/translate` | Update (body: optional `{ prompt, enabled, targetLang }`; omit a field to leave it unchanged). `targetLang` is `en`, `zh-Hans`, or `zh-Hant` (`zh` is accepted as `zh-Hans`) |
+
 ### Fever config — `/api/fever`
 
-Does not serve the Fever protocol itself (that is [`/fever`](#fever-api)). This route only reads and writes `fever.json`.
+Does not serve the Fever protocol itself (that is [`/fever`](#fever-api)). This route only reads and writes the `fever` section of `config.json`.
 
 | Method | Path | Description |
 | --- | --- | --- |
@@ -398,10 +410,10 @@ When `HOST=127.0.0.1`, only localhost clients can reach this endpoint. Bind `0.0
 
 ### Client setup
 
-1. Open `/fever` in the operator UI (or `POST /api/fever`) and set **User**, **Password**, then turn Fever **On**
+1. Open `/settings#fever` in the operator UI (or `POST /api/fever`) and set **User**, **Password**, then turn Fever **On**
 2. In the reader, add a Fever account:
    - Server: `http://localhost:<PORT>/fever/` (or `http://<lan-host>:<PORT>/fever/` when not localhost-restricted)
-   - Email / username and password: the same values stored in `fever.json`
+   - Email / username and password: the same values stored in `config.json` under `fever`
 3. The reader sends `api_key` as `md5("<user>:<password>")`. Auth failure returns `{ "api_version": 3, "auth": 0 }`
 
 ### Supported request flags
@@ -426,7 +438,7 @@ Favicons, links, unread counts, and starring over Fever are **not** implemented.
 3. Each feed is fetched over HTTP with the `NanoFlux/1.0` user agent (15 s timeout) and parsed as RSS/Atom. Concurrent fetches of the same feed id are ignored.
 4. Each entry gets a normalized GUID: MD5 hex of the article link (feeds that already provide an MD5 GUID are kept as-is). Per-feed known GUIDs are stored in the `last_guids` column; entries already seen by this feed or already present in the database (global GUID uniqueness, including soft-deleted rows) are skipped.
 5. At most **10** unseen candidates are enriched and inserted per feed per run. For each of those, Google News article links (`news.google.com/.../articles/...`) are resolved to the publisher URL (embedded token decode, or Google's batchexecute RPC) and the stored `link` is updated when resolution succeeds. Cover is taken from the RSS item when present (media thumbnail/content, image enclosure, iTunes image, or an image in the item HTML). If the RSS summary is shorter than ~80 word tokens (counted with `Intl.Segmenter` for Chinese and English — roughly ~200 Chinese characters or ~80 English words), or cover is still missing, the article page is fetched (desktop browser user agent, 15 s timeout, up to 3 concurrent requests), decoded with charset detection, and parsed with `@extractus/article-extractor` to fill in `content` and, if needed, `cover` from Open Graph / Twitter / `link rel=image_src` / first suitable `<img>`. Already-known entries skip scraping. Unprocessed backlog entries stay out of `last_guids` so the next catch-up run can pick them up.
-6. New items are assigned an integer `id` (UTC compact datetime + per-second sequence), deduplicated globally by `guid` (same article from different feeds is stored once), evaluated by the AI filter when it is active (`enabled` and non-empty prompt), and inserted into SQLite with `is_read = 0` and `is_dealt = 0`. On pass (or when filtering is off, or fail-open), `is_deleted = 0` and `deleted_reason` is `null`. On AI reject, `is_deleted = 1` and `deleted_reason` stores the model’s reason when present.
+6. New items are assigned an integer `id` (UTC compact datetime + per-second sequence), deduplicated globally by `guid` (same article from different feeds is stored once), evaluated by the AI filter when it is active (`enabled` and non-empty prompt), then title-translated when `translate.enabled` is true, and inserted into SQLite with `is_read = 0` and `is_dealt = 0`. On pass (or when filtering is off, or fail-open), `is_deleted = 0` and `deleted_reason` is `null`. On AI reject, `is_deleted = 1` and `deleted_reason` stores the model’s reason when present; rejected items skip translation. Translation fail-open keeps the original title.
 7. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear. If a feed still has unprocessed new items after the 10-item cap, the next fetch is scheduled in **1 minute** (catch-up) while keeping the adaptive interval for later.
 8. Daily at 01:00 UTC, items older than 90 days are hard-deleted.
 
@@ -437,7 +449,7 @@ Agents then consume this store through MCP / REST; they do not scrape feeds them
 ```
 ├── web/              Operator UI (Svelte)
 ├── public/           Built static assets (generated)
-├── api/              REST API routes (feeds, items, filter, fever)
+├── api/              REST API routes (feeds, items, filter, translate, fever)
 ├── fever/            Fever protocol route (`route.ts`)
 ├── mcp/              MCP server and tools (agent interface)
 ├── services/
@@ -446,6 +458,7 @@ Agents then consume this store through MCP / REST; they do not scrape feeds them
 │   ├── export/       Excel (.xlsx) article export
 │   ├── content/      Full-text article extraction
 │   ├── filters/      AI relevance filter
+│   ├── translate/    AI title translation (detect + LangChain)
 │   ├── rss.ts        RSS/Atom HTTP fetch and parse
 │   ├── google-news.ts Google News RSS URL helpers and article-link resolution
 │   ├── wechat-rss/   WeChat official-account search & subscribe
@@ -456,10 +469,11 @@ Agents then consume this store through MCP / REST; they do not scrape feeds them
 ├── utils/            Date, hash, HTML, text, and charset-decoding helpers
 ├── shared/           Shared types and utilities
 ├── drizzle/          SQL migrations
-├── filter.json       AI filter prompt (gitignored)
-├── filter.ts         Filter load and persist
-├── fever.json        Fever API credentials (gitignored)
-├── fever.ts          Fever config load and persist
+├── config.json       Filter, translate, and Fever settings (gitignored)
+├── config.ts         Unified config load and persist
+├── filter.ts         Filter accessors
+├── translate.ts      Translate config accessors
+├── fever.ts          Fever config accessors
 ├── main.ts           Application entry point
 ├── dev.ts            Concurrent frontend/backend watch for `bun run dev`
 └── build.ts          Frontend build (Tailwind CLI + Bun/Svelte)

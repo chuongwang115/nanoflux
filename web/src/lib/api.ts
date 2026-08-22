@@ -340,6 +340,84 @@ export function updateFilter(payload: { prompt?: string; enabled?: boolean }) {
   });
 }
 
+export type TranslateTargetLang = "en" | "zh-Hans" | "zh-Hant";
+
+export const TRANSLATE_TARGET_LANGS: TranslateTargetLang[] = [
+  "en",
+  "zh-Hans",
+  "zh-Hant",
+];
+
+function parseTranslateTargetLang(
+  value: unknown,
+): TranslateTargetLang | null {
+  if (value === "zh") return "zh-Hans";
+  if (value === "en" || value === "zh-Hans" || value === "zh-Hant") {
+    return value;
+  }
+  return null;
+}
+
+export type TranslateConfig = {
+  prompt: string;
+  enabled: boolean;
+  targetLang: TranslateTargetLang;
+};
+
+type TranslateApiResult = {
+  code: number;
+  message: string;
+  data?: Partial<TranslateConfig>;
+};
+
+function normalizeTranslateConfig(
+  data: Partial<TranslateConfig> | undefined,
+  defaults?: Partial<TranslateConfig>,
+): TranslateConfig {
+  const prompt =
+    typeof data?.prompt === "string" ? data.prompt : (defaults?.prompt ?? "");
+  const targetLang: TranslateTargetLang =
+    parseTranslateTargetLang(data?.targetLang) ??
+    parseTranslateTargetLang(defaults?.targetLang) ??
+    "zh-Hans";
+  return {
+    prompt,
+    enabled:
+      typeof data?.enabled === "boolean"
+        ? data.enabled
+        : typeof defaults?.enabled === "boolean"
+          ? defaults.enabled
+          : false,
+    targetLang,
+  };
+}
+
+export async function fetchTranslate(): Promise<TranslateConfig> {
+  const body = await request<TranslateApiResult>("/api/translate");
+  assertApiOk(body);
+  if (!body.data) {
+    throw new Error(body.message || "Failed to load translate config");
+  }
+  return normalizeTranslateConfig(body.data);
+}
+
+export function updateTranslate(payload: {
+  prompt?: string;
+  enabled?: boolean;
+  targetLang?: TranslateTargetLang;
+}) {
+  return request<TranslateApiResult>("/api/translate", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }).then((body) => {
+    assertApiOk(body);
+    if (!body.data) {
+      throw new Error(body.message || "Failed to update translate config");
+    }
+    return normalizeTranslateConfig(body.data, payload);
+  });
+}
+
 export type FeverConfig = {
   enabled: boolean;
   user: string;

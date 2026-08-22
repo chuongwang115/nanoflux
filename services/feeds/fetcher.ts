@@ -8,6 +8,7 @@ import { isMd5Format, md5Hex } from "../../utils/hash";
 import { stripHtml } from "../../utils/html";
 import { enrichItemsContent } from "../content/extractor";
 import { filterItems } from "../filters";
+import { translateItemTitles } from "../translate";
 import { fetchRssFeed } from "../rss";
 import { pickCoverFromRss } from "./cover";
 import {
@@ -132,7 +133,8 @@ export async function fetchFeed(feed: Feed): Promise<{
     const unprocessed = new Set(candidates.slice(MAX_NEW_ITEMS_PER_FEED).map((entry) => entry.guid));
     const enriched = await enrichItemsContent(batch);
     const filtered = await filterItems(enriched);
-    const inserted = addItems(feed.id, filtered);
+    const translated = await translateItemTitles(filtered);
+    const inserted = addItems(feed.id, translated);
 
     const nextInterval =
       remaining > 0

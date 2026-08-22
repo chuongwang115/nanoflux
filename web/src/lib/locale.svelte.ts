@@ -1,3 +1,10 @@
+import {
+  DEFAULT_LOCALE,
+  htmlLang,
+  localeFromNavigator,
+  nextLocale,
+  parseLocale,
+} from "../../../shared/locale";
 import { messages, type Locale, type MessageKey } from "./i18n/messages";
 import { applyDocumentLocale } from "./locale";
 
@@ -5,8 +12,7 @@ const STORAGE_KEY = "nanoflux-locale";
 
 function readStored(): Locale | null {
   try {
-    const v = localStorage.getItem(STORAGE_KEY);
-    if (v === "zh" || v === "en") return v;
+    return parseLocale(localStorage.getItem(STORAGE_KEY));
   } catch {
     /* ignore */
   }
@@ -14,16 +20,15 @@ function readStored(): Locale | null {
 }
 
 function browserLocale(): Locale {
-  if (typeof navigator === "undefined") return "zh";
-  const lang = navigator.language.toLowerCase();
-  return lang.startsWith("zh") ? "zh" : "en";
+  if (typeof navigator === "undefined") return DEFAULT_LOCALE;
+  return localeFromNavigator(navigator.language);
 }
 
-export const localeState = $state<{ locale: Locale }>({ locale: "zh" });
+export const localeState = $state<{ locale: Locale }>({ locale: DEFAULT_LOCALE });
 
 function applyLocale(locale: Locale) {
   if (typeof document === "undefined") return;
-  document.documentElement.lang = locale === "zh" ? "zh-CN" : "en";
+  document.documentElement.lang = htmlLang(locale);
   applyDocumentLocale(locale);
 }
 
@@ -32,7 +37,7 @@ export function initLocale() {
   applyLocale(localeState.locale);
 }
 
-function setLocale(locale: Locale) {
+export function setLocale(locale: Locale) {
   localeState.locale = locale;
   try {
     localStorage.setItem(STORAGE_KEY, locale);
@@ -43,7 +48,7 @@ function setLocale(locale: Locale) {
 }
 
 export function toggleLocale() {
-  setLocale(localeState.locale === "zh" ? "en" : "zh");
+  setLocale(nextLocale(localeState.locale));
 }
 
 export function t(key: MessageKey): string {

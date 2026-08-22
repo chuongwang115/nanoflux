@@ -31,7 +31,7 @@ export function initTheme() {
   applyTheme(themeState.mode);
 }
 
-function setTheme(t: Theme) {
+export function setTheme(t: Theme) {
   themeState.mode = t;
   try {
     localStorage.setItem(STORAGE_KEY, t);

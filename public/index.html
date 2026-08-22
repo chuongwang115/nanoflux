@@ -11,16 +11,24 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="NanoFlux" />
     <title>NanoFlux</title>
-    <link rel="manifest" href="/manifest.webmanifest?locale=zh" />
+    <link rel="manifest" href="/manifest.webmanifest?locale=zh-Hans" />
     <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <script>
 (function () {
   try {
     var l = localStorage.getItem("nanoflux-locale");
-    var loc = l === "en" ? "en" : l === "zh" ? "zh" : (navigator.language.toLowerCase().indexOf("zh") === 0 ? "zh" : "en");
-    document.documentElement.lang = loc === "zh" ? "zh-CN" : "en";
-    var desc = loc === "en" ? "News Service for AI Agents" : "面向 AI Agent 的新闻服务";
+    var loc;
+    if (l === "en" || l === "zh-Hans" || l === "zh-Hant") loc = l;
+    else if (l === "zh") loc = "zh-Hans";
+    else {
+      var nav = (navigator.language || "").toLowerCase();
+      if (nav.indexOf("en") === 0) loc = "en";
+      else if (nav.indexOf("zh") === 0 && (nav.indexOf("hant") >= 0 || nav.indexOf("-tw") >= 0 || nav.indexOf("-hk") >= 0 || nav.indexOf("-mo") >= 0)) loc = "zh-Hant";
+      else loc = "zh-Hans";
+    }
+    document.documentElement.lang = loc === "en" ? "en" : loc === "zh-Hant" ? "zh-TW" : "zh-CN";
+    var desc = loc === "en" ? "News Service for AI Agents" : loc === "zh-Hant" ? "面向 AI Agent 的新聞服務" : "面向 AI Agent 的新闻服务";
     var meta = document.querySelector('meta[name="description"]');
     if (meta) meta.setAttribute("content", desc);
     var mf = document.querySelector('link[rel="manifest"]');
@@ -41,7 +49,7 @@
     <link rel="stylesheet" href="/assets/app.css" />
     <script type="module" crossorigin src="/assets/main.js"></script>
   </head>
-  <body class="min-h-screen bg-white text-base text-neutral-900 antialiased font-sans dark:bg-neutral-950 dark:text-neutral-100">
+  <body>
     <div id="app"></div>
   </body>
 </html>

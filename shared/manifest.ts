@@ -1,4 +1,4 @@
-import type { Locale } from "./locale";
+import { htmlLang, type Locale } from "./locale";
 
 const manifestIcons = [
   {
@@ -34,7 +34,8 @@ const manifestIcons = [
 ] as const;
 
 export const PWA_META_DESCRIPTION: Record<Locale, string> = {
-  zh: "面向 AI Agent 的新闻服务",
+  "zh-Hans": "面向 AI Agent 的新闻服务",
+  "zh-Hant": "面向 AI Agent 的新聞服務",
   en: "News Service for AI Agents",
 };
 
@@ -49,7 +50,7 @@ export function buildWebManifest(locale: Locale) {
     orientation: "portrait-primary",
     background_color: "#ffffff",
     theme_color: "#171717",
-    lang: locale === "zh" ? "zh-CN" : "en",
+    lang: htmlLang(locale),
     icons: manifestIcons,
   };
 }

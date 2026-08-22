@@ -4,6 +4,7 @@ import {
   markItemsRead,
   markItemRead,
 } from "../db/items";
+import { DEFAULT_LOCALE, parseLocale } from "../shared/locale";
 import { buildItemsExport, type ExportLocale } from "../services/export/items-export";
 import { DEFAULT_LIMIT, MAX_LIMIT } from "../db/schema";
 import { encodeCursor, parseItemId, parseTimeUnit } from "../db/utils";
@@ -79,7 +80,7 @@ function parseTzOffset(raw: unknown): number {
 }
 
 function parseExportLocale(raw: unknown): ExportLocale {
-  return raw === "en" ? "en" : "zh";
+  return parseLocale(typeof raw === "string" ? raw : undefined) ?? DEFAULT_LOCALE;
 }
 
 function exportItemsHandler({ query }: {

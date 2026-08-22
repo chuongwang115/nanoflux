@@ -6280,102 +6280,6 @@ if (typeof window !== "undefined") {
 
 // ../nanoflux/node_modules/svelte/src/internal/flags/legacy.js
 enable_legacy_mode_flag();
-// ../nanoflux/web/src/lib/router.ts
-var scrollByRoute = new Map;
-var route = writable("/");
-var SUBPAGE_PATH_SUFFIXES = ["/feeds/", "/filter/", "/export/", "/fever/"];
-function isSubPagePath(path) {
-  return SUBPAGE_PATH_SUFFIXES.some((suffix) => path.endsWith(suffix));
-}
-function pathnameToRoute(pathname) {
-  if (pathname.endsWith("/feeds"))
-    return "/feeds";
-  if (pathname.endsWith("/filter") || pathname.endsWith("/filters")) {
-    return "/filter";
-  }
-  if (pathname.endsWith("/export"))
-    return "/export";
-  if (pathname.endsWith("/fever"))
-    return "/fever";
-  return "/";
-}
-function routeToRelativeHref(next2) {
-  if (next2 === "/feeds")
-    return "feeds";
-  if (next2 === "/filter")
-    return "filter";
-  if (next2 === "/export")
-    return "export";
-  if (next2 === "/fever")
-    return "fever";
-  if (isSubPagePath(window.location.pathname)) {
-    return "..";
-  }
-  return "./";
-}
-function homeHref() {
-  if (isSubPagePath(window.location.pathname)) {
-    return "..";
-  }
-  return "./";
-}
-function feedsHref() {
-  return "feeds";
-}
-function filterHref() {
-  return "filter";
-}
-function exportHref() {
-  return "export";
-}
-function feverHref() {
-  return "fever";
-}
-function saveScroll(current) {
-  scrollByRoute.set(current, window.scrollY);
-}
-function restoreScroll(next2) {
-  requestAnimationFrame(() => {
-    window.scrollTo(0, scrollByRoute.get(next2) ?? 0);
-  });
-}
-function syncRouteFromLocation() {
-  route.set(pathnameToRoute(window.location.pathname));
-}
-function navigate(next2) {
-  const current = get(route);
-  if (current === next2)
-    return;
-  const href = routeToRelativeHref(next2);
-  const target = new URL(href, window.location.href);
-  if (window.location.pathname === target.pathname)
-    return;
-  saveScroll(current);
-  history.pushState(null, "", href + window.location.search);
-  route.set(next2);
-  restoreScroll(next2);
-}
-function initRouter() {
-  syncRouteFromLocation();
-  window.addEventListener("popstate", () => {
-    syncRouteFromLocation();
-    restoreScroll(get(route));
-  });
-}
-function shouldHandleNavClick(event2) {
-  if (event2.defaultPrevented || event2.button !== 0 || event2.metaKey || event2.ctrlKey || event2.shiftKey || event2.altKey) {
-    return false;
-  }
-  return true;
-}
-function navClick(next2) {
-  return (event2) => {
-    if (!shouldHandleNavClick(event2))
-      return;
-    event2.preventDefault();
-    navigate(next2);
-  };
-}
 
 // ../nanoflux/node_modules/@lucide/svelte/dist/defaultAttributes.js
 var defaultAttributes = {
@@ -6476,7 +6380,7 @@ function Icon($$anchor, $$props) {
 if (undefined) {}
 var Icon_default = Icon;
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/a-arrow-down.svelte
+// ../nanoflux/node_modules/@lucide/svelte/dist/icons/download.svelte
 var rest_excludes2 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root2 = from_html(`<!--
 @lucide/svelte v1.33.0 - ISC
@@ -6493,24 +6397,23 @@ See the LICENSE file in the root directory of this source tree.
 
 Lucide SVG icon component, renders SVG Element with children.
 
-@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJtMTQgMTIgNCA0IDQtNCIgLz4KICA8cGF0aCBkPSJNMTggMTZWNyIgLz4KICA8cGF0aCBkPSJtMiAxNiA0LjAzOS05LjY5YS41LjUgMCAwIDEgLjkyMyAwTDExIDE2IiAvPgogIDxwYXRoIGQ9Ik0zLjMwNCAxM2g2LjM5MiIgLz4KPC9zdmc+Cg==) - https://lucide.dev/icons/a-arrow-down
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMTIgMTVWMyIgLz4KICA8cGF0aCBkPSJNMjEgMTV2NGEyIDIgMCAwIDEtMiAySDVhMiAyIDAgMCAxLTItMnYtNCIgLz4KICA8cGF0aCBkPSJtNyAxMCA1IDUgNS01IiAvPgo8L3N2Zz4K) - https://lucide.dev/icons/download
 @see https://lucide.dev/guide/packages/lucide-svelte - Documentation
 -->
 
 <!>`, 1);
-function A_arrow_down($$anchor, $$props) {
+function Download($$anchor, $$props) {
   let props = rest_props($$props, rest_excludes2);
   const iconNode = [
-    ["path", { d: "m14 12 4 4 4-4" }],
-    ["path", { d: "M18 16V7" }],
-    ["path", { d: "m2 16 4.039-9.69a.5.5 0 0 1 .923 0L11 16" }],
-    ["path", { d: "M3.304 13h6.392" }]
+    ["path", { d: "M12 15V3" }],
+    ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }],
+    ["path", { d: "m7 10 5 5 5-5" }]
   ];
   var fragment = root2();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
-  Icon_default(node_2, spread_props({ name: "a-arrow-down" }, () => props, {
+  Icon_default(node_2, spread_props({ name: "download" }, () => props, {
     get iconNode() {
       return iconNode;
     }
@@ -6518,8 +6421,8 @@ function A_arrow_down($$anchor, $$props) {
   append($$anchor, fragment);
 }
 if (undefined) {}
-var a_arrow_down_default = A_arrow_down;
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/a-arrow-up.svelte
+var download_default = Download;
+// ../nanoflux/node_modules/@lucide/svelte/dist/icons/newspaper.svelte
 var rest_excludes3 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root3 = from_html(`<!--
 @lucide/svelte v1.33.0 - ISC
@@ -6536,24 +6439,32 @@ See the LICENSE file in the root directory of this source tree.
 
 Lucide SVG icon component, renders SVG Element with children.
 
-@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJtMTQgMTEgNC00IDQgNCIgLz4KICA8cGF0aCBkPSJNMTggMTZWNyIgLz4KICA8cGF0aCBkPSJtMiAxNiA0LjAzOS05LjY5YS41LjUgMCAwIDEgLjkyMyAwTDExIDE2IiAvPgogIDxwYXRoIGQ9Ik0zLjMwNCAxM2g2LjM5MiIgLz4KPC9zdmc+Cg==) - https://lucide.dev/icons/a-arrow-up
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMTUgMThoLTUiIC8+CiAgPHBhdGggZD0iTTE4IDE0aC04IiAvPgogIDxwYXRoIGQ9Ik00IDIyaDE2YTIgMiAwIDAgMCAyLTJWNGEyIDIgMCAwIDAtMi0ySDhhMiAyIDAgMCAwLTIgMnYxNmEyIDIgMCAwIDEtNCAwdi05YTIgMiAwIDAgMSAyLTJoMiIgLz4KICA8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI0IiB4PSIxMCIgeT0iNiIgcng9IjEiIC8+Cjwvc3ZnPgo=) - https://lucide.dev/icons/newspaper
 @see https://lucide.dev/guide/packages/lucide-svelte - Documentation
 -->
 
 <!>`, 1);
-function A_arrow_up($$anchor, $$props) {
+function Newspaper($$anchor, $$props) {
   let props = rest_props($$props, rest_excludes3);
   const iconNode = [
-    ["path", { d: "m14 11 4-4 4 4" }],
-    ["path", { d: "M18 16V7" }],
-    ["path", { d: "m2 16 4.039-9.69a.5.5 0 0 1 .923 0L11 16" }],
-    ["path", { d: "M3.304 13h6.392" }]
+    ["path", { d: "M15 18h-5" }],
+    ["path", { d: "M18 14h-8" }],
+    [
+      "path",
+      {
+        d: "M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-4 0v-9a2 2 0 0 1 2-2h2"
+      }
+    ],
+    [
+      "rect",
+      { width: "8", height: "4", x: "10", y: "6", rx: "1" }
+    ]
   ];
   var fragment = root3();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
-  Icon_default(node_2, spread_props({ name: "a-arrow-up" }, () => props, {
+  Icon_default(node_2, spread_props({ name: "newspaper" }, () => props, {
     get iconNode() {
       return iconNode;
     }
@@ -6561,75 +6472,346 @@ function A_arrow_up($$anchor, $$props) {
   append($$anchor, fragment);
 }
 if (undefined) {}
-var a_arrow_up_default = A_arrow_up;
-// ../nanoflux/web/src/lib/fontSize.svelte.ts
-var STORAGE_KEY = "nanoflux-font-size";
-var MIGRATION_KEY = "nanoflux-font-size-v2";
-function migrateStoredFontSize() {
-  try {
-    if (localStorage.getItem(MIGRATION_KEY))
-      return;
-    if (localStorage.getItem(STORAGE_KEY) === "small") {
-      localStorage.setItem(STORAGE_KEY, "medium");
+var newspaper_default = Newspaper;
+// ../nanoflux/node_modules/@lucide/svelte/dist/icons/panel-left-close.svelte
+var rest_excludes4 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root4 = from_html(`<!--
+@lucide/svelte v1.33.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cmVjdCB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHg9IjMiIHk9IjMiIHJ4PSIyIiAvPgogIDxwYXRoIGQ9Ik05IDN2MTgiIC8+CiAgPHBhdGggZD0ibTE2IDE1LTMtMyAzLTMiIC8+Cjwvc3ZnPgo=) - https://lucide.dev/icons/panel-left-close
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Panel_left_close($$anchor, $$props) {
+  let props = rest_props($$props, rest_excludes4);
+  const iconNode = [
+    [
+      "rect",
+      { width: "18", height: "18", x: "3", y: "3", rx: "2" }
+    ],
+    ["path", { d: "M9 3v18" }],
+    ["path", { d: "m16 15-3-3 3-3" }]
+  ];
+  var fragment = root4();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "panel-left-close" }, () => props, {
+    get iconNode() {
+      return iconNode;
     }
-    localStorage.setItem(MIGRATION_KEY, "1");
-  } catch {}
+  }));
+  append($$anchor, fragment);
 }
-function readStored() {
-  try {
-    migrateStoredFontSize();
-    const v = localStorage.getItem(STORAGE_KEY);
-    if (v === "small" || v === "medium" || v === "large")
-      return v;
-  } catch {}
+if (undefined) {}
+var panel_left_close_default = Panel_left_close;
+// ../nanoflux/node_modules/@lucide/svelte/dist/icons/panel-left-open.svelte
+var rest_excludes5 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root5 = from_html(`<!--
+@lucide/svelte v1.33.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cmVjdCB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHg9IjMiIHk9IjMiIHJ4PSIyIiAvPgogIDxwYXRoIGQ9Ik05IDN2MTgiIC8+CiAgPHBhdGggZD0ibTE0IDkgMyAzLTMgMyIgLz4KPC9zdmc+Cg==) - https://lucide.dev/icons/panel-left-open
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Panel_left_open($$anchor, $$props) {
+  let props = rest_props($$props, rest_excludes5);
+  const iconNode = [
+    [
+      "rect",
+      { width: "18", height: "18", x: "3", y: "3", rx: "2" }
+    ],
+    ["path", { d: "M9 3v18" }],
+    ["path", { d: "m14 9 3 3-3 3" }]
+  ];
+  var fragment = root5();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "panel-left-open" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var panel_left_open_default = Panel_left_open;
+// ../nanoflux/node_modules/@lucide/svelte/dist/icons/rss.svelte
+var rest_excludes6 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root6 = from_html(`<!--
+@lucide/svelte v1.33.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNNCAxMWE5IDkgMCAwIDEgOSA5IiAvPgogIDxwYXRoIGQ9Ik00IDRhMTYgMTYgMCAwIDEgMTYgMTYiIC8+CiAgPGNpcmNsZSBjeD0iNSIgY3k9IjE5IiByPSIxIiAvPgo8L3N2Zz4K) - https://lucide.dev/icons/rss
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Rss($$anchor, $$props) {
+  let props = rest_props($$props, rest_excludes6);
+  const iconNode = [
+    ["path", { d: "M4 11a9 9 0 0 1 9 9" }],
+    ["path", { d: "M4 4a16 16 0 0 1 16 16" }],
+    ["circle", { cx: "5", cy: "19", r: "1" }]
+  ];
+  var fragment = root6();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "rss" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var rss_default = Rss;
+// ../nanoflux/web/src/lib/router.ts
+var scrollByRoute = new Map;
+var route = writable("/");
+var SUBPAGE_PATH_SUFFIXES = [
+  "/feeds/",
+  "/settings/",
+  "/filter/",
+  "/filters/",
+  "/translate/",
+  "/export/",
+  "/fever/"
+];
+function isSubPagePath(path) {
+  return SUBPAGE_PATH_SUFFIXES.some((suffix) => path.endsWith(suffix));
+}
+function pathnameToRoute(pathname) {
+  if (pathname.endsWith("/feeds"))
+    return "/feeds";
+  if (pathname.endsWith("/export"))
+    return "/export";
+  if (pathname.endsWith("/settings") || pathname.endsWith("/filter") || pathname.endsWith("/filters") || pathname.endsWith("/translate") || pathname.endsWith("/fever")) {
+    return "/settings";
+  }
+  return "/";
+}
+function routeToRelativeHref(next2) {
+  if (next2 === "/feeds")
+    return "feeds";
+  if (next2 === "/settings")
+    return "settings";
+  if (next2 === "/export")
+    return "export";
+  if (isSubPagePath(window.location.pathname)) {
+    return "..";
+  }
+  return "./";
+}
+function homeHref() {
+  if (isSubPagePath(window.location.pathname)) {
+    return "..";
+  }
+  return "./";
+}
+function feedsHref() {
+  return "feeds";
+}
+function exportHref() {
+  return "export";
+}
+function settingsHref() {
+  return "settings";
+}
+function settingsTabFromLocation() {
+  const path = window.location.pathname;
+  if (path.endsWith("/translate"))
+    return "translate";
+  if (path.endsWith("/fever"))
+    return "fever";
+  const hash2 = window.location.hash.replace(/^#/, "");
+  if (hash2 === "preferences" || hash2 === "translate" || hash2 === "fever" || hash2 === "filter") {
+    return hash2;
+  }
+  return "preferences";
+}
+function setSettingsTab(tab) {
+  const url = new URL(window.location.href);
+  url.hash = tab;
+  if (url.pathname.endsWith("/filter") || url.pathname.endsWith("/filters") || url.pathname.endsWith("/translate") || url.pathname.endsWith("/fever")) {
+    const settings = new URL(settingsHref(), window.location.href);
+    url.pathname = settings.pathname;
+  }
+  history.replaceState(null, "", url.pathname + url.search + url.hash);
+}
+function saveScroll(current) {
+  scrollByRoute.set(current, window.scrollY);
+}
+function restoreScroll(next2) {
+  requestAnimationFrame(() => {
+    window.scrollTo(0, scrollByRoute.get(next2) ?? 0);
+  });
+}
+function syncRouteFromLocation() {
+  route.set(pathnameToRoute(window.location.pathname));
+}
+function navigate(next2) {
+  const current = get(route);
+  if (current === next2)
+    return;
+  const href = routeToRelativeHref(next2);
+  const target = new URL(href, window.location.href);
+  if (window.location.pathname === target.pathname)
+    return;
+  saveScroll(current);
+  history.pushState(null, "", href + window.location.search);
+  route.set(next2);
+  restoreScroll(next2);
+}
+function initRouter() {
+  syncRouteFromLocation();
+  window.addEventListener("popstate", () => {
+    syncRouteFromLocation();
+    restoreScroll(get(route));
+  });
+}
+function shouldHandleNavClick(event2) {
+  if (event2.defaultPrevented || event2.button !== 0 || event2.metaKey || event2.ctrlKey || event2.shiftKey || event2.altKey) {
+    return false;
+  }
+  return true;
+}
+function navClick(next2) {
+  return (event2) => {
+    if (!shouldHandleNavClick(event2))
+      return;
+    event2.preventDefault();
+    navigate(next2);
+  };
+}
+
+// ../nanoflux/node_modules/@lucide/svelte/dist/icons/settings.svelte
+var rest_excludes7 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root7 = from_html(`<!--
+@lucide/svelte v1.33.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNOS42NzEgNC4xMzZhMi4zNCAyLjM0IDAgMCAxIDQuNjU5IDAgMi4zNCAyLjM0IDAgMCAwIDMuMzE5IDEuOTE1IDIuMzQgMi4zNCAwIDAgMSAyLjMzIDQuMDMzIDIuMzQgMi4zNCAwIDAgMCAwIDMuODMxIDIuMzQgMi4zNCAwIDAgMS0yLjMzIDQuMDMzIDIuMzQgMi4zNCAwIDAgMC0zLjMxOSAxLjkxNSAyLjM0IDIuMzQgMCAwIDEtNC42NTkgMCAyLjM0IDIuMzQgMCAwIDAtMy4zMi0xLjkxNSAyLjM0IDIuMzQgMCAwIDEtMi4zMy00LjAzMyAyLjM0IDIuMzQgMCAwIDAgMC0zLjgzMUEyLjM0IDIuMzQgMCAwIDEgNi4zNSA2LjA1MWEyLjM0IDIuMzQgMCAwIDAgMy4zMTktMS45MTUiIC8+CiAgPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMyIgLz4KPC9zdmc+Cg==) - https://lucide.dev/icons/settings
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Settings($$anchor, $$props) {
+  let props = rest_props($$props, rest_excludes7);
+  const iconNode = [
+    [
+      "path",
+      {
+        d: "M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"
+      }
+    ],
+    ["circle", { cx: "12", cy: "12", r: "3" }]
+  ];
+  var fragment = root7();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "settings" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var settings_default = Settings;
+// ../nanoflux/shared/locale.ts
+var DEFAULT_LOCALE = "zh-Hans";
+function parseLocale(value) {
+  if (value === "en" || value === "zh-Hans" || value === "zh-Hant")
+    return value;
+  if (value === "zh")
+    return "zh-Hans";
   return null;
 }
-var fontSizeState = proxy({ mode: "medium", direction: "up" });
-function applyFontSize(f) {
-  if (typeof document === "undefined")
-    return;
-  const root4 = document.documentElement;
-  root4.classList.toggle("font-small", f === "small");
-  root4.classList.toggle("font-large", f === "large");
-}
-function initDirection(mode) {
-  if (mode === "small")
-    fontSizeState.direction = "up";
-  else if (mode === "large")
-    fontSizeState.direction = "down";
-  else
-    fontSizeState.direction = "up";
-}
-function initFontSize() {
-  fontSizeState.mode = readStored() ?? "medium";
-  initDirection(fontSizeState.mode);
-  applyFontSize(fontSizeState.mode);
-}
-function setFontSize(f) {
-  fontSizeState.mode = f;
-  try {
-    localStorage.setItem(STORAGE_KEY, f);
-  } catch {}
-  applyFontSize(f);
-}
-function toggleFontSize() {
-  const { mode, direction } = fontSizeState;
-  if (mode === "small") {
-    fontSizeState.direction = "up";
-    setFontSize("medium");
-  } else if (mode === "large") {
-    fontSizeState.direction = "down";
-    setFontSize("medium");
-  } else if (direction === "up") {
-    setFontSize("large");
-  } else {
-    setFontSize("small");
+function localeFromNavigator(language) {
+  if (!language)
+    return DEFAULT_LOCALE;
+  const lang = language.toLowerCase();
+  if (lang.startsWith("en"))
+    return "en";
+  if (lang.startsWith("zh")) {
+    if (lang.includes("hant") || lang.includes("-tw") || lang.includes("-hk") || lang.includes("-mo")) {
+      return "zh-Hant";
+    }
+    return "zh-Hans";
   }
+  return DEFAULT_LOCALE;
+}
+function htmlLang(locale) {
+  if (locale === "en")
+    return "en";
+  if (locale === "zh-Hant")
+    return "zh-TW";
+  return "zh-CN";
+}
+function dateLocaleTag(locale) {
+  if (locale === "en")
+    return "en-US";
+  if (locale === "zh-Hant")
+    return "zh-TW";
+  return "zh-CN";
 }
 
 // ../nanoflux/shared/manifest.ts
 var PWA_META_DESCRIPTION = {
-  zh: "面向 AI Agent 的新闻服务",
+  "zh-Hans": "面向 AI Agent 的新闻服务",
+  "zh-Hant": "面向 AI Agent 的新聞服務",
   en: "News Service for AI Agents"
 };
 function manifestHref(locale) {
@@ -6638,11 +6820,14 @@ function manifestHref(locale) {
 
 // ../nanoflux/web/src/lib/i18n/messages.ts
 var messages = {
-  zh: {
+  "zh-Hans": {
     "items.latest": "最新资讯",
     "items.feeds": "Feed 管理",
-    "items.filter": "Filter 设置",
-    "items.fever": "Fever 设置",
+    "items.settings": "设置",
+    "items.preferences": "Preferences",
+    "items.filter": "Filter",
+    "items.translate": "Translate",
+    "items.fever": "Fever",
     "items.export": "导出",
     "items.noItems": "暂无资讯",
     "items.loading": "加载中…",
@@ -6705,6 +6890,19 @@ var messages = {
     "filters.loadFailed": "加载失败",
     "filters.saveFailed": "保存失败",
     "filters.confirmClearPrompt": "提示词为空，保存会清空已有内容。确定继续？",
+    "translate.hint": "设置翻译开关、目标语言与提示词。开启后仅翻译新抓取资讯的标题；关闭后提示词会保留。",
+    "translate.enabled": "AI 翻译",
+    "translate.on": "开启",
+    "translate.off": "关闭",
+    "translate.targetLang": "目标语言",
+    "translate.langEn": "英语",
+    "translate.langZhHans": "简体中文",
+    "translate.langZhHant": "繁体中文",
+    "translate.prompt": "翻译提示词",
+    "translate.save": "保存",
+    "translate.saving": "保存中…",
+    "translate.loadFailed": "加载失败",
+    "translate.saveFailed": "保存失败",
     "export.hint": "选择起始与截止时间，将范围内的文章导出为 Excel 文件。",
     "export.startTime": "起始时间",
     "export.endTime": "截止时间",
@@ -6730,24 +6928,169 @@ var messages = {
     "theme.switchToDark": "切换到深色模式",
     "theme.lightMode": "浅色模式",
     "theme.darkMode": "深色模式",
+    "sidebar.collapse": "收起导航",
+    "sidebar.expand": "展开导航",
     "font.switchToSmall": "切换到小字体",
     "font.switchToMedium": "切换到中等字体",
     "font.switchToLarge": "切换到大字体",
     "font.small": "小字体",
     "font.medium": "中等字体",
     "font.large": "大字体",
-    "lang.switchToEn": "切换到英文",
-    "lang.switchToZh": "切换到中文",
-    "meta.description": PWA_META_DESCRIPTION.zh,
+    "lang.switchToEn": "切换到英语",
+    "lang.switchToZhHans": "切换到简体中文",
+    "lang.switchToZhHant": "切换到繁体中文",
+    "lang.en": "英语",
+    "lang.zhHans": "简体中文",
+    "lang.zhHant": "繁体中文",
+    "prefs.hint": "调整阅读字号、界面语言与显示主题。",
+    "prefs.fontSize": "字体大小",
+    "prefs.language": "界面语言",
+    "prefs.theme": "显示主题",
+    "meta.description": PWA_META_DESCRIPTION["zh-Hans"],
     "time.justNow": "刚刚",
     "time.minutesAgo": "{n} 分钟前",
     "time.hoursAgo": "{n} 小时前",
     "time.daysAgo": "{n} 天前"
   },
+  "zh-Hant": {
+    "items.latest": "最新資訊",
+    "items.feeds": "Feed 管理",
+    "items.settings": "設定",
+    "items.preferences": "Preferences",
+    "items.filter": "Filter",
+    "items.translate": "Translate",
+    "items.fever": "Fever",
+    "items.export": "匯出",
+    "items.noItems": "暫無資訊",
+    "items.loading": "載入中…",
+    "items.noMore": "沒有更多了",
+    "items.loadFailed": "載入失敗",
+    "items.markAllRead": "全部已讀",
+    "items.filterBy": "篩選",
+    "items.filterUnread": "未讀",
+    "items.filterAll": "全部",
+    "items.switchToAll": "切換到全部",
+    "items.switchToUnread": "切換到未讀",
+    "feeds.name": "名稱",
+    "feeds.descriptionOptional": "描述（可選）",
+    "feeds.addFeed": "新增 Feed",
+    "feeds.keyword": "新增關鍵詞新聞",
+    "feeds.keywordTitle": "依關鍵詞新增",
+    "feeds.keywordPlaceholder": "輸入搜尋關鍵詞",
+    "feeds.keywordConfirm": "確定",
+    "feeds.keywordEmpty": "請輸入關鍵詞",
+    "feeds.wechat": "新增公眾號",
+    "feeds.wechatTitle": "搜尋公眾號",
+    "feeds.wechatPlaceholder": "輸入公眾號名稱或關鍵詞",
+    "feeds.wechatSearch": "搜尋",
+    "feeds.wechatSearching": "搜尋中…",
+    "feeds.wechatEmpty": "請輸入關鍵詞",
+    "feeds.wechatNoResults": "未找到相關公眾號",
+    "feeds.wechatSubscribed": "已新增",
+    "feeds.wechatNotSubscribed": "未新增",
+    "feeds.wechatResolveFailed": "無法新增該公眾號",
+    "feeds.wechatResolving": "正在取得 RSS 連結…",
+    "feeds.save": "儲存",
+    "feeds.cancel": "取消",
+    "feeds.parsing": "正在從 Feed 解析名稱與摘要…",
+    "feeds.feedList": "Feed 列表",
+    "feeds.sortBy": "排序",
+    "feeds.sortDefault": "預設",
+    "feeds.sortByPublished": "最後發布",
+    "feeds.loading": "載入中…",
+    "feeds.noFeeds": "暫無 Feeds",
+    "feeds.noMore": "沒有更多了",
+    "feeds.lastPublished": "最後發布",
+    "feeds.noPublished": "暫無發布",
+    "feeds.edit": "編輯",
+    "feeds.delete": "刪除",
+    "feeds.confirmDelete": "確定刪除該 Feed？",
+    "feeds.loadFailed": "載入失敗",
+    "feeds.parseFailed": "解析失敗",
+    "feeds.saveFailed": "儲存失敗",
+    "feeds.deleteFailed": "刪除失敗",
+    "feeds.exportOpml": "匯出 OPML",
+    "feeds.exportingOpml": "匯出中…",
+    "feeds.exportOpmlFailed": "匯出失敗",
+    "filters.hint": "設定大模型過濾提示詞。關閉過濾後提示詞會保留，新擷取的資訊預設通過。",
+    "filters.enabled": "AI 過濾",
+    "filters.on": "開啟",
+    "filters.off": "關閉",
+    "filters.prompt": "AI 過濾提示詞",
+    "filters.save": "儲存",
+    "filters.saving": "儲存中…",
+    "filters.loadFailed": "載入失敗",
+    "filters.saveFailed": "儲存失敗",
+    "filters.confirmClearPrompt": "提示詞為空，儲存會清空既有內容。確定繼續？",
+    "translate.hint": "設定翻譯開關、目標語言與提示詞。開啟後僅翻譯新擷取資訊的標題；關閉後提示詞會保留。",
+    "translate.enabled": "AI 翻譯",
+    "translate.on": "開啟",
+    "translate.off": "關閉",
+    "translate.targetLang": "目標語言",
+    "translate.langEn": "英語",
+    "translate.langZhHans": "簡體中文",
+    "translate.langZhHant": "繁體中文",
+    "translate.prompt": "翻譯提示詞",
+    "translate.save": "儲存",
+    "translate.saving": "儲存中…",
+    "translate.loadFailed": "載入失敗",
+    "translate.saveFailed": "儲存失敗",
+    "export.hint": "選擇起始與截止時間，將範圍內的文章匯出為 Excel 檔案。",
+    "export.startTime": "起始時間",
+    "export.endTime": "截止時間",
+    "export.button": "匯出 Excel",
+    "export.exporting": "匯出中…",
+    "export.failed": "匯出失敗",
+    "export.invalidRange": "起始時間不能晚於截止時間",
+    "fever.hint": "開啟後可用 Fever API 給 Reeder 等閱讀器同步資訊。關閉服務後用戶端將無法認證。",
+    "fever.enabled": "Fever API",
+    "fever.on": "開啟",
+    "fever.off": "關閉",
+    "fever.user": "User",
+    "fever.password": "Password",
+    "fever.passwordKeep": "留空則保留原密碼",
+    "fever.endpoint": "API 位址",
+    "fever.save": "儲存",
+    "fever.saving": "儲存中…",
+    "fever.loadFailed": "載入失敗",
+    "fever.saveFailed": "儲存失敗",
+    "fever.userRequired": "開啟 Fever API 時需要填寫 User",
+    "fever.passwordRequired": "開啟 Fever API 時需要設定 Password",
+    "theme.switchToLight": "切換到淺色模式",
+    "theme.switchToDark": "切換到深色模式",
+    "theme.lightMode": "淺色模式",
+    "theme.darkMode": "深色模式",
+    "sidebar.collapse": "收起導覽",
+    "sidebar.expand": "展開導覽",
+    "font.switchToSmall": "切換到小字體",
+    "font.switchToMedium": "切換到中等字體",
+    "font.switchToLarge": "切換到大字體",
+    "font.small": "小字體",
+    "font.medium": "中等字體",
+    "font.large": "大字體",
+    "lang.switchToEn": "切換到英語",
+    "lang.switchToZhHans": "切換到簡體中文",
+    "lang.switchToZhHant": "切換到繁體中文",
+    "lang.en": "英語",
+    "lang.zhHans": "簡體中文",
+    "lang.zhHant": "繁體中文",
+    "prefs.hint": "調整閱讀字號、介面語言與顯示主題。",
+    "prefs.fontSize": "字體大小",
+    "prefs.language": "介面語言",
+    "prefs.theme": "顯示主題",
+    "meta.description": PWA_META_DESCRIPTION["zh-Hant"],
+    "time.justNow": "剛剛",
+    "time.minutesAgo": "{n} 分鐘前",
+    "time.hoursAgo": "{n} 小時前",
+    "time.daysAgo": "{n} 天前"
+  },
   en: {
     "items.latest": "Latest",
     "items.feeds": "Feeds",
+    "items.settings": "Settings",
+    "items.preferences": "Preferences",
     "items.filter": "Filter",
+    "items.translate": "Translate",
     "items.export": "Export",
     "items.fever": "Fever",
     "items.noItems": "No news yet",
@@ -6811,6 +7154,19 @@ var messages = {
     "filters.loadFailed": "Failed to load",
     "filters.saveFailed": "Failed to save",
     "filters.confirmClearPrompt": "The prompt is empty. Saving will clear the existing prompt. Continue?",
+    "translate.hint": "Set the translation switch, target language, and prompt. When on, only titles of newly fetched items are translated. Turning it off keeps the prompt.",
+    "translate.enabled": "AI translation",
+    "translate.on": "On",
+    "translate.off": "Off",
+    "translate.targetLang": "Target language",
+    "translate.langEn": "English",
+    "translate.langZhHans": "Simplified Chinese",
+    "translate.langZhHant": "Traditional Chinese",
+    "translate.prompt": "Translation prompt",
+    "translate.save": "Save",
+    "translate.saving": "Saving…",
+    "translate.loadFailed": "Failed to load",
+    "translate.saveFailed": "Failed to save",
     "export.hint": "Pick a start and end time, then export the matching articles to an Excel file.",
     "export.startTime": "Start time",
     "export.endTime": "End time",
@@ -6836,6 +7192,8 @@ var messages = {
     "theme.switchToDark": "Switch to dark mode",
     "theme.lightMode": "Light mode",
     "theme.darkMode": "Dark mode",
+    "sidebar.collapse": "Collapse sidebar",
+    "sidebar.expand": "Expand sidebar",
     "font.switchToSmall": "Switch to small text",
     "font.switchToMedium": "Switch to medium text",
     "font.switchToLarge": "Switch to large text",
@@ -6843,7 +7201,15 @@ var messages = {
     "font.medium": "Medium text",
     "font.large": "Large text",
     "lang.switchToEn": "Switch to English",
-    "lang.switchToZh": "Switch to Chinese",
+    "lang.switchToZhHans": "Switch to Simplified Chinese",
+    "lang.switchToZhHant": "Switch to Traditional Chinese",
+    "lang.en": "English",
+    "lang.zhHans": "Simplified Chinese",
+    "lang.zhHant": "Traditional Chinese",
+    "prefs.hint": "Choose reading size, interface language, and display theme.",
+    "prefs.fontSize": "Font size",
+    "prefs.language": "Language",
+    "prefs.theme": "Theme",
     "meta.description": PWA_META_DESCRIPTION.en,
     "time.justNow": "Just now",
     "time.minutesAgo": "{n} min ago",
@@ -6864,41 +7230,35 @@ function applyDocumentLocale(locale) {
 }
 
 // ../nanoflux/web/src/lib/locale.svelte.ts
-var STORAGE_KEY2 = "nanoflux-locale";
-function readStored2() {
+var STORAGE_KEY = "nanoflux-locale";
+function readStored() {
   try {
-    const v = localStorage.getItem(STORAGE_KEY2);
-    if (v === "zh" || v === "en")
-      return v;
+    return parseLocale(localStorage.getItem(STORAGE_KEY));
   } catch {}
   return null;
 }
 function browserLocale() {
   if (typeof navigator === "undefined")
-    return "zh";
-  const lang = navigator.language.toLowerCase();
-  return lang.startsWith("zh") ? "zh" : "en";
+    return DEFAULT_LOCALE;
+  return localeFromNavigator(navigator.language);
 }
-var localeState = proxy({ locale: "zh" });
+var localeState = proxy({ locale: DEFAULT_LOCALE });
 function applyLocale(locale) {
   if (typeof document === "undefined")
     return;
-  document.documentElement.lang = locale === "zh" ? "zh-CN" : "en";
+  document.documentElement.lang = htmlLang(locale);
   applyDocumentLocale(locale);
 }
 function initLocale() {
-  localeState.locale = readStored2() ?? browserLocale();
+  localeState.locale = readStored() ?? browserLocale();
   applyLocale(localeState.locale);
 }
 function setLocale(locale) {
   localeState.locale = locale;
   try {
-    localStorage.setItem(STORAGE_KEY2, locale);
+    localStorage.setItem(STORAGE_KEY, locale);
   } catch {}
   applyLocale(locale);
-}
-function toggleLocale() {
-  setLocale(localeState.locale === "zh" ? "en" : "zh");
 }
 function t(key2) {
   return messages[localeState.locale][key2];
@@ -6907,400 +7267,245 @@ function tf(key2, vars) {
   return Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, String(v)), t(key2));
 }
 
-// ../nanoflux/web/src/components/buttons/FontSizeToggle.svelte
-var root4 = from_html(`
-    <!>
-  `, 1);
-var root_12 = from_html(`
+// ../nanoflux/web/src/components/buttons/SettingsButton.svelte
+var root8 = from_html(`
 
-<button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
+<a>
   <!>
-</button>`, 1);
-function FontSizeToggle($$anchor, $$props) {
+  <span> </span>
+</a>`, 1);
+function SettingsButton($$anchor, $$props) {
   push($$props, true);
-  const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
-  const nextSize = user_derived(() => fontSizeState.mode === "small" || fontSizeState.mode === "large" ? "medium" : fontSizeState.direction === "up" ? "large" : "small");
-  const increasing = user_derived(() => fontSizeState.mode === "small" || fontSizeState.mode === "medium" && fontSizeState.direction === "up");
-  const switchLabel = user_derived(() => get2(nextSize) === "medium" ? t("font.switchToMedium") : get2(nextSize) === "large" ? t("font.switchToLarge") : t("font.switchToSmall"));
-  const currentLabel = user_derived(() => fontSizeState.mode === "small" ? t("font.small") : fontSizeState.mode === "medium" ? t("font.medium") : t("font.large"));
+  const $route = () => store_get(route, "$route", $$stores);
+  const [$$stores, $$cleanup] = setup_stores();
+  let collapsed = prop($$props, "collapsed", 3, false);
+  const iconProps = { size: 16, strokeWidth: 1.5, "aria-hidden": true };
+  const active = user_derived(() => $route() === "/settings");
   next();
-  var fragment = root_12();
-  var button = sibling(first_child(fragment));
-  var node = sibling(child(button));
-  {
-    var consequent = ($$anchor2) => {
-      var fragment_1 = root4();
-      var node_1 = sibling(first_child(fragment_1));
-      a_arrow_up_default(node_1, spread_props(() => iconProps));
-      next();
-      append($$anchor2, fragment_1);
-    };
-    var alternate = ($$anchor2) => {
-      var fragment_2 = root4();
-      var node_2 = sibling(first_child(fragment_2));
-      a_arrow_down_default(node_2, spread_props(() => iconProps));
-      next();
-      append($$anchor2, fragment_2);
-    };
-    if_block(node, ($$render) => {
-      if (get2(increasing))
-        $$render(consequent);
-      else
-        $$render(alternate, -1);
-    });
-  }
+  var fragment = root8();
+  var a = sibling(first_child(fragment));
+  var event_handler = user_derived(() => navClick("/settings"));
+  var node = sibling(child(a));
+  settings_default(node, spread_props(() => iconProps));
+  var span = sibling(node, 2);
+  var text2 = child(span, true);
+  reset(span);
   next();
-  reset(button);
-  template_effect(() => {
-    set_attribute2(button, "aria-label", get2(switchLabel));
-    set_attribute2(button, "title", get2(currentLabel));
-  });
-  delegated("click", button, function(...$$args) {
-    toggleFontSize?.apply(this, $$args);
+  reset(a);
+  template_effect(($0, $1, $2) => {
+    set_attribute2(a, "href", $0);
+    set_class(a, 1, `flex items-center rounded-md text-sm transition-colors ${collapsed() ? "justify-center p-2 md:justify-center" : "gap-2 px-2 py-1.5"} ${get2(active) ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-neutral-100"}`);
+    set_attribute2(a, "aria-current", get2(active) ? "page" : undefined);
+    set_attribute2(a, "title", $1);
+    set_class(span, 1, clsx2(collapsed() ? "md:sr-only" : ""));
+    set_text(text2, $2);
+  }, [
+    () => settingsHref(),
+    () => collapsed() ? t("items.settings") : undefined,
+    () => t("items.settings")
+  ]);
+  delegated("click", a, function(...$$args) {
+    get2(event_handler)?.apply(this, $$args);
   });
   append($$anchor, fragment);
   pop();
+  $$cleanup();
 }
 if (undefined) {}
-var FontSizeToggle_default = FontSizeToggle;
+var SettingsButton_default = SettingsButton;
 delegate(["click"]);
 
-// ../nanoflux/web/src/components/buttons/LanguageToggle.svelte
-var root5 = from_html(`
-
-<button type="button" class="inline-flex min-w-[2rem] cursor-pointer items-center justify-center rounded-md p-1.5 text-xs font-medium text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"> </button>`, 1);
-function LanguageToggle($$anchor, $$props) {
-  push($$props, true);
-  const label = user_derived(() => localeState.locale === "zh" ? "EN" : "中");
-  const aria = user_derived(() => localeState.locale === "zh" ? t("lang.switchToEn") : t("lang.switchToZh"));
-  next();
-  var fragment = root5();
-  var button = sibling(first_child(fragment));
-  var text2 = child(button);
-  reset(button);
-  template_effect(() => {
-    set_attribute2(button, "aria-label", get2(aria));
-    set_attribute2(button, "title", get2(aria));
-    set_text(text2, `
-  ${get2(label) ?? ""}
-`);
-  });
-  delegated("click", button, function(...$$args) {
-    toggleLocale?.apply(this, $$args);
-  });
-  append($$anchor, fragment);
-  pop();
-}
-if (undefined) {}
-var LanguageToggle_default = LanguageToggle;
-delegate(["click"]);
-
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/moon.svelte
-var rest_excludes4 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root6 = from_html(`<!--
-@lucide/svelte v1.33.0 - ISC
-
-This source code is licensed under the ISC license.
-See the LICENSE file in the root directory of this source tree.
--->
-
-
-
-
-<!--
-@component
-
-Lucide SVG icon component, renders SVG Element with children.
-
-@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMjAuOTg1IDEyLjQ4NmE5IDkgMCAxIDEtOS40NzMtOS40NzJjLjQwNS0uMDIyLjYxNy40Ni40MDIuODAzYTYgNiAwIDAgMCA4LjI2OCA4LjI2OGMuMzQ0LS4yMTUuODI1LS4wMDQuODAzLjQwMSIgLz4KPC9zdmc+Cg==) - https://lucide.dev/icons/moon
-@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
--->
-
-<!>`, 1);
-function Moon($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes4);
-  const iconNode = [
-    [
-      "path",
-      {
-        d: "M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"
-      }
-    ]
-  ];
-  var fragment = root6();
-  var node = first_child(fragment);
-  var node_1 = sibling(node, 2);
-  var node_2 = sibling(node_1, 2);
-  Icon_default(node_2, spread_props({ name: "moon" }, () => props, {
-    get iconNode() {
-      return iconNode;
-    }
-  }));
-  append($$anchor, fragment);
-}
-if (undefined) {}
-var moon_default = Moon;
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/sun.svelte
-var rest_excludes5 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root7 = from_html(`<!--
-@lucide/svelte v1.33.0 - ISC
-
-This source code is licensed under the ISC license.
-See the LICENSE file in the root directory of this source tree.
--->
-
-
-
-
-<!--
-@component
-
-Lucide SVG icon component, renders SVG Element with children.
-
-@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI0IiAvPgogIDxwYXRoIGQ9Ik0xMiAydjIiIC8+CiAgPHBhdGggZD0iTTEyIDIwdjIiIC8+CiAgPHBhdGggZD0ibTQuOTMgNC45MyAxLjQxIDEuNDEiIC8+CiAgPHBhdGggZD0ibTE3LjY2IDE3LjY2IDEuNDEgMS40MSIgLz4KICA8cGF0aCBkPSJNMiAxMmgyIiAvPgogIDxwYXRoIGQ9Ik0yMCAxMmgyIiAvPgogIDxwYXRoIGQ9Im02LjM0IDE3LjY2LTEuNDEgMS40MSIgLz4KICA8cGF0aCBkPSJtMTkuMDcgNC45My0xLjQxIDEuNDEiIC8+Cjwvc3ZnPgo=) - https://lucide.dev/icons/sun
-@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
--->
-
-<!>`, 1);
-function Sun($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes5);
-  const iconNode = [
-    ["circle", { cx: "12", cy: "12", r: "4" }],
-    ["path", { d: "M12 2v2" }],
-    ["path", { d: "M12 20v2" }],
-    ["path", { d: "m4.93 4.93 1.41 1.41" }],
-    ["path", { d: "m17.66 17.66 1.41 1.41" }],
-    ["path", { d: "M2 12h2" }],
-    ["path", { d: "M20 12h2" }],
-    ["path", { d: "m6.34 17.66-1.41 1.41" }],
-    ["path", { d: "m19.07 4.93-1.41 1.41" }]
-  ];
-  var fragment = root7();
-  var node = first_child(fragment);
-  var node_1 = sibling(node, 2);
-  var node_2 = sibling(node_1, 2);
-  Icon_default(node_2, spread_props({ name: "sun" }, () => props, {
-    get iconNode() {
-      return iconNode;
-    }
-  }));
-  append($$anchor, fragment);
-}
-if (undefined) {}
-var sun_default = Sun;
-// ../nanoflux/web/src/lib/theme.svelte.ts
-var STORAGE_KEY3 = "nanoflux-theme";
-function readStored3() {
+// ../nanoflux/web/src/lib/sidebar.svelte.ts
+var STORAGE_KEY2 = "nanoflux-sidebar";
+function readStored2() {
   try {
-    const v = localStorage.getItem(STORAGE_KEY3);
-    if (v === "light" || v === "dark")
-      return v;
+    const v = localStorage.getItem(STORAGE_KEY2);
+    if (v === "true")
+      return true;
+    if (v === "false")
+      return false;
   } catch {}
   return null;
 }
-function systemPrefersDark() {
-  return typeof matchMedia !== "undefined" && matchMedia("(prefers-color-scheme: dark)").matches;
+var sidebarState = proxy({ collapsed: false });
+function initSidebar() {
+  sidebarState.collapsed = readStored2() ?? false;
 }
-var themeState = proxy({ mode: "light" });
-function applyTheme(t2) {
-  if (typeof document === "undefined")
-    return;
-  document.documentElement.classList.toggle("dark", t2 === "dark");
-}
-function initTheme() {
-  themeState.mode = readStored3() ?? (systemPrefersDark() ? "dark" : "light");
-  applyTheme(themeState.mode);
-}
-function setTheme(t2) {
-  themeState.mode = t2;
+function toggleSidebar() {
+  sidebarState.collapsed = !sidebarState.collapsed;
   try {
-    localStorage.setItem(STORAGE_KEY3, t2);
+    localStorage.setItem(STORAGE_KEY2, String(sidebarState.collapsed));
   } catch {}
-  applyTheme(t2);
 }
-function toggleTheme() {
-  setTheme(themeState.mode === "light" ? "dark" : "light");
-}
-
-// ../nanoflux/web/src/components/buttons/ThemeToggle.svelte
-var root8 = from_html(`
-    <!>
-  `, 1);
-var root_13 = from_html(`
-
-<button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
-  <!>
-</button>`, 1);
-function ThemeToggle($$anchor, $$props) {
-  push($$props, false);
-  const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
-  init();
-  next();
-  var fragment = root_13();
-  var button = sibling(first_child(fragment));
-  var node = sibling(child(button));
-  {
-    var consequent = ($$anchor2) => {
-      var fragment_1 = root8();
-      var node_1 = sibling(first_child(fragment_1));
-      sun_default(node_1, spread_props(() => iconProps));
-      next();
-      append($$anchor2, fragment_1);
-    };
-    var alternate = ($$anchor2) => {
-      var fragment_2 = root8();
-      var node_2 = sibling(first_child(fragment_2));
-      moon_default(node_2, spread_props(() => iconProps));
-      next();
-      append($$anchor2, fragment_2);
-    };
-    if_block(node, ($$render) => {
-      if (themeState.mode === "dark")
-        $$render(consequent);
-      else
-        $$render(alternate, -1);
-    });
-  }
-  next();
-  reset(button);
-  template_effect(($0, $1) => {
-    set_attribute2(button, "aria-label", $0);
-    set_attribute2(button, "title", $1);
-  }, [
-    () => themeState.mode === "dark" ? t("theme.switchToLight") : t("theme.switchToDark"),
-    () => themeState.mode === "dark" ? t("theme.lightMode") : t("theme.darkMode")
-  ]);
-  delegated("click", button, function(...$$args) {
-    toggleTheme?.apply(this, $$args);
-  });
-  append($$anchor, fragment);
-  pop();
-}
-if (undefined) {}
-var ThemeToggle_default = ThemeToggle;
-delegate(["click"]);
 
 // ../nanoflux/web/src/components/Header.svelte
 var root9 = from_html(`
+        <!>
+      `, 1);
+var root_12 = from_html(`
 
-<aside class="border-b border-neutral-100 px-5 py-5 dark:border-neutral-800 md:sticky md:top-4 md:m-4 md:flex md:h-[calc(100vh-2rem)] md:w-48 md:shrink-0 md:flex-col md:rounded-xl md:border md:bg-white md:px-5 md:py-8 md:shadow-sm md:dark:bg-neutral-950">
-  <a class="text-lg font-medium tracking-tight hover:opacity-70">
-    NanoFlux
-  </a>
+<aside>
+  <div>
+    <a>
+      NanoFlux
+    </a>
+
+    <button type="button" class="hidden shrink-0 cursor-pointer rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 md:inline-flex dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
+      <!>
+    </button>
+  </div>
 
   <nav class="mt-4 flex min-w-0 gap-1 overflow-x-auto text-sm md:mt-8 md:flex-col md:overflow-visible">
-    <a> </a>
-    <a> </a>
-    <a> </a>
-    <a> </a>
-    <a> </a>
+    <a>
+      <!>
+      <span> </span>
+    </a>
+    <a>
+      <!>
+      <span> </span>
+    </a>
+    <a>
+      <!>
+      <span> </span>
+    </a>
   </nav>
 
-  <div class="mt-4 flex shrink-0 items-center gap-0.5 md:mt-auto">
-    <!>
-    <!>
+  <div class="mt-4 shrink-0 md:mt-auto">
     <!>
   </div>
 </aside>`, 1);
 function Header($$anchor, $$props) {
-  push($$props, false);
+  push($$props, true);
   const $route = () => store_get(route, "$route", $$stores);
   const [$$stores, $$cleanup] = setup_stores();
-  const navClass = (active) => `block rounded-md px-2 py-1.5 transition-colors ${active ? "bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100" : "text-neutral-400 hover:bg-neutral-50 hover:text-neutral-900 dark:text-neutral-500 dark:hover:bg-neutral-900 dark:hover:text-neutral-100"}`;
-  init();
+  const iconProps = { size: 16, strokeWidth: 1.5, "aria-hidden": true };
+  const toggleIconProps = { size: 16, strokeWidth: 1.5, "aria-hidden": true };
+  const collapsed = user_derived(() => sidebarState.collapsed);
+  const navClass = (active) => `flex items-center rounded-md transition-colors ${get2(collapsed) ? "justify-center p-2 md:justify-center" : "gap-2 px-2 py-1.5"} ${active ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-neutral-100"}`;
   next();
-  var fragment = root9();
+  var fragment = root_12();
   var aside = sibling(first_child(fragment));
-  var a = sibling(child(aside));
+  var div = sibling(child(aside));
+  var a = sibling(child(div));
   var event_handler = user_derived(() => navClick("/"));
-  var nav = sibling(a, 2);
+  var button = sibling(a, 2);
+  var node = sibling(child(button));
+  {
+    var consequent = ($$anchor2) => {
+      var fragment_1 = root9();
+      var node_1 = sibling(first_child(fragment_1));
+      panel_left_open_default(node_1, spread_props(() => toggleIconProps));
+      next();
+      append($$anchor2, fragment_1);
+    };
+    var alternate = ($$anchor2) => {
+      var fragment_2 = root9();
+      var node_2 = sibling(first_child(fragment_2));
+      panel_left_close_default(node_2, spread_props(() => toggleIconProps));
+      next();
+      append($$anchor2, fragment_2);
+    };
+    if_block(node, ($$render) => {
+      if (get2(collapsed))
+        $$render(consequent);
+      else
+        $$render(alternate, -1);
+    });
+  }
+  next();
+  reset(button);
+  next();
+  reset(div);
+  var nav = sibling(div, 2);
   var a_1 = sibling(child(nav));
   var event_handler_1 = user_derived(() => navClick("/"));
-  var text2 = child(a_1);
+  var node_3 = sibling(child(a_1));
+  newspaper_default(node_3, spread_props(() => iconProps));
+  var span = sibling(node_3, 2);
+  var text2 = child(span, true);
+  reset(span);
+  next();
   reset(a_1);
   var a_2 = sibling(a_1, 2);
   var event_handler_2 = user_derived(() => navClick("/feeds"));
-  var text_1 = child(a_2);
+  var node_4 = sibling(child(a_2));
+  rss_default(node_4, spread_props(() => iconProps));
+  var span_1 = sibling(node_4, 2);
+  var text_1 = child(span_1, true);
+  reset(span_1);
+  next();
   reset(a_2);
   var a_3 = sibling(a_2, 2);
-  var event_handler_3 = user_derived(() => navClick("/filter"));
-  var text_2 = child(a_3);
+  var event_handler_3 = user_derived(() => navClick("/export"));
+  var node_5 = sibling(child(a_3));
+  download_default(node_5, spread_props(() => iconProps));
+  var span_2 = sibling(node_5, 2);
+  var text_2 = child(span_2, true);
+  reset(span_2);
+  next();
   reset(a_3);
-  var a_4 = sibling(a_3, 2);
-  var event_handler_4 = user_derived(() => navClick("/fever"));
-  var text_3 = child(a_4);
-  reset(a_4);
-  var a_5 = sibling(a_4, 2);
-  var event_handler_5 = user_derived(() => navClick("/export"));
-  var text_4 = child(a_5);
-  reset(a_5);
   next();
   reset(nav);
-  var div = sibling(nav, 2);
-  var node = sibling(child(div));
-  FontSizeToggle_default(node, {});
-  var node_1 = sibling(node, 2);
-  LanguageToggle_default(node_1, {});
-  var node_2 = sibling(node_1, 2);
-  ThemeToggle_default(node_2, {});
+  var div_1 = sibling(nav, 2);
+  var node_6 = sibling(child(div_1));
+  SettingsButton_default(node_6, {
+    get collapsed() {
+      return get2(collapsed);
+    }
+  });
   next();
-  reset(div);
+  reset(div_1);
   next();
   reset(aside);
-  template_effect(($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) => {
+  template_effect(($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) => {
+    set_class(aside, 1, `border-b border-neutral-100 px-5 py-5 transition-[width,padding] duration-200 dark:border-neutral-800 md:sticky md:top-4 md:m-4 md:flex md:h-[calc(100vh-2rem)] md:shrink-0 md:flex-col md:rounded-xl md:border md:bg-white md:py-8 md:shadow-sm md:dark:bg-neutral-950 ${get2(collapsed) ? "md:w-14 md:px-2" : "md:w-48 md:px-5"}`);
+    set_class(div, 1, `flex items-center ${get2(collapsed) ? "md:flex-col md:gap-2" : "justify-between gap-2"}`);
     set_attribute2(a, "href", $0);
-    set_attribute2(nav, "aria-label", $1);
-    set_attribute2(a_1, "href", $2);
-    set_class(a_1, 1, $3);
+    set_class(a, 1, `truncate text-lg font-medium tracking-tight hover:opacity-70 ${get2(collapsed) ? "md:hidden" : ""}`);
+    set_attribute2(button, "aria-label", $1);
+    set_attribute2(button, "title", $2);
+    set_attribute2(nav, "aria-label", $3);
+    set_attribute2(a_1, "href", $4);
+    set_class(a_1, 1, $5);
     set_attribute2(a_1, "aria-current", $route() === "/" ? "page" : undefined);
-    set_text(text2, `
-      ${$4 ?? ""}
-    `);
-    set_attribute2(a_2, "href", $5);
-    set_class(a_2, 1, $6);
+    set_attribute2(a_1, "title", $6);
+    set_class(span, 1, clsx2(get2(collapsed) ? "md:sr-only" : ""));
+    set_text(text2, $7);
+    set_attribute2(a_2, "href", $8);
+    set_class(a_2, 1, $9);
     set_attribute2(a_2, "aria-current", $route() === "/feeds" ? "page" : undefined);
-    set_text(text_1, `
-      ${$7 ?? ""}
-    `);
-    set_attribute2(a_3, "href", $8);
-    set_class(a_3, 1, $9);
-    set_attribute2(a_3, "aria-current", $route() === "/filter" ? "page" : undefined);
-    set_text(text_2, `
-      ${$10 ?? ""}
-    `);
-    set_attribute2(a_4, "href", $11);
-    set_class(a_4, 1, $12);
-    set_attribute2(a_4, "aria-current", $route() === "/fever" ? "page" : undefined);
-    set_text(text_3, `
-      ${$13 ?? ""}
-    `);
-    set_attribute2(a_5, "href", $14);
-    set_class(a_5, 1, $15);
-    set_attribute2(a_5, "aria-current", $route() === "/export" ? "page" : undefined);
-    set_text(text_4, `
-      ${$16 ?? ""}
-    `);
+    set_attribute2(a_2, "title", $10);
+    set_class(span_1, 1, clsx2(get2(collapsed) ? "md:sr-only" : ""));
+    set_text(text_1, $11);
+    set_attribute2(a_3, "href", $12);
+    set_class(a_3, 1, $13);
+    set_attribute2(a_3, "aria-current", $route() === "/export" ? "page" : undefined);
+    set_attribute2(a_3, "title", $14);
+    set_class(span_2, 1, clsx2(get2(collapsed) ? "md:sr-only" : ""));
+    set_text(text_2, $15);
   }, [
     () => homeHref(),
+    () => get2(collapsed) ? t("sidebar.expand") : t("sidebar.collapse"),
+    () => get2(collapsed) ? t("sidebar.expand") : t("sidebar.collapse"),
     () => t("items.latest"),
     () => homeHref(),
     () => clsx2(navClass($route() === "/")),
+    () => get2(collapsed) ? t("items.latest") : undefined,
     () => t("items.latest"),
     () => feedsHref(),
     () => clsx2(navClass($route() === "/feeds")),
+    () => get2(collapsed) ? t("items.feeds") : undefined,
     () => t("items.feeds"),
-    () => filterHref(),
-    () => clsx2(navClass($route() === "/filter")),
-    () => t("items.filter"),
-    () => feverHref(),
-    () => clsx2(navClass($route() === "/fever")),
-    () => t("items.fever"),
     () => exportHref(),
     () => clsx2(navClass($route() === "/export")),
+    () => get2(collapsed) ? t("items.export") : undefined,
     () => t("items.export")
   ]);
   delegated("click", a, function(...$$args) {
     get2(event_handler)?.apply(this, $$args);
+  });
+  delegated("click", button, function(...$$args) {
+    toggleSidebar?.apply(this, $$args);
   });
   delegated("click", a_1, function(...$$args) {
     get2(event_handler_1)?.apply(this, $$args);
@@ -7311,12 +7516,6 @@ function Header($$anchor, $$props) {
   delegated("click", a_3, function(...$$args) {
     get2(event_handler_3)?.apply(this, $$args);
   });
-  delegated("click", a_4, function(...$$args) {
-    get2(event_handler_4)?.apply(this, $$args);
-  });
-  delegated("click", a_5, function(...$$args) {
-    get2(event_handler_5)?.apply(this, $$args);
-  });
   append($$anchor, fragment);
   pop();
   $$cleanup();
@@ -7325,51 +7524,9 @@ if (undefined) {}
 var Header_default = Header;
 delegate(["click"]);
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/download.svelte
-var rest_excludes6 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root10 = from_html(`<!--
-@lucide/svelte v1.33.0 - ISC
-
-This source code is licensed under the ISC license.
-See the LICENSE file in the root directory of this source tree.
--->
-
-
-
-
-<!--
-@component
-
-Lucide SVG icon component, renders SVG Element with children.
-
-@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMTIgMTVWMyIgLz4KICA8cGF0aCBkPSJNMjEgMTV2NGEyIDIgMCAwIDEtMiAySDVhMiAyIDAgMCAxLTItMnYtNCIgLz4KICA8cGF0aCBkPSJtNyAxMCA1IDUgNS01IiAvPgo8L3N2Zz4K) - https://lucide.dev/icons/download
-@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
--->
-
-<!>`, 1);
-function Download($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes6);
-  const iconNode = [
-    ["path", { d: "M12 15V3" }],
-    ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }],
-    ["path", { d: "m7 10 5 5 5-5" }]
-  ];
-  var fragment = root10();
-  var node = first_child(fragment);
-  var node_1 = sibling(node, 2);
-  var node_2 = sibling(node_1, 2);
-  Icon_default(node_2, spread_props({ name: "download" }, () => props, {
-    get iconNode() {
-      return iconNode;
-    }
-  }));
-  append($$anchor, fragment);
-}
-if (undefined) {}
-var download_default = Download;
 // ../nanoflux/node_modules/@lucide/svelte/dist/icons/pencil.svelte
-var rest_excludes7 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root11 = from_html(`<!--
+var rest_excludes8 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root10 = from_html(`<!--
 @lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -7390,7 +7547,7 @@ Lucide SVG icon component, renders SVG Element with children.
 
 <!>`, 1);
 function Pencil($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes7);
+  let props = rest_props($$props, rest_excludes8);
   const iconNode = [
     [
       "path",
@@ -7400,7 +7557,7 @@ function Pencil($$anchor, $$props) {
     ],
     ["path", { d: "m15 5 4 4" }]
   ];
-  var fragment = root11();
+  var fragment = root10();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -7414,8 +7571,8 @@ function Pencil($$anchor, $$props) {
 if (undefined) {}
 var pencil_default = Pencil;
 // ../nanoflux/node_modules/@lucide/svelte/dist/icons/trash-2.svelte
-var rest_excludes8 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root12 = from_html(`<!--
+var rest_excludes9 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root11 = from_html(`<!--
 @lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -7436,7 +7593,7 @@ Lucide SVG icon component, renders SVG Element with children.
 
 <!>`, 1);
 function Trash_2($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes8);
+  let props = rest_props($$props, rest_excludes9);
   const iconNode = [
     ["path", { d: "M10 11v6" }],
     ["path", { d: "M14 11v6" }],
@@ -7444,7 +7601,7 @@ function Trash_2($$anchor, $$props) {
     ["path", { d: "M3 6h18" }],
     ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" }]
   ];
-  var fragment = root12();
+  var fragment = root11();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -7645,6 +7802,48 @@ function updateFilter(payload) {
     return normalizeFilterConfig(body.data, payload);
   });
 }
+var TRANSLATE_TARGET_LANGS = [
+  "en",
+  "zh-Hans",
+  "zh-Hant"
+];
+function parseTranslateTargetLang(value) {
+  if (value === "zh")
+    return "zh-Hans";
+  if (value === "en" || value === "zh-Hans" || value === "zh-Hant") {
+    return value;
+  }
+  return null;
+}
+function normalizeTranslateConfig(data, defaults) {
+  const prompt = typeof data?.prompt === "string" ? data.prompt : defaults?.prompt ?? "";
+  const targetLang = parseTranslateTargetLang(data?.targetLang) ?? parseTranslateTargetLang(defaults?.targetLang) ?? "zh-Hans";
+  return {
+    prompt,
+    enabled: typeof data?.enabled === "boolean" ? data.enabled : typeof defaults?.enabled === "boolean" ? defaults.enabled : false,
+    targetLang
+  };
+}
+async function fetchTranslate() {
+  const body = await request("/api/translate");
+  assertApiOk(body);
+  if (!body.data) {
+    throw new Error(body.message || "Failed to load translate config");
+  }
+  return normalizeTranslateConfig(body.data);
+}
+function updateTranslate(payload) {
+  return request("/api/translate", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  }).then((body) => {
+    assertApiOk(body);
+    if (!body.data) {
+      throw new Error(body.message || "Failed to update translate config");
+    }
+    return normalizeTranslateConfig(body.data, payload);
+  });
+}
 function normalizeFeverConfig(data, defaults) {
   return {
     enabled: typeof data?.enabled === "boolean" ? data.enabled : typeof defaults?.enabled === "boolean" ? defaults.enabled : false,
@@ -7697,7 +7896,7 @@ function formatTime(iso, nowMs = Date.now()) {
   const days = Math.floor(hours / 24);
   if (days < 7)
     return tf("time.daysAgo", { n: days });
-  const tag2 = localeState.locale === "zh" ? "zh-CN" : "en-US";
+  const tag2 = dateLocaleTag(localeState.locale);
   return date.toLocaleDateString(tag2, {
     month: "short",
     day: "numeric",
@@ -7720,11 +7919,11 @@ function buildKeywordGoogleNewsFeedUrl(keyword) {
 }
 
 // ../nanoflux/web/src/components/FeedsManager.svelte
-var root13 = from_html(`
+var root12 = from_html(`
         <button type="button" class="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"> </button>
         <button type="button" class="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"> </button>
       `, 1);
-var root_14 = from_html(`
+var root_13 = from_html(`
         <button type="button" class="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"> </button>
       `, 1);
 var root_2 = from_html(`
@@ -7786,7 +7985,7 @@ var root_132 = from_html(`
             <!>
           </ul>
         `, 1);
-var root_142 = from_html(`
+var root_14 = from_html(`
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" role="presentation">
     <div role="dialog" aria-modal="true" aria-labelledby="wechat-dialog-title" class="flex max-h-[80vh] w-full max-w-md flex-col border border-neutral-200 bg-white p-5 shadow-sm dark:border-neutral-700 dark:bg-neutral-900" tabindex="-1">
       <h3 id="wechat-dialog-title" class="text-sm font-medium text-neutral-900 dark:text-neutral-100"> </h3>
@@ -8222,7 +8421,7 @@ function FeedsManager($$anchor, $$props) {
   var node = sibling(button, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root13();
+      var fragment_1 = root12();
       var button_1 = sibling(first_child(fragment_1));
       var text_1 = child(button_1);
       reset(button_1);
@@ -8250,7 +8449,7 @@ function FeedsManager($$anchor, $$props) {
   var node_1 = sibling(node, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var fragment_2 = root_14();
+      var fragment_2 = root_13();
       var button_3 = sibling(first_child(fragment_2));
       var text_3 = child(button_3);
       reset(button_3);
@@ -8405,7 +8604,7 @@ function FeedsManager($$anchor, $$props) {
   var node_6 = sibling(node_4, 2);
   {
     var consequent_13 = ($$anchor2) => {
-      var fragment_8 = root_142();
+      var fragment_8 = root_14();
       var div_4 = sibling(first_child(fragment_8));
       var div_5 = sibling(child(div_4));
       var h3_1 = sibling(child(div_5));
@@ -8879,11 +9078,278 @@ if (undefined) {}
 var FeedsManager_default = FeedsManager;
 delegate(["input", "click", "keydown"]);
 
+// ../nanoflux/web/src/lib/fontSize.svelte.ts
+var STORAGE_KEY3 = "nanoflux-font-size";
+var MIGRATION_KEY = "nanoflux-font-size-v2";
+function migrateStoredFontSize() {
+  try {
+    if (localStorage.getItem(MIGRATION_KEY))
+      return;
+    if (localStorage.getItem(STORAGE_KEY3) === "small") {
+      localStorage.setItem(STORAGE_KEY3, "medium");
+    }
+    localStorage.setItem(MIGRATION_KEY, "1");
+  } catch {}
+}
+function readStored3() {
+  try {
+    migrateStoredFontSize();
+    const v = localStorage.getItem(STORAGE_KEY3);
+    if (v === "small" || v === "medium" || v === "large")
+      return v;
+  } catch {}
+  return null;
+}
+var fontSizeState = proxy({ mode: "medium", direction: "up" });
+function applyFontSize(f) {
+  if (typeof document === "undefined")
+    return;
+  const root13 = document.documentElement;
+  root13.classList.toggle("font-small", f === "small");
+  root13.classList.toggle("font-large", f === "large");
+}
+function initDirection(mode) {
+  if (mode === "small")
+    fontSizeState.direction = "up";
+  else if (mode === "large")
+    fontSizeState.direction = "down";
+  else
+    fontSizeState.direction = "up";
+}
+function initFontSize() {
+  fontSizeState.mode = readStored3() ?? "medium";
+  initDirection(fontSizeState.mode);
+  applyFontSize(fontSizeState.mode);
+}
+function setFontSize(f) {
+  fontSizeState.mode = f;
+  initDirection(f);
+  try {
+    localStorage.setItem(STORAGE_KEY3, f);
+  } catch {}
+  applyFontSize(f);
+}
+
+// ../nanoflux/web/src/lib/theme.svelte.ts
+var STORAGE_KEY4 = "nanoflux-theme";
+function readStored4() {
+  try {
+    const v = localStorage.getItem(STORAGE_KEY4);
+    if (v === "light" || v === "dark")
+      return v;
+  } catch {}
+  return null;
+}
+function systemPrefersDark() {
+  return typeof matchMedia !== "undefined" && matchMedia("(prefers-color-scheme: dark)").matches;
+}
+var themeState = proxy({ mode: "light" });
+function applyTheme(t2) {
+  if (typeof document === "undefined")
+    return;
+  document.documentElement.classList.toggle("dark", t2 === "dark");
+}
+function initTheme() {
+  themeState.mode = readStored4() ?? (systemPrefersDark() ? "dark" : "light");
+  applyTheme(themeState.mode);
+}
+function setTheme(t2) {
+  themeState.mode = t2;
+  try {
+    localStorage.setItem(STORAGE_KEY4, t2);
+  } catch {}
+  applyTheme(t2);
+}
+
+// ../nanoflux/web/src/components/PreferencesManager.svelte
+var root13 = from_html(`
+          <button type="button"> </button>
+        `, 1);
+var root_110 = from_html(`
+
+<section class="mb-10">
+  <p class="mb-6 text-sm text-neutral-400 dark:text-neutral-500"> </p>
+  <div class="space-y-8">
+    <div class="space-y-3">
+      <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm" role="group">
+        <!>
+      </div>
+    </div>
+
+    <div class="space-y-3">
+      <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm" role="group">
+        <!>
+      </div>
+    </div>
+
+    <div class="space-y-3">
+      <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm" role="group">
+        <!>
+      </div>
+    </div>
+  </div>
+</section>`, 1);
+function PreferencesManager($$anchor, $$props) {
+  push($$props, false);
+  function optionClass(active) {
+    return active ? "text-neutral-900 underline underline-offset-4 decoration-neutral-900 dark:text-neutral-100 dark:decoration-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300";
+  }
+  const fontOptions = [
+    { id: "small", key: "font.small" },
+    { id: "medium", key: "font.medium" },
+    { id: "large", key: "font.large" }
+  ];
+  const localeOptions = [
+    { id: "en", key: "lang.en" },
+    { id: "zh-Hans", key: "lang.zhHans" },
+    { id: "zh-Hant", key: "lang.zhHant" }
+  ];
+  const themeOptions = [
+    { id: "light", key: "theme.lightMode" },
+    { id: "dark", key: "theme.darkMode" }
+  ];
+  init();
+  next();
+  var fragment = root_110();
+  var section = sibling(first_child(fragment));
+  var p = sibling(child(section));
+  var text2 = child(p);
+  reset(p);
+  var div = sibling(p, 2);
+  var div_1 = sibling(child(div));
+  var span = sibling(child(div_1));
+  var text_1 = child(span);
+  reset(span);
+  var div_2 = sibling(span, 2);
+  var node = sibling(child(div_2));
+  each(node, 1, () => fontOptions, (option) => option.id, ($$anchor2, option) => {
+    next();
+    var fragment_1 = root13();
+    var button = sibling(first_child(fragment_1));
+    var text_2 = child(button);
+    reset(button);
+    next();
+    template_effect(($0, $1) => {
+      set_class(button, 1, `cursor-pointer transition-colors ${$0 ?? ""}`);
+      set_attribute2(button, "aria-pressed", fontSizeState.mode === get2(option).id);
+      set_text(text_2, `
+            ${$1 ?? ""}
+          `);
+    }, [
+      () => optionClass(fontSizeState.mode === get2(option).id),
+      () => t(get2(option).key)
+    ]);
+    delegated("click", button, () => setFontSize(get2(option).id));
+    append($$anchor2, fragment_1);
+  });
+  next();
+  reset(div_2);
+  next();
+  reset(div_1);
+  var div_3 = sibling(div_1, 2);
+  var span_1 = sibling(child(div_3));
+  var text_3 = child(span_1);
+  reset(span_1);
+  var div_4 = sibling(span_1, 2);
+  var node_1 = sibling(child(div_4));
+  each(node_1, 1, () => localeOptions, (option) => option.id, ($$anchor2, option) => {
+    next();
+    var fragment_2 = root13();
+    var button_1 = sibling(first_child(fragment_2));
+    var text_4 = child(button_1);
+    reset(button_1);
+    next();
+    template_effect(($0, $1) => {
+      set_class(button_1, 1, `cursor-pointer transition-colors ${$0 ?? ""}`);
+      set_attribute2(button_1, "aria-pressed", localeState.locale === get2(option).id);
+      set_text(text_4, `
+            ${$1 ?? ""}
+          `);
+    }, [
+      () => optionClass(localeState.locale === get2(option).id),
+      () => t(get2(option).key)
+    ]);
+    delegated("click", button_1, () => setLocale(get2(option).id));
+    append($$anchor2, fragment_2);
+  });
+  next();
+  reset(div_4);
+  next();
+  reset(div_3);
+  var div_5 = sibling(div_3, 2);
+  var span_2 = sibling(child(div_5));
+  var text_5 = child(span_2);
+  reset(span_2);
+  var div_6 = sibling(span_2, 2);
+  var node_2 = sibling(child(div_6));
+  each(node_2, 1, () => themeOptions, (option) => option.id, ($$anchor2, option) => {
+    next();
+    var fragment_3 = root13();
+    var button_2 = sibling(first_child(fragment_3));
+    var text_6 = child(button_2);
+    reset(button_2);
+    next();
+    template_effect(($0, $1) => {
+      set_class(button_2, 1, `cursor-pointer transition-colors ${$0 ?? ""}`);
+      set_attribute2(button_2, "aria-pressed", themeState.mode === get2(option).id);
+      set_text(text_6, `
+            ${$1 ?? ""}
+          `);
+    }, [
+      () => optionClass(themeState.mode === get2(option).id),
+      () => t(get2(option).key)
+    ]);
+    delegated("click", button_2, () => setTheme(get2(option).id));
+    append($$anchor2, fragment_3);
+  });
+  next();
+  reset(div_6);
+  next();
+  reset(div_5);
+  next();
+  reset(div);
+  next();
+  reset(section);
+  template_effect(($0, $1, $2, $3, $4, $5, $6) => {
+    set_text(text2, `
+    ${$0 ?? ""}
+  `);
+    set_text(text_1, `
+        ${$1 ?? ""}
+      `);
+    set_attribute2(div_2, "aria-label", $2);
+    set_text(text_3, `
+        ${$3 ?? ""}
+      `);
+    set_attribute2(div_4, "aria-label", $4);
+    set_text(text_5, `
+        ${$5 ?? ""}
+      `);
+    set_attribute2(div_6, "aria-label", $6);
+  }, [
+    () => t("prefs.hint"),
+    () => t("prefs.fontSize"),
+    () => t("prefs.fontSize"),
+    () => t("prefs.language"),
+    () => t("prefs.language"),
+    () => t("prefs.theme"),
+    () => t("prefs.theme")
+  ]);
+  append($$anchor, fragment);
+  pop();
+}
+if (undefined) {}
+var PreferencesManager_default = PreferencesManager;
+delegate(["click"]);
+
 // ../nanoflux/web/src/components/FiltersManager.svelte
 var root14 = from_html(`
     <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
   `, 1);
-var root_110 = from_html(`
+var root_112 = from_html(`
     <div class="space-y-8">
       <div class="space-y-3">
         <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
@@ -8980,7 +9446,7 @@ function FiltersManager($$anchor, $$props) {
       append($$anchor2, fragment_1);
     };
     var alternate = ($$anchor2) => {
-      var fragment_2 = root_110();
+      var fragment_2 = root_112();
       var div = sibling(first_child(fragment_2));
       var div_1 = sibling(child(div));
       var span = sibling(child(div_1));
@@ -9088,161 +9554,277 @@ if (undefined) {}
 var FiltersManager_default = FiltersManager;
 delegate(["click"]);
 
-// ../nanoflux/web/src/components/ExportPage.svelte
+// ../nanoflux/web/src/components/TranslateManager.svelte
 var root15 = from_html(`
-      <p class="text-sm text-red-500"> </p>
-    `, 1);
-var root_112 = from_html(`
+    <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
+  `, 1);
+var root_113 = from_html(`
+            <button type="button"> </button>
+          `, 1);
+var root_23 = from_html(`
+    <div class="space-y-8">
+      <div class="space-y-3">
+        <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm" role="group">
+          <button type="button"> </button>
+          <button type="button"> </button>
+        </div>
+      </div>
 
-<section class="space-y-8">
-  <p class="text-sm text-neutral-400 dark:text-neutral-500"> </p>
+      <div class="space-y-3">
+        <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm" role="group">
+          <!>
+        </div>
+      </div>
 
-  <div class="grid gap-6 sm:grid-cols-2">
-    <label class="block space-y-2">
-      <span class="text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
-      <!-- lang="sv-SE" forces a 24-hour, ISO-style (yyyy-mm-dd HH:mm) picker. -->
-      <input type="datetime-local" lang="sv-SE"/>
-    </label>
-    <label class="block space-y-2">
-      <span class="text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
-      <input type="datetime-local" lang="sv-SE"/>
-    </label>
-  </div>
+      <label class="block space-y-3">
+        <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
+        <textarea></textarea>
+      </label>
 
-  <div class="flex items-center gap-4">
-    <button type="button" class="inline-flex items-center gap-1.5 text-sm text-neutral-900 underline-offset-4 hover:underline disabled:opacity-50 dark:text-neutral-100">
-      <!> </button>
-    <!>
-  </div>
+      <button type="button" class="text-sm text-neutral-900 underline-offset-4 hover:underline disabled:opacity-50 dark:text-neutral-100"> </button>
+    </div>
+  `, 1);
+var root_33 = from_html(`
+    <p class="mt-3 text-sm text-red-500"> </p>
+  `, 1);
+var root_42 = from_html(`
+
+<section class="mb-10">
+  <p class="mb-6 text-sm text-neutral-400 dark:text-neutral-500"> </p>
+  <!>
+  <!>
 </section>`, 1);
-function ExportPage($$anchor, $$props) {
+function TranslateManager($$anchor, $$props) {
   push($$props, true);
-  function toDatetimeLocal(date) {
-    const pad = (n) => String(n).padStart(2, "0");
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` + `T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-  }
-  const nowDate = new Date;
-  let start = state(proxy(toDatetimeLocal(new Date(nowDate.getTime() - 24 * 60 * 60 * 1000))));
-  let end = state(proxy(toDatetimeLocal(nowDate)));
-  let exporting = state(false);
-  let error = state("");
   const inputClass = "w-full border-0 border-b border-neutral-200 bg-transparent py-2 text-sm outline-none placeholder:text-neutral-300 focus:border-neutral-900 dark:border-neutral-700 dark:placeholder:text-neutral-600 dark:focus:border-neutral-100";
-  function toIso(local) {
-    if (!local)
-      return;
-    const ms = Date.parse(local);
-    if (Number.isNaN(ms))
-      return;
-    return new Date(ms).toISOString();
+  const textareaClass = "min-h-48 resize-y " + inputClass;
+  let prompt = state("");
+  let enabled = state(false);
+  let targetLang = state("zh-Hans");
+  let savedPrompt = state("");
+  let savedEnabled = state(false);
+  let savedTargetLang = state("zh-Hans");
+  let formError = state("");
+  let loading = state(true);
+  let saving = state(false);
+  const isDirty = user_derived(() => get2(prompt).trim() !== get2(savedPrompt) || get2(enabled) !== get2(savedEnabled) || get2(targetLang) !== get2(savedTargetLang));
+  const saveDisabled = user_derived(() => get2(saving) || get2(loading) || !get2(isDirty));
+  function toggleClass(active) {
+    return active ? "text-neutral-900 underline underline-offset-4 decoration-neutral-900 dark:text-neutral-100 dark:decoration-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300";
   }
-  async function handleExport() {
-    if (get2(exporting))
-      return;
-    set(error, "");
-    const since = toIso(get2(start));
-    const until = toIso(get2(end));
-    if (since && until && since > until) {
-      set(error, t("export.invalidRange"), true);
-      return;
-    }
-    set(exporting, true);
+  async function loadTranslate() {
+    set(formError, "");
+    set(loading, true);
     try {
-      await downloadItemsExcel({ since, until });
+      const config = await fetchTranslate();
+      set(prompt, config.prompt, true);
+      set(enabled, config.enabled, true);
+      set(targetLang, config.targetLang, true);
+      set(savedPrompt, config.prompt, true);
+      set(savedEnabled, config.enabled, true);
+      set(savedTargetLang, config.targetLang, true);
     } catch (e) {
-      set(error, e instanceof Error ? e.message : t("export.failed"), true);
+      set(formError, e instanceof Error ? e.message : t("translate.loadFailed"), true);
     } finally {
-      set(exporting, false);
+      set(loading, false);
     }
   }
+  async function handleSave() {
+    if (get2(saveDisabled))
+      return;
+    set(formError, "");
+    set(saving, true);
+    try {
+      const updated = await updateTranslate({
+        prompt: get2(prompt).trim(),
+        enabled: get2(enabled),
+        targetLang: get2(targetLang)
+      });
+      set(prompt, updated.prompt, true);
+      set(enabled, updated.enabled, true);
+      set(targetLang, updated.targetLang, true);
+      set(savedPrompt, updated.prompt, true);
+      set(savedEnabled, updated.enabled, true);
+      set(savedTargetLang, updated.targetLang, true);
+    } catch (err) {
+      set(formError, err instanceof Error ? err.message : t("translate.saveFailed"), true);
+    } finally {
+      set(saving, false);
+    }
+  }
+  onMount(() => {
+    loadTranslate();
+  });
   next();
-  var fragment = root_112();
+  var fragment = root_42();
   var section = sibling(first_child(fragment));
   var p = sibling(child(section));
   var text2 = child(p);
   reset(p);
-  var div = sibling(p, 2);
-  var label = sibling(child(div));
-  var span = sibling(child(label));
-  var text_1 = child(span);
-  reset(span);
-  var node = sibling(span, 2);
-  var input = sibling(node, 2);
-  remove_input_defaults(input);
-  set_class(input, 1, clsx2(inputClass));
-  next();
-  reset(label);
-  var label_1 = sibling(label, 2);
-  var span_1 = sibling(child(label_1));
-  var text_2 = child(span_1);
-  reset(span_1);
-  var input_1 = sibling(span_1, 2);
-  remove_input_defaults(input_1);
-  set_class(input_1, 1, clsx2(inputClass));
-  next();
-  reset(label_1);
-  next();
-  reset(div);
-  var div_1 = sibling(div, 2);
-  var button = sibling(child(div_1));
-  var node_1 = sibling(child(button));
-  download_default(node_1, { size: 16, strokeWidth: 1.5, "aria-hidden": "true" });
-  var text_3 = sibling(node_1);
-  reset(button);
-  var node_2 = sibling(button, 2);
+  var node = sibling(p, 2);
   {
     var consequent = ($$anchor2) => {
       var fragment_1 = root15();
       var p_1 = sibling(first_child(fragment_1));
-      var text_4 = child(p_1, true);
+      var text_1 = child(p_1, true);
       reset(p_1);
       next();
-      template_effect(() => set_text(text_4, get2(error)));
+      template_effect(($0) => set_text(text_1, $0), [() => t("items.loading")]);
       append($$anchor2, fragment_1);
     };
-    if_block(node_2, ($$render) => {
-      if (get2(error))
+    var alternate = ($$anchor2) => {
+      var fragment_2 = root_23();
+      var div = sibling(first_child(fragment_2));
+      var div_1 = sibling(child(div));
+      var span = sibling(child(div_1));
+      var text_2 = child(span);
+      reset(span);
+      var div_2 = sibling(span, 2);
+      var button = sibling(child(div_2));
+      var text_3 = child(button);
+      reset(button);
+      var button_1 = sibling(button, 2);
+      var text_4 = child(button_1);
+      reset(button_1);
+      next();
+      reset(div_2);
+      next();
+      reset(div_1);
+      var div_3 = sibling(div_1, 2);
+      var span_1 = sibling(child(div_3));
+      var text_5 = child(span_1);
+      reset(span_1);
+      var div_4 = sibling(span_1, 2);
+      var node_1 = sibling(child(div_4));
+      each(node_1, 16, () => TRANSLATE_TARGET_LANGS, (lang) => lang, ($$anchor3, lang) => {
+        next();
+        var fragment_3 = root_113();
+        var button_2 = sibling(first_child(fragment_3));
+        var text_6 = child(button_2);
+        reset(button_2);
+        next();
+        template_effect(($0, $1) => {
+          set_class(button_2, 1, `transition-colors ${$0 ?? ""}`);
+          set_attribute2(button_2, "aria-pressed", get2(targetLang) === lang);
+          button_2.disabled = get2(saving);
+          set_text(text_6, `
+              ${$1 ?? ""}
+            `);
+        }, [
+          () => toggleClass(get2(targetLang) === lang),
+          () => t(lang === "en" ? "translate.langEn" : lang === "zh-Hans" ? "translate.langZhHans" : "translate.langZhHant")
+        ]);
+        delegated("click", button_2, () => set(targetLang, lang, true));
+        append($$anchor3, fragment_3);
+      });
+      next();
+      reset(div_4);
+      next();
+      reset(div_3);
+      var label = sibling(div_3, 2);
+      var span_2 = sibling(child(label));
+      var text_7 = child(span_2);
+      reset(span_2);
+      var textarea = sibling(span_2, 2);
+      remove_textarea_child(textarea);
+      set_class(textarea, 1, clsx2(textareaClass));
+      next();
+      reset(label);
+      var button_3 = sibling(label, 2);
+      var text_8 = child(button_3);
+      reset(button_3);
+      next();
+      reset(div);
+      next();
+      template_effect(($0, $1, $2, $3, $4, $5, $6, $7, $8, $9) => {
+        set_text(text_2, `
+          ${$0 ?? ""}
+        `);
+        set_attribute2(div_2, "aria-label", $1);
+        set_class(button, 1, `transition-colors ${$2 ?? ""}`);
+        set_attribute2(button, "aria-pressed", get2(enabled));
+        button.disabled = get2(saving);
+        set_text(text_3, `
+            ${$3 ?? ""}
+          `);
+        set_class(button_1, 1, `transition-colors ${$4 ?? ""}`);
+        set_attribute2(button_1, "aria-pressed", !get2(enabled));
+        button_1.disabled = get2(saving);
+        set_text(text_4, `
+            ${$5 ?? ""}
+          `);
+        set_text(text_5, `
+          ${$6 ?? ""}
+        `);
+        set_attribute2(div_4, "aria-label", $7);
+        set_text(text_7, `
+          ${$8 ?? ""}
+        `);
+        textarea.disabled = get2(saving);
+        button_3.disabled = get2(saveDisabled);
+        set_text(text_8, `
+        ${$9 ?? ""}
+      `);
+      }, [
+        () => t("translate.enabled"),
+        () => t("translate.enabled"),
+        () => toggleClass(get2(enabled)),
+        () => t("translate.on"),
+        () => toggleClass(!get2(enabled)),
+        () => t("translate.off"),
+        () => t("translate.targetLang"),
+        () => t("translate.targetLang"),
+        () => t("translate.prompt"),
+        () => get2(saving) ? t("translate.saving") : t("translate.save")
+      ]);
+      delegated("click", button, () => set(enabled, true));
+      delegated("click", button_1, () => set(enabled, false));
+      bind_value(textarea, () => get2(prompt), ($$value) => set(prompt, $$value));
+      delegated("click", button_3, () => void handleSave());
+      append($$anchor2, fragment_2);
+    };
+    if_block(node, ($$render) => {
+      if (get2(loading))
         $$render(consequent);
+      else
+        $$render(alternate, -1);
+    });
+  }
+  var node_2 = sibling(node, 2);
+  {
+    var consequent_1 = ($$anchor2) => {
+      var fragment_4 = root_33();
+      var p_2 = sibling(first_child(fragment_4));
+      var text_9 = child(p_2, true);
+      reset(p_2);
+      next();
+      template_effect(() => set_text(text_9, get2(formError)));
+      append($$anchor2, fragment_4);
+    };
+    if_block(node_2, ($$render) => {
+      if (get2(formError))
+        $$render(consequent_1);
     });
   }
   next();
-  reset(div_1);
-  next();
   reset(section);
-  template_effect(($0, $1, $2, $3) => {
-    set_text(text2, `
+  template_effect(($0) => set_text(text2, `
     ${$0 ?? ""}
-  `);
-    set_text(text_1, `
-        ${$1 ?? ""}
-      `);
-    set_text(text_2, `
-        ${$2 ?? ""}
-      `);
-    button.disabled = get2(exporting);
-    set_text(text_3, `
-      ${$3 ?? ""}
-    `);
-  }, [
-    () => t("export.hint"),
-    () => t("export.startTime"),
-    () => t("export.endTime"),
-    () => get2(exporting) ? t("export.exporting") : t("export.button")
-  ]);
-  bind_value(input, () => get2(start), ($$value) => set(start, $$value));
-  bind_value(input_1, () => get2(end), ($$value) => set(end, $$value));
-  delegated("click", button, () => void handleExport());
+  `), [() => t("translate.hint")]);
   append($$anchor, fragment);
   pop();
 }
 if (undefined) {}
-var ExportPage_default = ExportPage;
+var TranslateManager_default = TranslateManager;
 delegate(["click"]);
 
 // ../nanoflux/web/src/components/FeverManager.svelte
 var root16 = from_html(`
     <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
   `, 1);
-var root_113 = from_html(`
+var root_114 = from_html(`
     <div class="space-y-8">
       <div class="space-y-3">
         <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
@@ -9270,10 +9852,10 @@ var root_113 = from_html(`
       <button type="button" class="text-sm text-neutral-900 underline-offset-4 hover:underline disabled:opacity-50 dark:text-neutral-100"> </button>
     </div>
   `, 1);
-var root_23 = from_html(`
+var root_24 = from_html(`
     <p class="mt-3 text-sm text-red-500"> </p>
   `, 1);
-var root_33 = from_html(`
+var root_34 = from_html(`
 
 <section class="mb-10">
   <p class="mb-6 text-sm text-neutral-400 dark:text-neutral-500"> </p>
@@ -9350,7 +9932,7 @@ function FeverManager($$anchor, $$props) {
     loadFever();
   });
   next();
-  var fragment = root_33();
+  var fragment = root_34();
   var section = sibling(first_child(fragment));
   var p = sibling(child(section));
   var text2 = child(p);
@@ -9367,7 +9949,7 @@ function FeverManager($$anchor, $$props) {
       append($$anchor2, fragment_1);
     };
     var alternate = ($$anchor2) => {
-      var fragment_2 = root_113();
+      var fragment_2 = root_114();
       var div = sibling(first_child(fragment_2));
       var div_1 = sibling(child(div));
       var span = sibling(child(div_1));
@@ -9481,7 +10063,7 @@ function FeverManager($$anchor, $$props) {
   var node_1 = sibling(node, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var fragment_3 = root_23();
+      var fragment_3 = root_24();
       var p_3 = sibling(first_child(fragment_3));
       var text_10 = child(p_3, true);
       reset(p_3);
@@ -9506,9 +10088,298 @@ if (undefined) {}
 var FeverManager_default = FeverManager;
 delegate(["click"]);
 
+// ../nanoflux/web/src/components/SettingsManager.svelte
+var root17 = from_html(`
+        <button type="button" role="tab"> </button>
+      `, 1);
+var root_115 = from_html(`
+        <!>
+      `, 1);
+var root_25 = from_html(`
+
+<div class="flex min-w-0 flex-1 flex-col md:flex-row">
+  <aside class="px-5 py-4 md:sticky md:top-4 md:m-4 md:flex md:h-[calc(100vh-2rem)] md:w-40 md:shrink-0 md:flex-col md:px-5 md:py-8">
+    <nav class="flex min-w-0 gap-1 overflow-x-auto text-sm md:flex-col md:overflow-visible" role="tablist">
+      <!>
+    </nav>
+  </aside>
+
+  <div class="min-w-0 flex-1">
+    <div class="mx-auto max-w-page px-5 py-10 md:py-16">
+      <!>
+    </div>
+  </div>
+</div>`, 1);
+function SettingsManager($$anchor, $$props) {
+  push($$props, true);
+  let tab = state(proxy(settingsTabFromLocation()));
+  const tabs = [
+    { id: "preferences", key: "items.preferences" },
+    { id: "filter", key: "items.filter" },
+    { id: "translate", key: "items.translate" },
+    { id: "fever", key: "items.fever" }
+  ];
+  function tabClass(active) {
+    return `shrink-0 px-2 py-1.5 text-sm transition-colors md:w-full md:text-left ${active ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-neutral-100"}`;
+  }
+  function selectTab(next2) {
+    if (get2(tab) === next2)
+      return;
+    set(tab, next2, true);
+    setSettingsTab(next2);
+  }
+  onMount(() => {
+    set(tab, settingsTabFromLocation(), true);
+    const onHash = () => {
+      set(tab, settingsTabFromLocation(), true);
+    };
+    window.addEventListener("hashchange", onHash);
+    window.addEventListener("popstate", onHash);
+    return () => {
+      window.removeEventListener("hashchange", onHash);
+      window.removeEventListener("popstate", onHash);
+    };
+  });
+  next();
+  var fragment = root_25();
+  var div = sibling(first_child(fragment));
+  var aside = sibling(child(div));
+  var nav = sibling(child(aside));
+  var node = sibling(child(nav));
+  each(node, 17, () => tabs, (item) => item.id, ($$anchor2, item) => {
+    next();
+    var fragment_1 = root17();
+    var button = sibling(first_child(fragment_1));
+    var text2 = child(button);
+    reset(button);
+    next();
+    template_effect(($0, $1) => {
+      set_class(button, 1, $0);
+      set_attribute2(button, "aria-selected", get2(tab) === get2(item).id);
+      set_text(text2, `
+          ${$1 ?? ""}
+        `);
+    }, [
+      () => clsx2(tabClass(get2(tab) === get2(item).id)),
+      () => t(get2(item).key)
+    ]);
+    delegated("click", button, () => selectTab(get2(item).id));
+    append($$anchor2, fragment_1);
+  });
+  next();
+  reset(nav);
+  next();
+  reset(aside);
+  var div_1 = sibling(aside, 2);
+  var div_2 = sibling(child(div_1));
+  var node_1 = sibling(child(div_2));
+  {
+    var consequent = ($$anchor2) => {
+      var fragment_2 = root_115();
+      var node_2 = sibling(first_child(fragment_2));
+      PreferencesManager_default(node_2, {});
+      next();
+      append($$anchor2, fragment_2);
+    };
+    var consequent_1 = ($$anchor2) => {
+      var fragment_3 = root_115();
+      var node_3 = sibling(first_child(fragment_3));
+      FiltersManager_default(node_3, {});
+      next();
+      append($$anchor2, fragment_3);
+    };
+    var consequent_2 = ($$anchor2) => {
+      var fragment_4 = root_115();
+      var node_4 = sibling(first_child(fragment_4));
+      TranslateManager_default(node_4, {});
+      next();
+      append($$anchor2, fragment_4);
+    };
+    var alternate = ($$anchor2) => {
+      var fragment_5 = root_115();
+      var node_5 = sibling(first_child(fragment_5));
+      FeverManager_default(node_5, {});
+      next();
+      append($$anchor2, fragment_5);
+    };
+    if_block(node_1, ($$render) => {
+      if (get2(tab) === "preferences")
+        $$render(consequent);
+      else if (get2(tab) === "filter")
+        $$render(consequent_1, 1);
+      else if (get2(tab) === "translate")
+        $$render(consequent_2, 2);
+      else
+        $$render(alternate, -1);
+    });
+  }
+  next();
+  reset(div_2);
+  next();
+  reset(div_1);
+  next();
+  reset(div);
+  template_effect(($0) => set_attribute2(nav, "aria-label", $0), [() => t("items.settings")]);
+  append($$anchor, fragment);
+  pop();
+}
+if (undefined) {}
+var SettingsManager_default = SettingsManager;
+delegate(["click"]);
+
+// ../nanoflux/web/src/components/ExportPage.svelte
+var root18 = from_html(`
+      <p class="text-sm text-red-500"> </p>
+    `, 1);
+var root_116 = from_html(`
+
+<section class="space-y-8">
+  <p class="text-sm text-neutral-400 dark:text-neutral-500"> </p>
+
+  <div class="grid gap-6 sm:grid-cols-2">
+    <label class="block space-y-2">
+      <span class="text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
+      <!-- lang="sv-SE" forces a 24-hour, ISO-style (yyyy-mm-dd HH:mm) picker. -->
+      <input type="datetime-local" lang="sv-SE"/>
+    </label>
+    <label class="block space-y-2">
+      <span class="text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
+      <input type="datetime-local" lang="sv-SE"/>
+    </label>
+  </div>
+
+  <div class="flex items-center gap-4">
+    <button type="button" class="inline-flex items-center gap-1.5 text-sm text-neutral-900 underline-offset-4 hover:underline disabled:opacity-50 dark:text-neutral-100">
+      <!> </button>
+    <!>
+  </div>
+</section>`, 1);
+function ExportPage($$anchor, $$props) {
+  push($$props, true);
+  function toDatetimeLocal(date) {
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` + `T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+  const nowDate = new Date;
+  let start = state(proxy(toDatetimeLocal(new Date(nowDate.getTime() - 24 * 60 * 60 * 1000))));
+  let end = state(proxy(toDatetimeLocal(nowDate)));
+  let exporting = state(false);
+  let error = state("");
+  const inputClass = "w-full border-0 border-b border-neutral-200 bg-transparent py-2 text-sm outline-none placeholder:text-neutral-300 focus:border-neutral-900 dark:border-neutral-700 dark:placeholder:text-neutral-600 dark:focus:border-neutral-100";
+  function toIso(local) {
+    if (!local)
+      return;
+    const ms = Date.parse(local);
+    if (Number.isNaN(ms))
+      return;
+    return new Date(ms).toISOString();
+  }
+  async function handleExport() {
+    if (get2(exporting))
+      return;
+    set(error, "");
+    const since = toIso(get2(start));
+    const until = toIso(get2(end));
+    if (since && until && since > until) {
+      set(error, t("export.invalidRange"), true);
+      return;
+    }
+    set(exporting, true);
+    try {
+      await downloadItemsExcel({ since, until });
+    } catch (e) {
+      set(error, e instanceof Error ? e.message : t("export.failed"), true);
+    } finally {
+      set(exporting, false);
+    }
+  }
+  next();
+  var fragment = root_116();
+  var section = sibling(first_child(fragment));
+  var p = sibling(child(section));
+  var text2 = child(p);
+  reset(p);
+  var div = sibling(p, 2);
+  var label = sibling(child(div));
+  var span = sibling(child(label));
+  var text_1 = child(span);
+  reset(span);
+  var node = sibling(span, 2);
+  var input = sibling(node, 2);
+  remove_input_defaults(input);
+  set_class(input, 1, clsx2(inputClass));
+  next();
+  reset(label);
+  var label_1 = sibling(label, 2);
+  var span_1 = sibling(child(label_1));
+  var text_2 = child(span_1);
+  reset(span_1);
+  var input_1 = sibling(span_1, 2);
+  remove_input_defaults(input_1);
+  set_class(input_1, 1, clsx2(inputClass));
+  next();
+  reset(label_1);
+  next();
+  reset(div);
+  var div_1 = sibling(div, 2);
+  var button = sibling(child(div_1));
+  var node_1 = sibling(child(button));
+  download_default(node_1, { size: 16, strokeWidth: 1.5, "aria-hidden": "true" });
+  var text_3 = sibling(node_1);
+  reset(button);
+  var node_2 = sibling(button, 2);
+  {
+    var consequent = ($$anchor2) => {
+      var fragment_1 = root18();
+      var p_1 = sibling(first_child(fragment_1));
+      var text_4 = child(p_1, true);
+      reset(p_1);
+      next();
+      template_effect(() => set_text(text_4, get2(error)));
+      append($$anchor2, fragment_1);
+    };
+    if_block(node_2, ($$render) => {
+      if (get2(error))
+        $$render(consequent);
+    });
+  }
+  next();
+  reset(div_1);
+  next();
+  reset(section);
+  template_effect(($0, $1, $2, $3) => {
+    set_text(text2, `
+    ${$0 ?? ""}
+  `);
+    set_text(text_1, `
+        ${$1 ?? ""}
+      `);
+    set_text(text_2, `
+        ${$2 ?? ""}
+      `);
+    button.disabled = get2(exporting);
+    set_text(text_3, `
+      ${$3 ?? ""}
+    `);
+  }, [
+    () => t("export.hint"),
+    () => t("export.startTime"),
+    () => t("export.endTime"),
+    () => get2(exporting) ? t("export.exporting") : t("export.button")
+  ]);
+  bind_value(input, () => get2(start), ($$value) => set(start, $$value));
+  bind_value(input_1, () => get2(end), ($$value) => set(end, $$value));
+  delegated("click", button, () => void handleExport());
+  append($$anchor, fragment);
+  pop();
+}
+if (undefined) {}
+var ExportPage_default = ExportPage;
+delegate(["click"]);
+
 // ../nanoflux/node_modules/@lucide/svelte/dist/icons/eye.svelte
-var rest_excludes9 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root17 = from_html(`<!--
+var rest_excludes10 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root19 = from_html(`<!--
 @lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -9529,7 +10400,7 @@ Lucide SVG icon component, renders SVG Element with children.
 
 <!>`, 1);
 function Eye($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes9);
+  let props = rest_props($$props, rest_excludes10);
   const iconNode = [
     [
       "path",
@@ -9539,7 +10410,7 @@ function Eye($$anchor, $$props) {
     ],
     ["circle", { cx: "12", cy: "12", r: "3" }]
   ];
-  var fragment = root17();
+  var fragment = root19();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -9553,8 +10424,8 @@ function Eye($$anchor, $$props) {
 if (undefined) {}
 var eye_default = Eye;
 // ../nanoflux/node_modules/@lucide/svelte/dist/icons/eye-closed.svelte
-var rest_excludes10 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root18 = from_html(`<!--
+var rest_excludes11 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root20 = from_html(`<!--
 @lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -9575,7 +10446,7 @@ Lucide SVG icon component, renders SVG Element with children.
 
 <!>`, 1);
 function Eye_closed($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes10);
+  let props = rest_props($$props, rest_excludes11);
   const iconNode = [
     ["path", { d: "m15 18-.722-3.25" }],
     ["path", { d: "M2 8a10.645 10.645 0 0 0 20 0" }],
@@ -9583,7 +10454,7 @@ function Eye_closed($$anchor, $$props) {
     ["path", { d: "m4 15 1.726-2.05" }],
     ["path", { d: "m9 18 .722-3.25" }]
   ];
-  var fragment = root18();
+  var fragment = root20();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -9597,10 +10468,10 @@ function Eye_closed($$anchor, $$props) {
 if (undefined) {}
 var eye_closed_default = Eye_closed;
 // ../nanoflux/web/src/components/buttons/ItemFilterToggle.svelte
-var root19 = from_html(`
+var root21 = from_html(`
     <!>
   `, 1);
-var root_114 = from_html(`
+var root_117 = from_html(`
 
 <button type="button">
   <!>
@@ -9611,19 +10482,19 @@ function ItemFilterToggle($$anchor, $$props) {
   const label = user_derived(() => $$props.filter === "unread" ? t("items.switchToAll") : t("items.switchToUnread"));
   const title = user_derived(() => $$props.filter === "unread" ? t("items.filterUnread") : t("items.filterAll"));
   next();
-  var fragment = root_114();
+  var fragment = root_117();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root19();
+      var fragment_1 = root21();
       var node_1 = sibling(first_child(fragment_1));
       eye_default(node_1, spread_props(() => iconProps));
       next();
       append($$anchor2, fragment_1);
     };
     var alternate = ($$anchor2) => {
-      var fragment_2 = root19();
+      var fragment_2 = root21();
       var node_2 = sibling(first_child(fragment_2));
       eye_closed_default(node_2, spread_props(() => iconProps));
       next();
@@ -9655,8 +10526,8 @@ var ItemFilterToggle_default = ItemFilterToggle;
 delegate(["click"]);
 
 // ../nanoflux/node_modules/@lucide/svelte/dist/icons/check-check.svelte
-var rest_excludes11 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root20 = from_html(`<!--
+var rest_excludes12 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root22 = from_html(`<!--
 @lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -9677,12 +10548,12 @@ Lucide SVG icon component, renders SVG Element with children.
 
 <!>`, 1);
 function Check_check($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes11);
+  let props = rest_props($$props, rest_excludes12);
   const iconNode = [
     ["path", { d: "M18 6 7 17l-5-5" }],
     ["path", { d: "m22 10-7.5 7.5L13 16" }]
   ];
-  var fragment = root20();
+  var fragment = root22();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -9696,7 +10567,7 @@ function Check_check($$anchor, $$props) {
 if (undefined) {}
 var check_check_default = Check_check;
 // ../nanoflux/web/src/components/buttons/MarkAllReadButton.svelte
-var root21 = from_html(`
+var root23 = from_html(`
 
 <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
   <!>
@@ -9706,7 +10577,7 @@ function MarkAllReadButton($$anchor, $$props) {
   const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
   const label = user_derived(() => t("items.markAllRead"));
   next();
-  var fragment = root21();
+  var fragment = root23();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   check_check_default(node, spread_props(() => iconProps));
@@ -9725,21 +10596,21 @@ var MarkAllReadButton_default = MarkAllReadButton;
 delegate(["click"]);
 
 // ../nanoflux/web/src/components/ItemList.svelte
-var root22 = from_html(`
+var root24 = from_html(`
   <p class="py-6 text-sm text-red-500"> </p>
 `, 1);
-var root_115 = from_html(`
+var root_118 = from_html(`
   <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root_24 = from_html(`
+var root_26 = from_html(`
               <p class="mt-2 line-clamp-2 text-sm text-neutral-400 dark:text-neutral-500"> </p>
             `, 1);
-var root_34 = from_html(`
+var root_35 = from_html(`
             <a target="_blank" rel="noopener noreferrer" class="block aspect-[4/3] w-40 shrink-0 overflow-hidden rounded-md" tabindex="-1" aria-hidden="true">
               <img alt="" class="h-full w-full bg-neutral-100 object-cover dark:bg-neutral-800" loading="lazy" referrerpolicy="no-referrer"/>
             </a>
           `, 1);
-var root_42 = from_html(`
+var root_43 = from_html(`
       <li class="py-5">
         <article class="flex items-start gap-4">
           <div class="min-w-0 flex-1">
@@ -9904,7 +10775,7 @@ function ItemList($$anchor, $$props) {
   var node_2 = sibling(div, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root22();
+      var fragment_1 = root24();
       var p = sibling(first_child(fragment_1));
       var text2 = child(p, true);
       reset(p);
@@ -9913,7 +10784,7 @@ function ItemList($$anchor, $$props) {
       append($$anchor2, fragment_1);
     };
     var consequent_1 = ($$anchor2) => {
-      var fragment_2 = root_115();
+      var fragment_2 = root_118();
       var p_1 = sibling(first_child(fragment_2));
       var text_1 = child(p_1, true);
       reset(p_1);
@@ -9927,7 +10798,7 @@ function ItemList($$anchor, $$props) {
       var node_3 = sibling(child(ul));
       each(node_3, 17, () => get2(items), (item) => item.id, ($$anchor3, item) => {
         next();
-        var fragment_4 = root_42();
+        var fragment_4 = root_43();
         var li = sibling(first_child(fragment_4));
         var article = sibling(child(li));
         var div_1 = sibling(child(article));
@@ -9946,7 +10817,7 @@ function ItemList($$anchor, $$props) {
         var node_4 = sibling(a_1, 2);
         {
           var consequent_2 = ($$anchor4) => {
-            var fragment_5 = root_24();
+            var fragment_5 = root_26();
             var p_2 = sibling(first_child(fragment_5));
             var text_5 = child(p_2);
             reset(p_2);
@@ -9966,7 +10837,7 @@ function ItemList($$anchor, $$props) {
         var node_5 = sibling(div_1, 2);
         {
           var consequent_3 = ($$anchor4) => {
-            var fragment_6 = root_34();
+            var fragment_6 = root_35();
             var a_2 = sibling(first_child(fragment_6));
             var img = sibling(child(a_2));
             next();
@@ -10059,83 +10930,92 @@ var ItemList_default = ItemList;
 delegate(["click"]);
 
 // ../nanoflux/web/src/App.svelte
-var root23 = from_html(`
+var root25 = from_html(`
+    <!>
+  `, 1);
+var root_119 = from_html(`
+          <!>
+        `, 1);
+var root_27 = from_html(`
+    <div class="min-w-0 flex-1">
+      <div class="mx-auto max-w-page px-5 py-10 md:py-16">
         <!>
-      `, 1);
-var root_116 = from_html(`
+      </div>
+    </div>
+  `, 1);
+var root_36 = from_html(`
 
 <main class="w-full font-sans md:flex">
   <!>
-  <div class="min-w-0 flex-1">
-    <div class="mx-auto max-w-page px-5 py-10 md:py-16">
-      <!>
-    </div>
-  </div>
+  <!>
 </main>`, 1);
 function App($$anchor) {
   const $route = () => store_get(route, "$route", $$stores);
   const [$$stores, $$cleanup] = setup_stores();
   next();
-  var fragment = root_116();
+  var fragment = root_36();
   var main = sibling(first_child(fragment));
   var node = sibling(child(main));
   Header_default(node, {});
-  var div = sibling(node, 2);
-  var div_1 = sibling(child(div));
-  var node_1 = sibling(child(div_1));
+  var node_1 = sibling(node, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root23();
+      var fragment_1 = root25();
       var node_2 = sibling(first_child(fragment_1));
-      FeedsManager_default(node_2, {});
+      SettingsManager_default(node_2, {});
       next();
       append($$anchor2, fragment_1);
     };
-    var consequent_1 = ($$anchor2) => {
-      var fragment_2 = root23();
-      var node_3 = sibling(first_child(fragment_2));
-      FiltersManager_default(node_3, {});
+    var alternate_1 = ($$anchor2) => {
+      var fragment_2 = root_27();
+      var div = sibling(first_child(fragment_2));
+      var div_1 = sibling(child(div));
+      var node_3 = sibling(child(div_1));
+      {
+        var consequent_1 = ($$anchor3) => {
+          var fragment_3 = root_119();
+          var node_4 = sibling(first_child(fragment_3));
+          FeedsManager_default(node_4, {});
+          next();
+          append($$anchor3, fragment_3);
+        };
+        var consequent_2 = ($$anchor3) => {
+          var fragment_4 = root_119();
+          var node_5 = sibling(first_child(fragment_4));
+          ExportPage_default(node_5, {});
+          next();
+          append($$anchor3, fragment_4);
+        };
+        var alternate = ($$anchor3) => {
+          var fragment_5 = root_119();
+          var node_6 = sibling(first_child(fragment_5));
+          ItemList_default(node_6, {});
+          next();
+          append($$anchor3, fragment_5);
+        };
+        if_block(node_3, ($$render) => {
+          if ($route() === "/feeds")
+            $$render(consequent_1);
+          else if ($route() === "/export")
+            $$render(consequent_2, 1);
+          else
+            $$render(alternate, -1);
+        });
+      }
+      next();
+      reset(div_1);
+      next();
+      reset(div);
       next();
       append($$anchor2, fragment_2);
     };
-    var consequent_2 = ($$anchor2) => {
-      var fragment_3 = root23();
-      var node_4 = sibling(first_child(fragment_3));
-      ExportPage_default(node_4, {});
-      next();
-      append($$anchor2, fragment_3);
-    };
-    var consequent_3 = ($$anchor2) => {
-      var fragment_4 = root23();
-      var node_5 = sibling(first_child(fragment_4));
-      FeverManager_default(node_5, {});
-      next();
-      append($$anchor2, fragment_4);
-    };
-    var alternate = ($$anchor2) => {
-      var fragment_5 = root23();
-      var node_6 = sibling(first_child(fragment_5));
-      ItemList_default(node_6, {});
-      next();
-      append($$anchor2, fragment_5);
-    };
     if_block(node_1, ($$render) => {
-      if ($route() === "/feeds")
+      if ($route() === "/settings")
         $$render(consequent);
-      else if ($route() === "/filter")
-        $$render(consequent_1, 1);
-      else if ($route() === "/export")
-        $$render(consequent_2, 2);
-      else if ($route() === "/fever")
-        $$render(consequent_3, 3);
       else
-        $$render(alternate, -1);
+        $$render(alternate_1, -1);
     });
   }
-  next();
-  reset(div_1);
-  next();
-  reset(div);
   next();
   reset(main);
   append($$anchor, fragment);
@@ -10156,6 +11036,7 @@ function registerPwa() {
 // ../nanoflux/web/src/main.ts
 initRouter();
 initTheme();
+initSidebar();
 initFontSize();
 initLocale();
 registerPwa();

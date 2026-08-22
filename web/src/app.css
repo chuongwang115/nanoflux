@@ -16,6 +16,18 @@
 }
 
 @layer base {
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply min-h-screen bg-white text-base text-neutral-900 antialiased font-sans dark:bg-neutral-950 dark:text-neutral-100;
+  }
+
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
   [role="tab"]:not([aria-disabled="true"]) {
