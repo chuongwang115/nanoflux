@@ -434,7 +434,8 @@ Agents then consume this store through MCP / REST; they do not scrape feeds them
 ```
 ├── web/              Operator UI (Svelte)
 ├── public/           Built static assets (generated)
-├── routes/           REST API routes (feeds, items, filter, fever) and Fever protocol (`fever-api.ts`)
+├── api/              REST API routes (feeds, items, filter, fever)
+├── fever/            Fever protocol route (`route.ts`)
 ├── mcp/              MCP server and tools (agent interface)
 ├── services/
 │   ├── ai/           LangChain chat client (OpenAI-compatible)

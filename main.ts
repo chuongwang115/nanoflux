@@ -9,14 +9,14 @@ import {
 import { buildWebManifest } from "./shared/manifest";
 import type { Locale } from "./shared/locale";
 import { closeDatabase } from "./db/database";
-import { routes as itemsRoutes } from "./routes/items";
-import { routes as feedsRoutes } from "./routes/feeds";
-import { routes as filterRoutes } from "./routes/filter";
-import { routes as feverRoutes } from "./routes/fever";
+import { routes as itemsRoutes } from "./api/items";
+import { routes as feedsRoutes } from "./api/feeds";
+import { routes as filterRoutes } from "./api/filter";
+import { routes as feverRoutes } from "./api/fever";
 import {
   handleFeverRequest,
   isFeverApiQuery,
-} from "./routes/fever-api";
+} from "./fever/route";
 import { routes as mcpRoutes } from "./mcp/route";
 import { loadFeverConfig, isFeverEnabled } from "./fever";
 import {
