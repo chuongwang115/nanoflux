@@ -591,6 +591,21 @@ function invariant(condition, message) {
     invariant_violation(message);
 }
 
+// ../nanoflux/node_modules/svelte/src/internal/shared/context.js
+function get_parent_context(context) {
+  let parent = context.p;
+  while (parent !== null && parent.c === null) {
+    parent = parent.p;
+  }
+  return parent?.c ?? null;
+}
+function get_or_init_context_map(context, name) {
+  if (context === null) {
+    lifecycle_outside_component(name);
+  }
+  return context.c ??= new Map(get_parent_context(context) || undefined);
+}
+
 // ../nanoflux/node_modules/svelte/src/internal/client/context.js
 var component_context = null;
 function set_component_context(context) {
@@ -605,7 +620,7 @@ function set_dev_current_component_function(fn) {
   dev_current_component_function = fn;
 }
 function getContext(key) {
-  const context_map = get_or_init_context_map("getContext");
+  const context_map = get_or_init_context_map(component_context, "getContext");
   const result = context_map.get(key);
   return result;
 }
@@ -646,23 +661,6 @@ function pop(component) {
 }
 function is_runes() {
   return !legacy_mode_flag || component_context !== null && component_context.l === null;
-}
-function get_or_init_context_map(name) {
-  if (component_context === null) {
-    lifecycle_outside_component(name);
-  }
-  return component_context.c ??= new Map(get_parent_context(component_context) || undefined);
-}
-function get_parent_context(component_context2) {
-  let parent = component_context2.p;
-  while (parent !== null) {
-    const context_map = parent.c;
-    if (context_map !== null) {
-      return context_map;
-    }
-    parent = parent.p;
-  }
-  return null;
 }
 
 // ../nanoflux/node_modules/svelte/src/internal/client/dom/task.js
@@ -1839,6 +1837,7 @@ class Batch {
       }
     }
     if (next_batch !== null) {
+      old_values.clear();
       next_batch.#process();
     }
   }
@@ -2420,7 +2419,11 @@ function set(source2, value, should_proxy = false) {
 }
 function internal_set(source2, value, updated_during_traversal = null) {
   if (!source2.equals(value)) {
-    old_values.set(source2, is_destroying_effect ? value : source2.v);
+    if (is_destroying_effect) {
+      old_values.set(source2, value);
+    } else if (!old_values.has(source2)) {
+      old_values.set(source2, source2.v);
+    }
     var batch = Batch.ensure();
     batch.capture(source2, value);
     if (true_default) {
@@ -3954,6 +3957,7 @@ function delegate(events) {
   }
 }
 var last_propagated_event = null;
+var last_propagated_event_clear_scheduled = false;
 function handle_event_propagation(event2) {
   var handler_element = this;
   var owner_document = handler_element.ownerDocument;
@@ -3961,6 +3965,13 @@ function handle_event_propagation(event2) {
   var path = event2.composedPath?.() || [];
   var current_target = path[0] || event2.target;
   last_propagated_event = event2;
+  if (!last_propagated_event_clear_scheduled) {
+    last_propagated_event_clear_scheduled = true;
+    setTimeout(() => {
+      last_propagated_event_clear_scheduled = false;
+      last_propagated_event = null;
+    });
+  }
   var path_idx = 0;
   var handled_at = last_propagated_event === event2 && event2[event_symbol];
   if (handled_at) {
@@ -5103,7 +5114,7 @@ function to_style(value, styles) {
       normal_styles = styles;
     }
     if (value) {
-      value = String(value).replaceAll(/\s*\/\*.*?\*\/\s*/g, "").trim();
+      value = String(value).replaceAll(/\/\*.*?\*\//g, "").trim();
       var in_str = false;
       var in_apo = 0;
       var in_comment = false;
@@ -5362,7 +5373,7 @@ function set_attributes(element2, prev, next2, css_hash, should_remove_defaults 
   var current = prev || {};
   var is_option_element = element2.nodeName === OPTION_TAG;
   for (var key in prev) {
-    if (!(key in next2)) {
+    if (!(key in next2) && key[0] + key[1] !== "$$") {
       next2[key] = null;
     }
   }

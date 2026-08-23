@@ -1,17 +1,16 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { getItems, markItemDealt } from "../../db/items";
+import { getItems, markItemIngested } from "../../db/items";
 import { DEFAULT_LIMIT, MAX_LIMIT } from "../../db/schema";
 
-export function registerGetUndealtItems(server: McpServer): void {
+export function registerGetUningestedNews(server: McpServer): void {
   server.registerTool(
-    "get_undealt_news",
+    "get_uningested_news",
     {
       description:
-        "Fetch undealt news within a relative time window before now. Returned news are marked as dealt. When hasMore is true, call again with the same unit/count (and limit) to fetch the next batch until hasMore is false.",
+        "Fetch uningested news from the last count days. Returned news are marked as ingested. When hasMore is true, call again with the same count (and limit) to fetch the next batch until hasMore is false.",
       inputSchema: {
-        unit: z.string().describe("Time unit; use with count for a relative range from now"),
-        count: z.number().int().min(1).describe("Number of units (e.g. unit=hour, count=2 for the last 2 hours)"),
+        count: z.number().int().min(1).describe("Number of days before now (e.g. 2 for the last 2 days)"),
         limit: z
           .number()
           .int()
@@ -21,7 +20,7 @@ export function registerGetUndealtItems(server: McpServer): void {
           .describe("Max news entries to return (default 20, max 50)"),
       },
     },
-    async ({ unit, count, limit }) => {
+    async ({ count, limit }) => {
     
       try {
 
@@ -31,28 +30,27 @@ export function registerGetUndealtItems(server: McpServer): void {
         );
 
         const selected = getItems({
-          unit,
+          unit: "day",
           count,
           limit: adjustedLimit,
-          isDealt: 0,
+          isIngested: 0,
         });
 
         const hasMore = selected.length > adjustedLimit;
         const returned = selected.slice(0, adjustedLimit);
 
         for (const item of returned) {
-          markItemDealt(item.id);
+          markItemIngested(item.id);
         }
 
         const message = hasMore
           ? [
-              "More undealt news remain.",
-              "Call get_undealt_news again with the same parameters:",
-              `unit=${unit}`,
+              "More uningested news remain.",
+              "Call get_uningested_news again with the same parameters:",
               `count=${count}`,
               `limit=${adjustedLimit}`,
             ].join(" ")
-          : "No more undealt news in this window.";
+          : "No more uningested news in this window.";
 
         return {
           content: [
@@ -75,7 +73,7 @@ export function registerGetUndealtItems(server: McpServer): void {
         };
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "Failed to get undealt news";
+          error instanceof Error ? error.message : "Failed to get uningested news";
         return {
           content: [
             { type: "text", text: JSON.stringify({ error: message }) },

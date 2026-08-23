@@ -1,4 +1,5 @@
-import { extractFromHtml } from "@extractus/article-extractor";
+import { Readability } from "@mozilla/readability";
+import { parseHTML } from "linkedom";
 import { decodeHtmlBytes } from "../../utils/encoding";
 import { countContentTokens } from "../../utils/text";
 import { htmlToPlainText, stripSrcsetAttributes } from "../../utils/html";
@@ -16,6 +17,26 @@ const BROWSER_USER_AGENT =
 const ARTICLE_TIMEOUT_MS = 15_000;
 const SCRAPE_CONCURRENCY = 3;
 
+/**
+ * Readability's default 500-char floor is tuned for English. Chinese news
+ * bodies are denser per character, so a lower floor avoids false empties.
+ */
+const READABILITY_CHAR_THRESHOLD = 140;
+
+/** Common article roots when Readability misses (WeChat, CMS templates). */
+const FALLBACK_SELECTORS = [
+  "#js_content",
+  ".rich_media_content",
+  "[itemprop='articleBody']",
+  "article",
+  ".article-content",
+  ".article-body",
+  ".post-content",
+  ".entry-content",
+  "#content",
+  "main",
+];
+
 /** Whether content is long enough that scraping is unnecessary. */
 function hasFullContent(content: string | null | undefined): boolean {
   const text = content?.trim();
@@ -25,6 +46,63 @@ function hasFullContent(content: string | null | undefined): boolean {
 
 function needsFullContentScrape(content: string | null | undefined): boolean {
   return !hasFullContent(content);
+}
+
+function parseLinkedDocument(html: string, url: string) {
+  const window = parseHTML(html);
+  const document = window.document;
+  const head = document.head ?? document.querySelector("head");
+  if (head) {
+    const base = document.createElement("base");
+    base.setAttribute("href", url);
+    head.insertBefore(base, head.firstChild);
+  }
+  return document;
+}
+
+function extractWithReadability(html: string, url: string): string | null {
+  try {
+    const document = parseLinkedDocument(html, url);
+    const article = new Readability(document as unknown as Document, {
+      charThreshold: READABILITY_CHAR_THRESHOLD,
+      nbTopCandidates: 10,
+    }).parse();
+    return article?.content?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+function extractWithSelectors(html: string): string | null {
+  try {
+    const document = parseHTML(html).document;
+    let bestHtml: string | null = null;
+    let bestTokens = 0;
+    for (const selector of FALLBACK_SELECTORS) {
+      const el = document.querySelector(selector);
+      if (!el) continue;
+      const inner = (el as { innerHTML?: string }).innerHTML?.trim();
+      if (!inner) continue;
+      const tokens = countContentTokens(htmlToPlainText(inner));
+      if (tokens > bestTokens) {
+        bestTokens = tokens;
+        bestHtml = inner;
+      }
+    }
+    return bestTokens >= FULL_CONTENT_MIN_TOKENS ? bestHtml : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Firefox Reader Mode first; CMS/WeChat selectors if that body is too short. */
+function extractArticleHtml(html: string, url: string): string | null {
+  const fromReader = extractWithReadability(html, url);
+  const readerText = fromReader ? htmlToPlainText(fromReader) : "";
+  if (countContentTokens(readerText) >= FULL_CONTENT_MIN_TOKENS) {
+    return fromReader;
+  }
+  return extractWithSelectors(html) ?? fromReader;
 }
 
 async function fetchArticleHtml(url: string): Promise<string | null> {
@@ -70,25 +148,22 @@ async function enrichItemContent<
   const stillNeedCover = !next.cover;
   if (!needContent && !stillNeedCover) return next;
 
-  let article: Awaited<ReturnType<typeof extractFromHtml>> = null;
-  try {
-    article = await extractFromHtml(html, next.link, {
-      contentLengthThreshold: FULL_CONTENT_MIN_TOKENS,
-    });
-  } catch {
-    article = null;
-  }
+  const articleHtml = extractArticleHtml(html, next.link);
 
   if (stillNeedCover) {
     const fromBody =
-      pickCoverFromHtml(article?.content, next.link) ||
+      pickCoverFromHtml(articleHtml, next.link) ||
       pickCoverFromHtml(html, next.link);
     if (fromBody) next = { ...next, cover: fromBody };
   }
 
-  if (needContent && article?.content) {
-    const text = htmlToPlainText(article.content);
-    if (text) next = { ...next, content: text };
+  if (needContent && articleHtml) {
+    const text = htmlToPlainText(articleHtml);
+    const extractedTokens = countContentTokens(text);
+    const existingTokens = countContentTokens(next.content ?? "");
+    if (text && extractedTokens > existingTokens) {
+      next = { ...next, content: text };
+    }
   }
 
   return next;

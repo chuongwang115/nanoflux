@@ -44,7 +44,3 @@ data.sqlite-wal
 
 # app config (filter / translate / fever credentials)
 config.json
-filter.json
-filters.json
-translate.json
-fever.json

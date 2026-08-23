@@ -19,7 +19,7 @@ export function getItems(options?: {
   unit?: string;
   count?: number;
   isRead?: number;
-  isDealt?: number;
+  isIngested?: number;
   cursor?: string;
   limit?: number;
 }): any[] {
@@ -65,9 +65,9 @@ export function getItems(options?: {
       options?.isRead === 0 || options?.isRead === 1
         ? eq(items.is_read, options.isRead)
         : undefined;
-    const dealtFilter =
-      options?.isDealt === 0 || options?.isDealt === 1
-        ? eq(items.is_dealt, options.isDealt)
+    const ingestedFilter =
+      options?.isIngested === 0 || options?.isIngested === 1
+        ? eq(items.is_ingested, options.isIngested)
         : undefined;
     const deletedFilter = eq(items.is_deleted, 0);
 
@@ -82,13 +82,13 @@ export function getItems(options?: {
         cover: items.cover,
         published_at: items.published_at,
         is_read: items.is_read,
-        is_dealt: items.is_dealt,
+        is_ingested: items.is_ingested,
         created_at: items.created_at,
         feed_title: feeds.title,
       })
       .from(items)
       .innerJoin(feeds, eq(items.feed_id, feeds.id))
-      .where(and(timeFilter, cursorFilter, readFilter, dealtFilter, deletedFilter))
+      .where(and(timeFilter, cursorFilter, readFilter, ingestedFilter, deletedFilter))
       .orderBy(desc(items.published_at), desc(items.id))
       .limit(adjustedLimit + 1)
       .all();
@@ -190,7 +190,7 @@ export function addItems(
           cover: newItem.cover,
           published_at: newItem.published_at,
           is_read: 0,
-          is_dealt: 0,
+          is_ingested: 0,
           is_deleted,
           deleted_reason,
         })
@@ -286,18 +286,18 @@ export function markItemRead(id: number): void {
   }
 }
 
-export function markItemDealt(id: number): void {
+export function markItemIngested(id: number): void {
 
   try {
 
     db.update(items)
-    .set({ is_dealt: 1 })
-    .where(and(eq(items.id, id), eq(items.is_dealt, 0), eq(items.is_deleted, 0)))
+    .set({ is_ingested: 1 })
+    .where(and(eq(items.id, id), eq(items.is_ingested, 0), eq(items.is_deleted, 0)))
     .run();
 
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to mark item ${id} as dealt: ${detail}`);
+    throw new Error(`Failed to mark item ${id} as ingested: ${detail}`);
   }
 }
 
