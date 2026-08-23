@@ -1,4 +1,5 @@
 PRAGMA foreign_keys=OFF;--> statement-breakpoint
+ALTER TABLE `t_feeds` RENAME COLUMN `last_pub_date` TO `last_build_date`;--> statement-breakpoint
 CREATE TABLE `t_feeds_new` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`title` text NOT NULL,
