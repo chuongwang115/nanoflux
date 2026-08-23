@@ -1,5 +1,6 @@
 <script lang="ts">
   import Download from "@lucide/svelte/icons/download";
+  import LogOut from "@lucide/svelte/icons/log-out";
   import Newspaper from "@lucide/svelte/icons/newspaper";
   import PanelLeftClose from "@lucide/svelte/icons/panel-left-close";
   import PanelLeftOpen from "@lucide/svelte/icons/panel-left-open";
@@ -12,6 +13,7 @@
     route,
   } from "../lib/router";
   import SettingsButton from "./buttons/SettingsButton.svelte";
+  import { authState, submitLogout } from "../lib/auth.svelte";
   import { t } from "../lib/locale.svelte";
   import { sidebarState, toggleSidebar } from "../lib/sidebar.svelte";
 
@@ -19,6 +21,15 @@
   const toggleIconProps = { size: 16, strokeWidth: 1.5, "aria-hidden": true as const };
 
   const collapsed = $derived(sidebarState.collapsed);
+  const showLogout = $derived(authState.required && authState.authenticated);
+
+  async function handleLogout() {
+    try {
+      await submitLogout();
+    } catch {
+      /* session is cleared server-side even if this fails */
+    }
+  }
 
   const navClass = (active: boolean) =>
     `flex items-center rounded-md transition-colors ${
@@ -103,5 +114,18 @@
 
   <div class="mt-4 shrink-0 md:mt-auto">
     <SettingsButton {collapsed} />
+    {#if showLogout}
+      <button
+        type="button"
+        onclick={handleLogout}
+        class="mt-1 flex w-full cursor-pointer items-center rounded-md text-sm text-neutral-400 transition-colors hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-neutral-100 {collapsed
+          ? 'justify-center p-2 md:justify-center'
+          : 'gap-2 px-2 py-1.5'}"
+        title={collapsed ? t("auth.logout") : undefined}
+      >
+        <LogOut {...iconProps} />
+        <span class={collapsed ? "md:sr-only" : ""}>{t("auth.logout")}</span>
+      </button>
+    {/if}
   </div>
 </aside>

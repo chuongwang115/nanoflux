@@ -50,6 +50,20 @@ type ApiResult = {
   message: string;
 };
 
+type UnauthorizedListener = () => void;
+const unauthorizedListeners = new Set<UnauthorizedListener>();
+
+export function onUnauthorized(listener: UnauthorizedListener): () => void {
+  unauthorizedListeners.add(listener);
+  return () => {
+    unauthorizedListeners.delete(listener);
+  };
+}
+
+function notifyUnauthorized(): void {
+  for (const listener of unauthorizedListeners) listener();
+}
+
 function assertApiOk(body: ApiResult): void {
   if (body.code !== 0) {
     throw new Error(body.message || "Request failed");
@@ -85,9 +99,13 @@ async function request<T>(
 ): Promise<T> {
   const res = await fetch(url, {
     ...options,
+    credentials: "same-origin",
     headers: { "Content-Type": "application/json", ...options.headers },
   });
   const body = await res.json().catch(() => ({}));
+  if (res.status === 401 && !url.startsWith("/api/auth/")) {
+    notifyUnauthorized();
+  }
   if (!res.ok) {
     const message =
       (body as { error?: string; message?: string }).error ??
@@ -228,7 +246,10 @@ export function deleteFeed(id: number) {
 }
 
 export async function downloadFeedsOpml(): Promise<void> {
-  const res = await fetch("/api/feeds/export.opml");
+  const res = await fetch("/api/feeds/export.opml", {
+    credentials: "same-origin",
+  });
+  if (res.status === 401) notifyUnauthorized();
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(text || `Export failed (${res.status})`);
@@ -255,7 +276,10 @@ export async function downloadItemsExcel(options: {
   params.set("tz_offset", String(new Date().getTimezoneOffset()));
   params.set("lang", localeState.locale);
 
-  const res = await fetch(`/api/items/export.xlsx?${params}`);
+  const res = await fetch(`/api/items/export.xlsx?${params}`, {
+    credentials: "same-origin",
+  });
+  if (res.status === 401) notifyUnauthorized();
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(text || `Export failed (${res.status})`);
@@ -479,4 +503,45 @@ export function updateFever(payload: {
       hasPassword: Boolean(payload.password) || undefined,
     });
   });
+}
+
+export type AuthStatus = {
+  required: boolean;
+  authenticated: boolean;
+};
+
+type AuthApiResult = {
+  code: number;
+  message: string;
+  data?: Partial<AuthStatus>;
+};
+
+function normalizeAuthStatus(data: Partial<AuthStatus> | undefined): AuthStatus {
+  return {
+    required: Boolean(data?.required),
+    authenticated: Boolean(data?.authenticated),
+  };
+}
+
+export async function fetchAuthStatus(): Promise<AuthStatus> {
+  const body = await request<AuthApiResult>("/api/auth/status");
+  assertApiOk(body);
+  return normalizeAuthStatus(body.data);
+}
+
+export async function loginAdmin(password: string): Promise<AuthStatus> {
+  const body = await request<AuthApiResult>("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
+  assertApiOk(body);
+  return normalizeAuthStatus(body.data);
+}
+
+export async function logoutAdmin(): Promise<AuthStatus> {
+  const body = await request<AuthApiResult>("/api/auth/logout", {
+    method: "POST",
+  });
+  assertApiOk(body);
+  return normalizeAuthStatus(body.data);
 }

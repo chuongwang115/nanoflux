@@ -1,11 +1,17 @@
 import { join } from "node:path";
 import { Elysia } from "elysia";
-import { resolveHost, resolvePort } from "./shared/env";
+import {
+  adminPasswordStrengthError,
+  resolveAdminPassword,
+  resolveHost,
+  resolvePort,
+} from "./shared/env";
 import {
   isLocalhostAddress,
   isLocalhostRestricted,
-  localhostOnly,
+  withLocalhostOnly,
 } from "./shared/localhost-only";
+import { createAuthRoutes, withAdminAuth } from "./api/auth";
 import { buildWebManifest } from "./shared/manifest";
 import { DEFAULT_LOCALE, parseLocale, type Locale } from "./shared/locale";
 import { closeDatabase } from "./db/database";
@@ -73,18 +79,42 @@ console.log(`[fever] config loaded enabled=${isFeverEnabled()}`);
 
 const host = resolveHost();
 const restrictLocalhost = isLocalhostRestricted(host);
+const adminPassword = resolveAdminPassword();
+const adminAuthRequired = !restrictLocalhost;
 
-const backendRoutes = new Elysia()
+if (adminAuthRequired) {
+  if (!adminPassword) {
+    console.error(
+      "ADMIN_PASSWORD is required when HOST is not 127.0.0.1. Set it in .env before exposing the operator UI.",
+    );
+    process.exit(1);
+  }
+  const strengthError = adminPasswordStrengthError(adminPassword);
+  if (strengthError) {
+    console.error(strengthError);
+    process.exit(1);
+  }
+}
+
+const adminAuth = {
+  required: adminAuthRequired,
+  password: adminPassword,
+};
+
+const restRoutes = new Elysia()
   .use(itemsRoutes)
   .use(feedsRoutes)
   .use(filterRoutes)
   .use(translateRoutes)
-  .use(feverRoutes)
-  .use(mcpRoutes);
+  .use(feverRoutes);
 
-const protectedBackendRoutes = restrictLocalhost
-  ? new Elysia().use(localhostOnly).use(backendRoutes)
-  : backendRoutes;
+const guardedRestRoutes = restrictLocalhost
+  ? withLocalhostOnly(restRoutes)
+  : withAdminAuth(restRoutes, adminAuth);
+
+const protectedBackendRoutes = new Elysia()
+  .use(guardedRestRoutes)
+  .use(withLocalhostOnly(mcpRoutes));
 
 function forbidIfRemote(ctx: {
   request: Request;
@@ -160,6 +190,7 @@ const publicRoutes = new Elysia()
   .get("/assets/*", ({ params }) =>
     Bun.file(join(PUBLIC_DIR, "assets", params["*"])),
   )
+  .use(createAuthRoutes(adminAuth))
   .use(protectedBackendRoutes);
 
 const app = new Elysia().use(publicRoutes);
@@ -182,10 +213,12 @@ if (!app.server) {
 
 if (restrictLocalhost) {
   console.log(
-    `Listening on http://localhost:${app.server.port} (API/MCP: localhost only)`,
+    `Listening on http://localhost:${app.server.port} (REST/Fever/MCP: localhost only)`,
   );
 } else {
-  console.log(`Listening on http://${host}:${app.server.port}/`);
+  console.log(
+    `Listening on http://${host}:${app.server.port}/ (operator UI/REST require ADMIN_PASSWORD; MCP: localhost only)`,
+  );
 }
 
 // Start cron only after we own the listen port, so a failed bind cannot leave

@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "fs/promises";
 import { resolve } from "path";
+import { passwordStrengthError } from "./shared/password-strength";
 
 export const TRANSLATE_TARGET_LANGS = ["en", "zh-Hans", "zh-Hant"] as const;
 export type TranslateTargetLang = (typeof TRANSLATE_TARGET_LANGS)[number];
@@ -316,6 +317,15 @@ export async function updateFeverState(partial: {
 
   if (nextEnabled && (!nextUser || !nextPassword)) {
     throw new Error("Fever API requires a user and password when enabled");
+  }
+
+  const settingPassword =
+    typeof partial.password === "string" && partial.password.length > 0;
+  if (settingPassword || (nextEnabled && nextPassword)) {
+    const strengthError = passwordStrengthError(nextPassword, "Fever password");
+    if (strengthError) {
+      throw new Error(strengthError);
+    }
   }
 
   config.fever.user = nextUser;

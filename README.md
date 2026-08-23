@@ -37,7 +37,7 @@ Typical RSS readers optimize for human browsing. NanoFlux optimizes for **agent 
 
 Read state (`is_read`) and agent consumption (`is_ingested`) are independent. Opening an article in the UI or Reeder does not mark it ingested for MCP, and `get_uningested_news` does not mark it read for Fever/UI.
 
-Run it on localhost next to your agent runtime. When `HOST=127.0.0.1`, API, MCP, and Fever accept only local clients.
+Run it on localhost next to your agent runtime. MCP (`/mcp`) accepts only local clients and does not use `ADMIN_PASSWORD`. When `HOST=127.0.0.1`, REST and Fever also accept only local clients. When you bind a public address (`HOST=0.0.0.0`), the operator UI and REST API require `ADMIN_PASSWORD` before they can be used.
 
 ## Features
 
@@ -71,6 +71,7 @@ Run it on localhost next to your agent runtime. When `HOST=127.0.0.1`, API, MCP,
 - `/export`: Excel by time range
 - Home list shows cover thumbnails when an item has a `cover` URL
 - PWA shell (installable; manifest at `/manifest.webmanifest`), trilingual UI (English / Simplified Chinese / Traditional Chinese), light/dark theme, adjustable font size
+- When bound publicly (`HOST` is not `127.0.0.1`), a login screen gates the UI; the sidebar shows **Sign out** after authentication
 
 ## Tech Stack
 
@@ -124,7 +125,8 @@ Create a `.env` file at the project root (see `.env.example`).
 | Variable | Default | Description |
 | --- | --- | --- |
 | `PORT` | `3000` in `.env.example` | HTTP listen port (required; startup fails when omitted) |
-| `HOST` | `127.0.0.1` | Bind address. `127.0.0.1` also restricts API/MCP/Fever to localhost. Use `0.0.0.0` to listen on all interfaces without restriction. |
+| `HOST` | `127.0.0.1` | Bind address. `127.0.0.1` also restricts REST and Fever to localhost. MCP is always localhost-only (no admin password). Use `0.0.0.0` to listen on all interfaces; the operator UI and REST then require `ADMIN_PASSWORD`. |
+| `ADMIN_PASSWORD` | — | Operator password. Required at startup when `HOST` is not `127.0.0.1`. Must be at least 8 characters and include letters, digits, and symbols. Unused on localhost. |
 | `DB_PATH` | `data.sqlite` | SQLite database file path |
 
 ### AI filter and title translation (optional)
@@ -193,11 +195,11 @@ Filter, title translation, and Fever credentials live in a single `config.json` 
 | `translate` | `targetLang` | `en`, `zh-Hans`, or `zh-Hant`. |
 | `fever` | `enabled` | Whether the Fever endpoint authenticates clients. Defaults to false if missing. |
 | `fever` | `user` | Fever username (trimmed). Required when `enabled` is true. |
-| `fever` | `password` | Fever password. Required when `enabled` is true. Leave the password field blank in the UI/REST update body to keep the stored value. |
+| `fever` | `password` | Fever password. Required when `enabled` is true. Must be at least 8 characters and include letters, digits, and symbols. Leave the password field blank in the UI/REST update body to keep the stored value. |
 
 Filtering is **active** only when both `filter.enabled` is true and `filter.prompt` is non-empty.
 
-The Fever `api_key` is `md5("<user>:<password>")` (lowercase hex), matching the original Fever protocol. Enabling Fever without both user and password is rejected.
+The Fever `api_key` is `md5("<user>:<password>")` (lowercase hex), matching the original Fever protocol. Enabling Fever without both user and password is rejected. Setting or enabling a password that is not at least 8 characters with letters, digits, and symbols is also rejected.
 
 ```json
 {
@@ -257,7 +259,7 @@ Service logs are written to the `logs/` directory.
 
 Primary interface: `http://localhost:<PORT>/mcp` (JSON response mode enabled; `PORT` from `.env`).
 
-When `HOST=127.0.0.1`, only localhost clients can reach the MCP endpoint (same restriction as REST and Fever).
+Only localhost clients can reach this endpoint, including when `HOST=0.0.0.0`. It does not use `ADMIN_PASSWORD`.
 
 ### Client configuration
 
@@ -317,7 +319,19 @@ News query tools return stored items from the database. Each item includes integ
 
 ## REST API
 
-REST is available for scripts and the operator UI. JSON endpoints return `{ code, message, data }` unless noted otherwise (e.g. OPML / Excel downloads). `code` is `0` on success. When `HOST=127.0.0.1`, these routes are localhost-only (Fever `/fever` uses the same restriction).
+REST is available for scripts and the operator UI. JSON endpoints return `{ code, message, data }` unless noted otherwise (e.g. OPML / Excel downloads). `code` is `0` on success. When `HOST=127.0.0.1`, these routes are localhost-only (Fever `/fever` uses the same restriction). When `HOST` is not `127.0.0.1`, REST (except `/api/auth/*`) requires a session cookie from `POST /api/auth/login` or `Authorization: Bearer <ADMIN_PASSWORD>`. MCP is always localhost-only and is not gated by `ADMIN_PASSWORD`. The Fever protocol uses its own user/password.
+
+### Auth — `/api/auth`
+
+Used when `HOST` is not `127.0.0.1` (`required: true`). On localhost bind, `GET /api/auth/status` reports `{ required: false, authenticated: true }` and login is a no-op.
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/api/auth/status` | `{ required, authenticated }` |
+| `POST` | `/api/auth/login` | Body `{ password }`. Sets an HttpOnly `nanoflux_session` cookie (7 days, `SameSite=Lax`; `Secure` when the request is HTTPS). Failed logins are rate-limited to 20 attempts per IP per 10 minutes (`429`). |
+| `POST` | `/api/auth/logout` | Clears the session cookie |
+
+Scripts can skip the cookie and send `Authorization: Bearer <ADMIN_PASSWORD>` on REST calls instead.
 
 ### Feeds — `/api/feeds`
 
@@ -398,7 +412,7 @@ Does not serve the Fever protocol itself (that is [`/fever`](#fever-api)). This 
 | Method | Path | Description |
 | --- | --- | --- |
 | `GET` | `/api/fever` | Public Fever config (`{ enabled, user, hasPassword }`) |
-| `POST` | `/api/fever` | Update Fever config (body: optional `{ enabled, user, password }`; omit a field to leave it unchanged). Empty `password` keeps the stored password. Enabling requires a user and a password (new or already stored). |
+| `POST` | `/api/fever` | Update Fever config (body: optional `{ enabled, user, password }`; omit a field to leave it unchanged). Empty `password` keeps the stored password. Enabling requires a user and a password (new or already stored). New and enabled passwords must be at least 8 characters and include letters, digits, and symbols. |
 
 ## Fever API
 
@@ -449,7 +463,7 @@ Agents then consume this store through MCP / REST; they do not scrape feeds them
 ```
 ├── web/              Operator UI (Svelte)
 ├── public/           Built static assets (generated)
-├── api/              REST API routes (feeds, items, filter, translate, fever)
+├── api/              REST API routes (auth, feeds, items, filter, translate, fever)
 ├── fever/            Fever protocol route (`route.ts`)
 ├── mcp/              MCP server and tools (agent interface)
 ├── services/
@@ -467,7 +481,7 @@ Agents then consume this store through MCP / REST; they do not scrape feeds them
 │   └── scheduler.ts  Cron-based fetch and cleanup jobs
 ├── db/               Drizzle schema and data access
 ├── utils/            Date, hash, HTML, text, and charset-decoding helpers
-├── shared/           Shared types and utilities
+├── shared/           Shared types and utilities (env, admin session, password strength, locale)
 ├── drizzle/          SQL migrations
 ├── config.json       Filter, translate, and Fever settings (gitignored)
 ├── config.ts         Unified config load and persist

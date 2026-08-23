@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { fetchFever, updateFever } from "../lib/api";
   import { t } from "../lib/locale.svelte";
+  import { isStrongPassword } from "../../../shared/password-strength";
 
   const inputClass =
     "w-full border-0 border-b border-neutral-200 bg-transparent py-2 text-sm outline-none placeholder:text-neutral-300 focus:border-neutral-900 dark:border-neutral-700 dark:placeholder:text-neutral-600 dark:focus:border-neutral-100";
@@ -61,6 +62,10 @@
       formError = t("fever.passwordRequired");
       return;
     }
+    if (password.length > 0 && !isStrongPassword(password)) {
+      formError = t("fever.passwordWeak");
+      return;
+    }
 
     saving = true;
     try {
@@ -79,7 +84,10 @@
       savedEnabled = updated.enabled;
       savedUser = updated.user;
     } catch (err) {
-      formError = err instanceof Error ? err.message : t("fever.saveFailed");
+      const message = err instanceof Error ? err.message : "";
+      formError = message.includes("at least 8 characters")
+        ? t("fever.passwordWeak")
+        : message || t("fever.saveFailed");
     } finally {
       saving = false;
     }

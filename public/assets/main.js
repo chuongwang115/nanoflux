@@ -6289,9 +6289,6 @@ if (typeof window !== "undefined") {
   ((window.__svelte ??= {}).v ??= new Set).add(PUBLIC_VERSION);
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/flags/legacy.js
-enable_legacy_mode_flag();
-
 // ../nanoflux/node_modules/@lucide/svelte/dist/defaultAttributes.js
 var defaultAttributes = {
   xmlns: "http://www.w3.org/2000/svg",
@@ -6433,9 +6430,51 @@ function Download($$anchor, $$props) {
 }
 if (undefined) {}
 var download_default = Download;
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/newspaper.svelte
+// ../nanoflux/node_modules/@lucide/svelte/dist/icons/log-out.svelte
 var rest_excludes3 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root3 = from_html(`<!--
+@lucide/svelte v1.33.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJtMTYgMTcgNS01LTUtNSIgLz4KICA8cGF0aCBkPSJNMjEgMTJIOSIgLz4KICA8cGF0aCBkPSJNOSAyMUg1YTIgMiAwIDAgMS0yLTJWNWEyIDIgMCAwIDEgMi0yaDQiIC8+Cjwvc3ZnPgo=) - https://lucide.dev/icons/log-out
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Log_out($$anchor, $$props) {
+  let props = rest_props($$props, rest_excludes3);
+  const iconNode = [
+    ["path", { d: "m16 17 5-5-5-5" }],
+    ["path", { d: "M21 12H9" }],
+    ["path", { d: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" }]
+  ];
+  var fragment = root3();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "log-out" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var log_out_default = Log_out;
+// ../nanoflux/node_modules/@lucide/svelte/dist/icons/newspaper.svelte
+var rest_excludes4 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root4 = from_html(`<!--
 @lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -6456,7 +6495,7 @@ Lucide SVG icon component, renders SVG Element with children.
 
 <!>`, 1);
 function Newspaper($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes3);
+  let props = rest_props($$props, rest_excludes4);
   const iconNode = [
     ["path", { d: "M15 18h-5" }],
     ["path", { d: "M18 14h-8" }],
@@ -6471,7 +6510,7 @@ function Newspaper($$anchor, $$props) {
       { width: "8", height: "4", x: "10", y: "6", rx: "1" }
     ]
   ];
-  var fragment = root3();
+  var fragment = root4();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -6485,8 +6524,8 @@ function Newspaper($$anchor, $$props) {
 if (undefined) {}
 var newspaper_default = Newspaper;
 // ../nanoflux/node_modules/@lucide/svelte/dist/icons/panel-left-close.svelte
-var rest_excludes4 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root4 = from_html(`<!--
+var rest_excludes5 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root5 = from_html(`<!--
 @lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -6507,7 +6546,7 @@ Lucide SVG icon component, renders SVG Element with children.
 
 <!>`, 1);
 function Panel_left_close($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes4);
+  let props = rest_props($$props, rest_excludes5);
   const iconNode = [
     [
       "rect",
@@ -6516,7 +6555,7 @@ function Panel_left_close($$anchor, $$props) {
     ["path", { d: "M9 3v18" }],
     ["path", { d: "m16 15-3-3 3-3" }]
   ];
-  var fragment = root4();
+  var fragment = root5();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -6530,8 +6569,8 @@ function Panel_left_close($$anchor, $$props) {
 if (undefined) {}
 var panel_left_close_default = Panel_left_close;
 // ../nanoflux/node_modules/@lucide/svelte/dist/icons/panel-left-open.svelte
-var rest_excludes5 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root5 = from_html(`<!--
+var rest_excludes6 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root6 = from_html(`<!--
 @lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -6552,7 +6591,7 @@ Lucide SVG icon component, renders SVG Element with children.
 
 <!>`, 1);
 function Panel_left_open($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes5);
+  let props = rest_props($$props, rest_excludes6);
   const iconNode = [
     [
       "rect",
@@ -6561,7 +6600,7 @@ function Panel_left_open($$anchor, $$props) {
     ["path", { d: "M9 3v18" }],
     ["path", { d: "m14 9 3 3-3 3" }]
   ];
-  var fragment = root5();
+  var fragment = root6();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -6575,8 +6614,8 @@ function Panel_left_open($$anchor, $$props) {
 if (undefined) {}
 var panel_left_open_default = Panel_left_open;
 // ../nanoflux/node_modules/@lucide/svelte/dist/icons/rss.svelte
-var rest_excludes6 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root6 = from_html(`<!--
+var rest_excludes7 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root7 = from_html(`<!--
 @lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -6597,13 +6636,13 @@ Lucide SVG icon component, renders SVG Element with children.
 
 <!>`, 1);
 function Rss($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes6);
+  let props = rest_props($$props, rest_excludes7);
   const iconNode = [
     ["path", { d: "M4 11a9 9 0 0 1 9 9" }],
     ["path", { d: "M4 4a16 16 0 0 1 16 16" }],
     ["circle", { cx: "5", cy: "19", r: "1" }]
   ];
-  var fragment = root6();
+  var fragment = root7();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -6736,8 +6775,8 @@ function navClick(next2) {
 }
 
 // ../nanoflux/node_modules/@lucide/svelte/dist/icons/settings.svelte
-var rest_excludes7 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root7 = from_html(`<!--
+var rest_excludes8 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root8 = from_html(`<!--
 @lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -6758,7 +6797,7 @@ Lucide SVG icon component, renders SVG Element with children.
 
 <!>`, 1);
 function Settings($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes7);
+  let props = rest_props($$props, rest_excludes8);
   const iconNode = [
     [
       "path",
@@ -6768,7 +6807,7 @@ function Settings($$anchor, $$props) {
     ],
     ["circle", { cx: "12", cy: "12", r: "3" }]
   ];
-  var fragment = root7();
+  var fragment = root8();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -6782,6 +6821,7 @@ function Settings($$anchor, $$props) {
 if (undefined) {}
 var settings_default = Settings;
 // ../nanoflux/shared/locale.ts
+var LOCALES = ["en", "zh-Hans", "zh-Hant"];
 var DEFAULT_LOCALE = "zh-Hans";
 function parseLocale(value) {
   if (value === "en" || value === "zh-Hans" || value === "zh-Hant")
@@ -6817,6 +6857,10 @@ function dateLocaleTag(locale) {
   if (locale === "zh-Hant")
     return "zh-TW";
   return "zh-CN";
+}
+function nextLocale(locale) {
+  const index2 = LOCALES.indexOf(locale);
+  return LOCALES[(index2 + 1) % LOCALES.length] ?? DEFAULT_LOCALE;
 }
 
 // ../nanoflux/shared/manifest.ts
@@ -6935,6 +6979,15 @@ var messages = {
     "fever.saveFailed": "保存失败",
     "fever.userRequired": "开启 Fever API 时需要填写 User",
     "fever.passwordRequired": "开启 Fever API 时需要设置 Password",
+    "fever.passwordWeak": "密码至少 8 位，且需同时包含字母、数字和符号",
+    "auth.hint": "此服务已对公网开放，请输入管理员密码后继续。",
+    "auth.password": "管理员密码",
+    "auth.submit": "进入",
+    "auth.submitting": "验证中…",
+    "auth.failed": "验证失败",
+    "auth.invalid": "密码不正确",
+    "auth.tooMany": "尝试次数过多，请稍后再试",
+    "auth.logout": "退出",
     "theme.switchToLight": "切换到浅色模式",
     "theme.switchToDark": "切换到深色模式",
     "theme.lightMode": "浅色模式",
@@ -7067,6 +7120,15 @@ var messages = {
     "fever.saveFailed": "儲存失敗",
     "fever.userRequired": "開啟 Fever API 時需要填寫 User",
     "fever.passwordRequired": "開啟 Fever API 時需要設定 Password",
+    "fever.passwordWeak": "密碼至少 8 位，且需同時包含字母、數字和符號",
+    "auth.hint": "此服務已對公網開放，請輸入管理員密碼後繼續。",
+    "auth.password": "管理員密碼",
+    "auth.submit": "進入",
+    "auth.submitting": "驗證中…",
+    "auth.failed": "驗證失敗",
+    "auth.invalid": "密碼不正確",
+    "auth.tooMany": "嘗試次數過多，請稍後再試",
+    "auth.logout": "登出",
     "theme.switchToLight": "切換到淺色模式",
     "theme.switchToDark": "切換到深色模式",
     "theme.lightMode": "淺色模式",
@@ -7199,6 +7261,15 @@ var messages = {
     "fever.saveFailed": "Failed to save",
     "fever.userRequired": "User is required when Fever API is on",
     "fever.passwordRequired": "Password is required when Fever API is on",
+    "fever.passwordWeak": "Password must be at least 8 characters and include letters, digits, and symbols",
+    "auth.hint": "This instance is publicly reachable. Enter the admin password to continue.",
+    "auth.password": "Admin password",
+    "auth.submit": "Continue",
+    "auth.submitting": "Checking…",
+    "auth.failed": "Sign-in failed",
+    "auth.invalid": "Incorrect password",
+    "auth.tooMany": "Too many attempts. Try again later.",
+    "auth.logout": "Sign out",
     "theme.switchToLight": "Switch to light mode",
     "theme.switchToDark": "Switch to dark mode",
     "theme.lightMode": "Light mode",
@@ -7271,6 +7342,9 @@ function setLocale(locale) {
   } catch {}
   applyLocale(locale);
 }
+function toggleLocale() {
+  setLocale(nextLocale(localeState.locale));
+}
 function t(key2) {
   return messages[localeState.locale][key2];
 }
@@ -7279,7 +7353,7 @@ function tf(key2, vars) {
 }
 
 // ../nanoflux/web/src/components/buttons/SettingsButton.svelte
-var root8 = from_html(`
+var root9 = from_html(`
 
 <a>
   <!>
@@ -7293,7 +7367,7 @@ function SettingsButton($$anchor, $$props) {
   const iconProps = { size: 16, strokeWidth: 1.5, "aria-hidden": true };
   const active = user_derived(() => $route() === "/settings");
   next();
-  var fragment = root8();
+  var fragment = root9();
   var a = sibling(first_child(fragment));
   var event_handler = user_derived(() => navClick("/settings"));
   var node = sibling(child(a));
@@ -7326,306 +7400,18 @@ if (undefined) {}
 var SettingsButton_default = SettingsButton;
 delegate(["click"]);
 
-// ../nanoflux/web/src/lib/sidebar.svelte.ts
-var STORAGE_KEY2 = "nanoflux-sidebar";
-function readStored2() {
-  try {
-    const v = localStorage.getItem(STORAGE_KEY2);
-    if (v === "true")
-      return true;
-    if (v === "false")
-      return false;
-  } catch {}
-  return null;
-}
-var sidebarState = proxy({ collapsed: false });
-function initSidebar() {
-  sidebarState.collapsed = readStored2() ?? false;
-}
-function toggleSidebar() {
-  sidebarState.collapsed = !sidebarState.collapsed;
-  try {
-    localStorage.setItem(STORAGE_KEY2, String(sidebarState.collapsed));
-  } catch {}
-}
-
-// ../nanoflux/web/src/components/Header.svelte
-var root9 = from_html(`
-        <!>
-      `, 1);
-var root_12 = from_html(`
-
-<aside>
-  <div>
-    <a>
-      NanoFlux
-    </a>
-
-    <button type="button" class="hidden shrink-0 cursor-pointer rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 md:inline-flex dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
-      <!>
-    </button>
-  </div>
-
-  <nav class="mt-4 flex min-w-0 gap-1 overflow-x-auto text-sm md:mt-8 md:flex-col md:overflow-visible">
-    <a>
-      <!>
-      <span> </span>
-    </a>
-    <a>
-      <!>
-      <span> </span>
-    </a>
-    <a>
-      <!>
-      <span> </span>
-    </a>
-  </nav>
-
-  <div class="mt-4 shrink-0 md:mt-auto">
-    <!>
-  </div>
-</aside>`, 1);
-function Header($$anchor, $$props) {
-  push($$props, true);
-  const $route = () => store_get(route, "$route", $$stores);
-  const [$$stores, $$cleanup] = setup_stores();
-  const iconProps = { size: 16, strokeWidth: 1.5, "aria-hidden": true };
-  const toggleIconProps = { size: 16, strokeWidth: 1.5, "aria-hidden": true };
-  const collapsed = user_derived(() => sidebarState.collapsed);
-  const navClass = (active) => `flex items-center rounded-md transition-colors ${get2(collapsed) ? "justify-center p-2 md:justify-center" : "gap-2 px-2 py-1.5"} ${active ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-neutral-100"}`;
-  next();
-  var fragment = root_12();
-  var aside = sibling(first_child(fragment));
-  var div = sibling(child(aside));
-  var a = sibling(child(div));
-  var event_handler = user_derived(() => navClick("/"));
-  var button = sibling(a, 2);
-  var node = sibling(child(button));
-  {
-    var consequent = ($$anchor2) => {
-      var fragment_1 = root9();
-      var node_1 = sibling(first_child(fragment_1));
-      panel_left_open_default(node_1, spread_props(() => toggleIconProps));
-      next();
-      append($$anchor2, fragment_1);
-    };
-    var alternate = ($$anchor2) => {
-      var fragment_2 = root9();
-      var node_2 = sibling(first_child(fragment_2));
-      panel_left_close_default(node_2, spread_props(() => toggleIconProps));
-      next();
-      append($$anchor2, fragment_2);
-    };
-    if_block(node, ($$render) => {
-      if (get2(collapsed))
-        $$render(consequent);
-      else
-        $$render(alternate, -1);
-    });
-  }
-  next();
-  reset(button);
-  next();
-  reset(div);
-  var nav = sibling(div, 2);
-  var a_1 = sibling(child(nav));
-  var event_handler_1 = user_derived(() => navClick("/"));
-  var node_3 = sibling(child(a_1));
-  newspaper_default(node_3, spread_props(() => iconProps));
-  var span = sibling(node_3, 2);
-  var text2 = child(span, true);
-  reset(span);
-  next();
-  reset(a_1);
-  var a_2 = sibling(a_1, 2);
-  var event_handler_2 = user_derived(() => navClick("/feeds"));
-  var node_4 = sibling(child(a_2));
-  rss_default(node_4, spread_props(() => iconProps));
-  var span_1 = sibling(node_4, 2);
-  var text_1 = child(span_1, true);
-  reset(span_1);
-  next();
-  reset(a_2);
-  var a_3 = sibling(a_2, 2);
-  var event_handler_3 = user_derived(() => navClick("/export"));
-  var node_5 = sibling(child(a_3));
-  download_default(node_5, spread_props(() => iconProps));
-  var span_2 = sibling(node_5, 2);
-  var text_2 = child(span_2, true);
-  reset(span_2);
-  next();
-  reset(a_3);
-  next();
-  reset(nav);
-  var div_1 = sibling(nav, 2);
-  var node_6 = sibling(child(div_1));
-  SettingsButton_default(node_6, {
-    get collapsed() {
-      return get2(collapsed);
-    }
-  });
-  next();
-  reset(div_1);
-  next();
-  reset(aside);
-  template_effect(($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) => {
-    set_class(aside, 1, `border-b border-neutral-100 px-5 py-5 transition-[width,padding] duration-200 dark:border-neutral-800 md:sticky md:top-4 md:m-4 md:flex md:h-[calc(100vh-2rem)] md:shrink-0 md:flex-col md:rounded-xl md:border md:bg-white md:py-8 md:shadow-sm md:dark:bg-neutral-950 ${get2(collapsed) ? "md:w-14 md:px-2" : "md:w-48 md:px-5"}`);
-    set_class(div, 1, `flex items-center ${get2(collapsed) ? "md:flex-col md:gap-2" : "justify-between gap-2"}`);
-    set_attribute2(a, "href", $0);
-    set_class(a, 1, `truncate text-lg font-medium tracking-tight hover:opacity-70 ${get2(collapsed) ? "md:hidden" : ""}`);
-    set_attribute2(button, "aria-label", $1);
-    set_attribute2(button, "title", $2);
-    set_attribute2(nav, "aria-label", $3);
-    set_attribute2(a_1, "href", $4);
-    set_class(a_1, 1, $5);
-    set_attribute2(a_1, "aria-current", $route() === "/" ? "page" : undefined);
-    set_attribute2(a_1, "title", $6);
-    set_class(span, 1, clsx2(get2(collapsed) ? "md:sr-only" : ""));
-    set_text(text2, $7);
-    set_attribute2(a_2, "href", $8);
-    set_class(a_2, 1, $9);
-    set_attribute2(a_2, "aria-current", $route() === "/feeds" ? "page" : undefined);
-    set_attribute2(a_2, "title", $10);
-    set_class(span_1, 1, clsx2(get2(collapsed) ? "md:sr-only" : ""));
-    set_text(text_1, $11);
-    set_attribute2(a_3, "href", $12);
-    set_class(a_3, 1, $13);
-    set_attribute2(a_3, "aria-current", $route() === "/export" ? "page" : undefined);
-    set_attribute2(a_3, "title", $14);
-    set_class(span_2, 1, clsx2(get2(collapsed) ? "md:sr-only" : ""));
-    set_text(text_2, $15);
-  }, [
-    () => homeHref(),
-    () => get2(collapsed) ? t("sidebar.expand") : t("sidebar.collapse"),
-    () => get2(collapsed) ? t("sidebar.expand") : t("sidebar.collapse"),
-    () => t("items.latest"),
-    () => homeHref(),
-    () => clsx2(navClass($route() === "/")),
-    () => get2(collapsed) ? t("items.latest") : undefined,
-    () => t("items.latest"),
-    () => feedsHref(),
-    () => clsx2(navClass($route() === "/feeds")),
-    () => get2(collapsed) ? t("items.feeds") : undefined,
-    () => t("items.feeds"),
-    () => exportHref(),
-    () => clsx2(navClass($route() === "/export")),
-    () => get2(collapsed) ? t("items.export") : undefined,
-    () => t("items.export")
-  ]);
-  delegated("click", a, function(...$$args) {
-    get2(event_handler)?.apply(this, $$args);
-  });
-  delegated("click", button, function(...$$args) {
-    toggleSidebar?.apply(this, $$args);
-  });
-  delegated("click", a_1, function(...$$args) {
-    get2(event_handler_1)?.apply(this, $$args);
-  });
-  delegated("click", a_2, function(...$$args) {
-    get2(event_handler_2)?.apply(this, $$args);
-  });
-  delegated("click", a_3, function(...$$args) {
-    get2(event_handler_3)?.apply(this, $$args);
-  });
-  append($$anchor, fragment);
-  pop();
-  $$cleanup();
-}
-if (undefined) {}
-var Header_default = Header;
-delegate(["click"]);
-
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/pencil.svelte
-var rest_excludes8 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root10 = from_html(`<!--
-@lucide/svelte v1.33.0 - ISC
-
-This source code is licensed under the ISC license.
-See the LICENSE file in the root directory of this source tree.
--->
-
-
-
-
-<!--
-@component
-
-Lucide SVG icon component, renders SVG Element with children.
-
-@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMjEuMTc0IDYuODEyYTEgMSAwIDAgMC0zLjk4Ni0zLjk4N0wzLjg0MiAxNi4xNzRhMiAyIDAgMCAwLS41LjgzbC0xLjMyMSA0LjM1MmEuNS41IDAgMCAwIC42MjMuNjIybDQuMzUzLTEuMzJhMiAyIDAgMCAwIC44My0uNDk3eiIgLz4KICA8cGF0aCBkPSJtMTUgNSA0IDQiIC8+Cjwvc3ZnPgo=) - https://lucide.dev/icons/pencil
-@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
--->
-
-<!>`, 1);
-function Pencil($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes8);
-  const iconNode = [
-    [
-      "path",
-      {
-        d: "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"
-      }
-    ],
-    ["path", { d: "m15 5 4 4" }]
-  ];
-  var fragment = root10();
-  var node = first_child(fragment);
-  var node_1 = sibling(node, 2);
-  var node_2 = sibling(node_1, 2);
-  Icon_default(node_2, spread_props({ name: "pencil" }, () => props, {
-    get iconNode() {
-      return iconNode;
-    }
-  }));
-  append($$anchor, fragment);
-}
-if (undefined) {}
-var pencil_default = Pencil;
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/trash-2.svelte
-var rest_excludes9 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root11 = from_html(`<!--
-@lucide/svelte v1.33.0 - ISC
-
-This source code is licensed under the ISC license.
-See the LICENSE file in the root directory of this source tree.
--->
-
-
-
-
-<!--
-@component
-
-Lucide SVG icon component, renders SVG Element with children.
-
-@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMTAgMTF2NiIgLz4KICA8cGF0aCBkPSJNMTQgMTF2NiIgLz4KICA8cGF0aCBkPSJNMTkgNnYxNGEyIDIgMCAwIDEtMiAySDdhMiAyIDAgMCAxLTItMlY2IiAvPgogIDxwYXRoIGQ9Ik0zIDZoMTgiIC8+CiAgPHBhdGggZD0iTTggNlY0YTIgMiAwIDAgMSAyLTJoNGEyIDIgMCAwIDEgMiAydjIiIC8+Cjwvc3ZnPgo=) - https://lucide.dev/icons/trash-2
-@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
--->
-
-<!>`, 1);
-function Trash_2($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes9);
-  const iconNode = [
-    ["path", { d: "M10 11v6" }],
-    ["path", { d: "M14 11v6" }],
-    ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" }],
-    ["path", { d: "M3 6h18" }],
-    ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" }]
-  ];
-  var fragment = root11();
-  var node = first_child(fragment);
-  var node_1 = sibling(node, 2);
-  var node_2 = sibling(node_1, 2);
-  Icon_default(node_2, spread_props({ name: "trash-2" }, () => props, {
-    get iconNode() {
-      return iconNode;
-    }
-  }));
-  append($$anchor, fragment);
-}
-if (undefined) {}
-var trash_2_default = Trash_2;
 // ../nanoflux/web/src/lib/api.ts
+var unauthorizedListeners = new Set;
+function onUnauthorized(listener) {
+  unauthorizedListeners.add(listener);
+  return () => {
+    unauthorizedListeners.delete(listener);
+  };
+}
+function notifyUnauthorized() {
+  for (const listener of unauthorizedListeners)
+    listener();
+}
 function assertApiOk(body) {
   if (body.code !== 0) {
     throw new Error(body.message || "Request failed");
@@ -7640,9 +7426,13 @@ function normalizeItem(raw) {
 async function request(url, options = {}) {
   const res = await fetch(url, {
     ...options,
+    credentials: "same-origin",
     headers: { "Content-Type": "application/json", ...options.headers }
   });
   const body = await res.json().catch(() => ({}));
+  if (res.status === 401 && !url.startsWith("/api/auth/")) {
+    notifyUnauthorized();
+  }
   if (!res.ok) {
     const message = body.error ?? body.message;
     throw new Error(message || `Request failed (${res.status})`);
@@ -7730,7 +7520,11 @@ function deleteFeed(id) {
   });
 }
 async function downloadFeedsOpml() {
-  const res = await fetch("/api/feeds/export.opml");
+  const res = await fetch("/api/feeds/export.opml", {
+    credentials: "same-origin"
+  });
+  if (res.status === 401)
+    notifyUnauthorized();
   if (!res.ok) {
     const text2 = await res.text().catch(() => "");
     throw new Error(text2 || `Export failed (${res.status})`);
@@ -7754,7 +7548,11 @@ async function downloadItemsExcel(options) {
     params.set("until", options.until);
   params.set("tz_offset", String(new Date().getTimezoneOffset()));
   params.set("lang", localeState.locale);
-  const res = await fetch(`/api/items/export.xlsx?${params}`);
+  const res = await fetch(`/api/items/export.xlsx?${params}`, {
+    credentials: "same-origin"
+  });
+  if (res.status === 401)
+    notifyUnauthorized();
   if (!res.ok) {
     const text2 = await res.text().catch(() => "");
     throw new Error(text2 || `Export failed (${res.status})`);
@@ -7886,7 +7684,404 @@ function updateFever(payload) {
     });
   });
 }
+function normalizeAuthStatus(data) {
+  return {
+    required: Boolean(data?.required),
+    authenticated: Boolean(data?.authenticated)
+  };
+}
+async function fetchAuthStatus() {
+  const body = await request("/api/auth/status");
+  assertApiOk(body);
+  return normalizeAuthStatus(body.data);
+}
+async function loginAdmin(password) {
+  const body = await request("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ password })
+  });
+  assertApiOk(body);
+  return normalizeAuthStatus(body.data);
+}
+async function logoutAdmin() {
+  const body = await request("/api/auth/logout", {
+    method: "POST"
+  });
+  assertApiOk(body);
+  return normalizeAuthStatus(body.data);
+}
 
+// ../nanoflux/web/src/lib/auth.svelte.ts
+var authState = proxy({ loading: true, required: false, authenticated: true });
+onUnauthorized(() => {
+  authState.required = true;
+  authState.authenticated = false;
+});
+async function initAuth() {
+  try {
+    const status = await fetchAuthStatus();
+    authState.required = status.required;
+    authState.authenticated = status.authenticated;
+  } catch {
+    authState.required = false;
+    authState.authenticated = true;
+  } finally {
+    authState.loading = false;
+  }
+}
+async function submitLogin(password) {
+  const status = await loginAdmin(password);
+  authState.required = status.required;
+  authState.authenticated = status.authenticated;
+}
+async function submitLogout() {
+  const status = await logoutAdmin();
+  authState.required = status.required;
+  authState.authenticated = status.authenticated;
+}
+
+// ../nanoflux/web/src/lib/sidebar.svelte.ts
+var STORAGE_KEY2 = "nanoflux-sidebar";
+function readStored2() {
+  try {
+    const v = localStorage.getItem(STORAGE_KEY2);
+    if (v === "true")
+      return true;
+    if (v === "false")
+      return false;
+  } catch {}
+  return null;
+}
+var sidebarState = proxy({ collapsed: false });
+function initSidebar() {
+  sidebarState.collapsed = readStored2() ?? false;
+}
+function toggleSidebar() {
+  sidebarState.collapsed = !sidebarState.collapsed;
+  try {
+    localStorage.setItem(STORAGE_KEY2, String(sidebarState.collapsed));
+  } catch {}
+}
+
+// ../nanoflux/web/src/components/Header.svelte
+var root10 = from_html(`
+        <!>
+      `, 1);
+var root_12 = from_html(`
+      <button type="button">
+        <!>
+        <span> </span>
+      </button>
+    `, 1);
+var root_2 = from_html(`
+
+<aside>
+  <div>
+    <a>
+      NanoFlux
+    </a>
+
+    <button type="button" class="hidden shrink-0 cursor-pointer rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 md:inline-flex dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
+      <!>
+    </button>
+  </div>
+
+  <nav class="mt-4 flex min-w-0 gap-1 overflow-x-auto text-sm md:mt-8 md:flex-col md:overflow-visible">
+    <a>
+      <!>
+      <span> </span>
+    </a>
+    <a>
+      <!>
+      <span> </span>
+    </a>
+    <a>
+      <!>
+      <span> </span>
+    </a>
+  </nav>
+
+  <div class="mt-4 shrink-0 md:mt-auto">
+    <!>
+    <!>
+  </div>
+</aside>`, 1);
+function Header($$anchor, $$props) {
+  push($$props, true);
+  const $route = () => store_get(route, "$route", $$stores);
+  const [$$stores, $$cleanup] = setup_stores();
+  const iconProps = { size: 16, strokeWidth: 1.5, "aria-hidden": true };
+  const toggleIconProps = { size: 16, strokeWidth: 1.5, "aria-hidden": true };
+  const collapsed = user_derived(() => sidebarState.collapsed);
+  const showLogout = user_derived(() => authState.required && authState.authenticated);
+  async function handleLogout() {
+    try {
+      await submitLogout();
+    } catch {}
+  }
+  const navClass = (active) => `flex items-center rounded-md transition-colors ${get2(collapsed) ? "justify-center p-2 md:justify-center" : "gap-2 px-2 py-1.5"} ${active ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-neutral-100"}`;
+  next();
+  var fragment = root_2();
+  var aside = sibling(first_child(fragment));
+  var div = sibling(child(aside));
+  var a = sibling(child(div));
+  var event_handler = user_derived(() => navClick("/"));
+  var button = sibling(a, 2);
+  var node = sibling(child(button));
+  {
+    var consequent = ($$anchor2) => {
+      var fragment_1 = root10();
+      var node_1 = sibling(first_child(fragment_1));
+      panel_left_open_default(node_1, spread_props(() => toggleIconProps));
+      next();
+      append($$anchor2, fragment_1);
+    };
+    var alternate = ($$anchor2) => {
+      var fragment_2 = root10();
+      var node_2 = sibling(first_child(fragment_2));
+      panel_left_close_default(node_2, spread_props(() => toggleIconProps));
+      next();
+      append($$anchor2, fragment_2);
+    };
+    if_block(node, ($$render) => {
+      if (get2(collapsed))
+        $$render(consequent);
+      else
+        $$render(alternate, -1);
+    });
+  }
+  next();
+  reset(button);
+  next();
+  reset(div);
+  var nav = sibling(div, 2);
+  var a_1 = sibling(child(nav));
+  var event_handler_1 = user_derived(() => navClick("/"));
+  var node_3 = sibling(child(a_1));
+  newspaper_default(node_3, spread_props(() => iconProps));
+  var span = sibling(node_3, 2);
+  var text2 = child(span, true);
+  reset(span);
+  next();
+  reset(a_1);
+  var a_2 = sibling(a_1, 2);
+  var event_handler_2 = user_derived(() => navClick("/feeds"));
+  var node_4 = sibling(child(a_2));
+  rss_default(node_4, spread_props(() => iconProps));
+  var span_1 = sibling(node_4, 2);
+  var text_1 = child(span_1, true);
+  reset(span_1);
+  next();
+  reset(a_2);
+  var a_3 = sibling(a_2, 2);
+  var event_handler_3 = user_derived(() => navClick("/export"));
+  var node_5 = sibling(child(a_3));
+  download_default(node_5, spread_props(() => iconProps));
+  var span_2 = sibling(node_5, 2);
+  var text_2 = child(span_2, true);
+  reset(span_2);
+  next();
+  reset(a_3);
+  next();
+  reset(nav);
+  var div_1 = sibling(nav, 2);
+  var node_6 = sibling(child(div_1));
+  SettingsButton_default(node_6, {
+    get collapsed() {
+      return get2(collapsed);
+    }
+  });
+  var node_7 = sibling(node_6, 2);
+  {
+    var consequent_1 = ($$anchor2) => {
+      var fragment_3 = root_12();
+      var button_1 = sibling(first_child(fragment_3));
+      var node_8 = sibling(child(button_1));
+      log_out_default(node_8, spread_props(() => iconProps));
+      var span_3 = sibling(node_8, 2);
+      var text_3 = child(span_3, true);
+      reset(span_3);
+      next();
+      reset(button_1);
+      next();
+      template_effect(($0, $1) => {
+        set_class(button_1, 1, `mt-1 flex w-full cursor-pointer items-center rounded-md text-sm text-neutral-400 transition-colors hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-neutral-100 ${get2(collapsed) ? "justify-center p-2 md:justify-center" : "gap-2 px-2 py-1.5"}`);
+        set_attribute2(button_1, "title", $0);
+        set_class(span_3, 1, clsx2(get2(collapsed) ? "md:sr-only" : ""));
+        set_text(text_3, $1);
+      }, [
+        () => get2(collapsed) ? t("auth.logout") : undefined,
+        () => t("auth.logout")
+      ]);
+      delegated("click", button_1, handleLogout);
+      append($$anchor2, fragment_3);
+    };
+    if_block(node_7, ($$render) => {
+      if (get2(showLogout))
+        $$render(consequent_1);
+    });
+  }
+  next();
+  reset(div_1);
+  next();
+  reset(aside);
+  template_effect(($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) => {
+    set_class(aside, 1, `border-b border-neutral-100 px-5 py-5 transition-[width,padding] duration-200 dark:border-neutral-800 md:sticky md:top-4 md:m-4 md:flex md:h-[calc(100vh-2rem)] md:shrink-0 md:flex-col md:rounded-xl md:border md:bg-white md:py-8 md:shadow-sm md:dark:bg-neutral-950 ${get2(collapsed) ? "md:w-14 md:px-2" : "md:w-48 md:px-5"}`);
+    set_class(div, 1, `flex items-center ${get2(collapsed) ? "md:flex-col md:gap-2" : "justify-between gap-2"}`);
+    set_attribute2(a, "href", $0);
+    set_class(a, 1, `truncate text-lg font-medium tracking-tight hover:opacity-70 ${get2(collapsed) ? "md:hidden" : ""}`);
+    set_attribute2(button, "aria-label", $1);
+    set_attribute2(button, "title", $2);
+    set_attribute2(nav, "aria-label", $3);
+    set_attribute2(a_1, "href", $4);
+    set_class(a_1, 1, $5);
+    set_attribute2(a_1, "aria-current", $route() === "/" ? "page" : undefined);
+    set_attribute2(a_1, "title", $6);
+    set_class(span, 1, clsx2(get2(collapsed) ? "md:sr-only" : ""));
+    set_text(text2, $7);
+    set_attribute2(a_2, "href", $8);
+    set_class(a_2, 1, $9);
+    set_attribute2(a_2, "aria-current", $route() === "/feeds" ? "page" : undefined);
+    set_attribute2(a_2, "title", $10);
+    set_class(span_1, 1, clsx2(get2(collapsed) ? "md:sr-only" : ""));
+    set_text(text_1, $11);
+    set_attribute2(a_3, "href", $12);
+    set_class(a_3, 1, $13);
+    set_attribute2(a_3, "aria-current", $route() === "/export" ? "page" : undefined);
+    set_attribute2(a_3, "title", $14);
+    set_class(span_2, 1, clsx2(get2(collapsed) ? "md:sr-only" : ""));
+    set_text(text_2, $15);
+  }, [
+    () => homeHref(),
+    () => get2(collapsed) ? t("sidebar.expand") : t("sidebar.collapse"),
+    () => get2(collapsed) ? t("sidebar.expand") : t("sidebar.collapse"),
+    () => t("items.latest"),
+    () => homeHref(),
+    () => clsx2(navClass($route() === "/")),
+    () => get2(collapsed) ? t("items.latest") : undefined,
+    () => t("items.latest"),
+    () => feedsHref(),
+    () => clsx2(navClass($route() === "/feeds")),
+    () => get2(collapsed) ? t("items.feeds") : undefined,
+    () => t("items.feeds"),
+    () => exportHref(),
+    () => clsx2(navClass($route() === "/export")),
+    () => get2(collapsed) ? t("items.export") : undefined,
+    () => t("items.export")
+  ]);
+  delegated("click", a, function(...$$args) {
+    get2(event_handler)?.apply(this, $$args);
+  });
+  delegated("click", button, function(...$$args) {
+    toggleSidebar?.apply(this, $$args);
+  });
+  delegated("click", a_1, function(...$$args) {
+    get2(event_handler_1)?.apply(this, $$args);
+  });
+  delegated("click", a_2, function(...$$args) {
+    get2(event_handler_2)?.apply(this, $$args);
+  });
+  delegated("click", a_3, function(...$$args) {
+    get2(event_handler_3)?.apply(this, $$args);
+  });
+  append($$anchor, fragment);
+  pop();
+  $$cleanup();
+}
+if (undefined) {}
+var Header_default = Header;
+delegate(["click"]);
+
+// ../nanoflux/node_modules/@lucide/svelte/dist/icons/pencil.svelte
+var rest_excludes9 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root11 = from_html(`<!--
+@lucide/svelte v1.33.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMjEuMTc0IDYuODEyYTEgMSAwIDAgMC0zLjk4Ni0zLjk4N0wzLjg0MiAxNi4xNzRhMiAyIDAgMCAwLS41LjgzbC0xLjMyMSA0LjM1MmEuNS41IDAgMCAwIC42MjMuNjIybDQuMzUzLTEuMzJhMiAyIDAgMCAwIC44My0uNDk3eiIgLz4KICA8cGF0aCBkPSJtMTUgNSA0IDQiIC8+Cjwvc3ZnPgo=) - https://lucide.dev/icons/pencil
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Pencil($$anchor, $$props) {
+  let props = rest_props($$props, rest_excludes9);
+  const iconNode = [
+    [
+      "path",
+      {
+        d: "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"
+      }
+    ],
+    ["path", { d: "m15 5 4 4" }]
+  ];
+  var fragment = root11();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "pencil" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var pencil_default = Pencil;
+// ../nanoflux/node_modules/@lucide/svelte/dist/icons/trash-2.svelte
+var rest_excludes10 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root12 = from_html(`<!--
+@lucide/svelte v1.33.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMTAgMTF2NiIgLz4KICA8cGF0aCBkPSJNMTQgMTF2NiIgLz4KICA8cGF0aCBkPSJNMTkgNnYxNGEyIDIgMCAwIDEtMiAySDdhMiAyIDAgMCAxLTItMlY2IiAvPgogIDxwYXRoIGQ9Ik0zIDZoMTgiIC8+CiAgPHBhdGggZD0iTTggNlY0YTIgMiAwIDAgMSAyLTJoNGEyIDIgMCAwIDEgMiAydjIiIC8+Cjwvc3ZnPgo=) - https://lucide.dev/icons/trash-2
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Trash_2($$anchor, $$props) {
+  let props = rest_props($$props, rest_excludes10);
+  const iconNode = [
+    ["path", { d: "M10 11v6" }],
+    ["path", { d: "M14 11v6" }],
+    ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" }],
+    ["path", { d: "M3 6h18" }],
+    ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" }]
+  ];
+  var fragment = root12();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "trash-2" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var trash_2_default = Trash_2;
 // ../nanoflux/web/src/lib/utils.ts
 function formatTime(iso, nowMs = Date.now()) {
   if (!iso)
@@ -7930,14 +8125,14 @@ function buildKeywordGoogleNewsFeedUrl(keyword) {
 }
 
 // ../nanoflux/web/src/components/FeedsManager.svelte
-var root12 = from_html(`
+var root13 = from_html(`
         <button type="button" class="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"> </button>
         <button type="button" class="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"> </button>
       `, 1);
 var root_13 = from_html(`
         <button type="button" class="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"> </button>
       `, 1);
-var root_2 = from_html(`
+var root_22 = from_html(`
     <p class="mt-3 text-sm text-neutral-400 dark:text-neutral-500"> </p>
   `, 1);
 var root_3 = from_html(`
@@ -8432,7 +8627,7 @@ function FeedsManager($$anchor, $$props) {
   var node = sibling(button, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root12();
+      var fragment_1 = root13();
       var button_1 = sibling(first_child(fragment_1));
       var text_1 = child(button_1);
       reset(button_1);
@@ -8483,7 +8678,7 @@ function FeedsManager($$anchor, $$props) {
   var node_2 = sibling(form, 2);
   {
     var consequent_2 = ($$anchor2) => {
-      var fragment_3 = root_2();
+      var fragment_3 = root_22();
       var p = sibling(first_child(fragment_3));
       var text_4 = child(p);
       reset(p);
@@ -9089,6 +9284,9 @@ if (undefined) {}
 var FeedsManager_default = FeedsManager;
 delegate(["input", "click", "keydown"]);
 
+// ../nanoflux/node_modules/svelte/src/internal/flags/legacy.js
+enable_legacy_mode_flag();
+
 // ../nanoflux/web/src/lib/fontSize.svelte.ts
 var STORAGE_KEY3 = "nanoflux-font-size";
 var MIGRATION_KEY = "nanoflux-font-size-v2";
@@ -9115,9 +9313,9 @@ var fontSizeState = proxy({ mode: "medium", direction: "up" });
 function applyFontSize(f) {
   if (typeof document === "undefined")
     return;
-  const root13 = document.documentElement;
-  root13.classList.toggle("font-small", f === "small");
-  root13.classList.toggle("font-large", f === "large");
+  const root14 = document.documentElement;
+  root14.classList.toggle("font-small", f === "small");
+  root14.classList.toggle("font-large", f === "large");
 }
 function initDirection(mode) {
   if (mode === "small")
@@ -9171,9 +9369,12 @@ function setTheme(t2) {
   } catch {}
   applyTheme(t2);
 }
+function toggleTheme() {
+  setTheme(themeState.mode === "light" ? "dark" : "light");
+}
 
 // ../nanoflux/web/src/components/PreferencesManager.svelte
-var root13 = from_html(`
+var root14 = from_html(`
           <button type="button"> </button>
         `, 1);
 var root_110 = from_html(`
@@ -9238,7 +9439,7 @@ function PreferencesManager($$anchor, $$props) {
   var node = sibling(child(div_2));
   each(node, 1, () => fontOptions, (option) => option.id, ($$anchor2, option) => {
     next();
-    var fragment_1 = root13();
+    var fragment_1 = root14();
     var button = sibling(first_child(fragment_1));
     var text_2 = child(button);
     reset(button);
@@ -9268,7 +9469,7 @@ function PreferencesManager($$anchor, $$props) {
   var node_1 = sibling(child(div_4));
   each(node_1, 1, () => localeOptions, (option) => option.id, ($$anchor2, option) => {
     next();
-    var fragment_2 = root13();
+    var fragment_2 = root14();
     var button_1 = sibling(first_child(fragment_2));
     var text_4 = child(button_1);
     reset(button_1);
@@ -9298,7 +9499,7 @@ function PreferencesManager($$anchor, $$props) {
   var node_2 = sibling(child(div_6));
   each(node_2, 1, () => themeOptions, (option) => option.id, ($$anchor2, option) => {
     next();
-    var fragment_3 = root13();
+    var fragment_3 = root14();
     var button_2 = sibling(first_child(fragment_3));
     var text_6 = child(button_2);
     reset(button_2);
@@ -9357,7 +9558,7 @@ var PreferencesManager_default = PreferencesManager;
 delegate(["click"]);
 
 // ../nanoflux/web/src/components/FiltersManager.svelte
-var root14 = from_html(`
+var root15 = from_html(`
     <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
   `, 1);
 var root_112 = from_html(`
@@ -9378,7 +9579,7 @@ var root_112 = from_html(`
       <button type="button" class="text-sm text-neutral-900 underline-offset-4 hover:underline disabled:opacity-50 dark:text-neutral-100"> </button>
     </div>
   `, 1);
-var root_22 = from_html(`
+var root_23 = from_html(`
     <p class="mt-3 text-sm text-red-500"> </p>
   `, 1);
 var root_32 = from_html(`
@@ -9448,7 +9649,7 @@ function FiltersManager($$anchor, $$props) {
   var node = sibling(p, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root14();
+      var fragment_1 = root15();
       var p_1 = sibling(first_child(fragment_1));
       var text_1 = child(p_1, true);
       reset(p_1);
@@ -9540,7 +9741,7 @@ function FiltersManager($$anchor, $$props) {
   var node_1 = sibling(node, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var fragment_3 = root_22();
+      var fragment_3 = root_23();
       var p_2 = sibling(first_child(fragment_3));
       var text_7 = child(p_2, true);
       reset(p_2);
@@ -9566,13 +9767,13 @@ var FiltersManager_default = FiltersManager;
 delegate(["click"]);
 
 // ../nanoflux/web/src/components/TranslateManager.svelte
-var root15 = from_html(`
+var root16 = from_html(`
     <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
   `, 1);
 var root_113 = from_html(`
             <button type="button"> </button>
           `, 1);
-var root_23 = from_html(`
+var root_24 = from_html(`
     <div class="space-y-8">
       <div class="space-y-3">
         <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
@@ -9677,7 +9878,7 @@ function TranslateManager($$anchor, $$props) {
   var node = sibling(p, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root15();
+      var fragment_1 = root16();
       var p_1 = sibling(first_child(fragment_1));
       var text_1 = child(p_1, true);
       reset(p_1);
@@ -9686,7 +9887,7 @@ function TranslateManager($$anchor, $$props) {
       append($$anchor2, fragment_1);
     };
     var alternate = ($$anchor2) => {
-      var fragment_2 = root_23();
+      var fragment_2 = root_24();
       var div = sibling(first_child(fragment_2));
       var div_1 = sibling(child(div));
       var span = sibling(child(div_1));
@@ -9831,8 +10032,18 @@ if (undefined) {}
 var TranslateManager_default = TranslateManager;
 delegate(["click"]);
 
+// ../nanoflux/shared/password-strength.ts
+function isStrongPassword(password) {
+  if (password.length < 8)
+    return false;
+  const hasLetter = /[A-Za-z]/.test(password);
+  const hasDigit = /\d/.test(password);
+  const hasSymbol = /[^A-Za-z0-9]/.test(password);
+  return hasLetter && hasDigit && hasSymbol;
+}
+
 // ../nanoflux/web/src/components/FeverManager.svelte
-var root16 = from_html(`
+var root17 = from_html(`
     <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
   `, 1);
 var root_114 = from_html(`
@@ -9863,7 +10074,7 @@ var root_114 = from_html(`
       <button type="button" class="text-sm text-neutral-900 underline-offset-4 hover:underline disabled:opacity-50 dark:text-neutral-100"> </button>
     </div>
   `, 1);
-var root_24 = from_html(`
+var root_25 = from_html(`
     <p class="mt-3 text-sm text-red-500"> </p>
   `, 1);
 var root_34 = from_html(`
@@ -9920,6 +10131,10 @@ function FeverManager($$anchor, $$props) {
       set(formError, t("fever.passwordRequired"), true);
       return;
     }
+    if (get2(password).length > 0 && !isStrongPassword(get2(password))) {
+      set(formError, t("fever.passwordWeak"), true);
+      return;
+    }
     set(saving, true);
     try {
       const payload = { enabled: get2(enabled), user: get2(user).trim() };
@@ -9934,7 +10149,8 @@ function FeverManager($$anchor, $$props) {
       set(savedEnabled, updated.enabled, true);
       set(savedUser, updated.user, true);
     } catch (err) {
-      set(formError, err instanceof Error ? err.message : t("fever.saveFailed"), true);
+      const message = err instanceof Error ? err.message : "";
+      set(formError, message.includes("at least 8 characters") ? t("fever.passwordWeak") : message || t("fever.saveFailed"), true);
     } finally {
       set(saving, false);
     }
@@ -9951,7 +10167,7 @@ function FeverManager($$anchor, $$props) {
   var node = sibling(p, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root16();
+      var fragment_1 = root17();
       var p_1 = sibling(first_child(fragment_1));
       var text_1 = child(p_1, true);
       reset(p_1);
@@ -10074,7 +10290,7 @@ function FeverManager($$anchor, $$props) {
   var node_1 = sibling(node, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var fragment_3 = root_24();
+      var fragment_3 = root_25();
       var p_3 = sibling(first_child(fragment_3));
       var text_10 = child(p_3, true);
       reset(p_3);
@@ -10100,13 +10316,13 @@ var FeverManager_default = FeverManager;
 delegate(["click"]);
 
 // ../nanoflux/web/src/components/SettingsManager.svelte
-var root17 = from_html(`
+var root18 = from_html(`
         <button type="button" role="tab"> </button>
       `, 1);
 var root_115 = from_html(`
         <!>
       `, 1);
-var root_25 = from_html(`
+var root_26 = from_html(`
 
 <div class="flex min-w-0 flex-1 flex-col md:flex-row">
   <aside class="px-5 py-4 md:sticky md:top-4 md:m-4 md:flex md:h-[calc(100vh-2rem)] md:w-40 md:shrink-0 md:flex-col md:px-5 md:py-8">
@@ -10152,14 +10368,14 @@ function SettingsManager($$anchor, $$props) {
     };
   });
   next();
-  var fragment = root_25();
+  var fragment = root_26();
   var div = sibling(first_child(fragment));
   var aside = sibling(child(div));
   var nav = sibling(child(aside));
   var node = sibling(child(nav));
   each(node, 17, () => tabs, (item) => item.id, ($$anchor2, item) => {
     next();
-    var fragment_1 = root17();
+    var fragment_1 = root18();
     var button = sibling(first_child(fragment_1));
     var text2 = child(button);
     reset(button);
@@ -10239,7 +10455,7 @@ var SettingsManager_default = SettingsManager;
 delegate(["click"]);
 
 // ../nanoflux/web/src/components/ExportPage.svelte
-var root18 = from_html(`
+var root19 = from_html(`
       <p class="text-sm text-red-500"> </p>
     `, 1);
 var root_116 = from_html(`
@@ -10341,7 +10557,7 @@ function ExportPage($$anchor, $$props) {
   var node_2 = sibling(button, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root18();
+      var fragment_1 = root19();
       var p_1 = sibling(first_child(fragment_1));
       var text_4 = child(p_1, true);
       reset(p_1);
@@ -10389,8 +10605,8 @@ var ExportPage_default = ExportPage;
 delegate(["click"]);
 
 // ../nanoflux/node_modules/@lucide/svelte/dist/icons/eye.svelte
-var rest_excludes10 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root19 = from_html(`<!--
+var rest_excludes11 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root20 = from_html(`<!--
 @lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -10411,7 +10627,7 @@ Lucide SVG icon component, renders SVG Element with children.
 
 <!>`, 1);
 function Eye($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes10);
+  let props = rest_props($$props, rest_excludes11);
   const iconNode = [
     [
       "path",
@@ -10421,7 +10637,7 @@ function Eye($$anchor, $$props) {
     ],
     ["circle", { cx: "12", cy: "12", r: "3" }]
   ];
-  var fragment = root19();
+  var fragment = root20();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -10435,8 +10651,8 @@ function Eye($$anchor, $$props) {
 if (undefined) {}
 var eye_default = Eye;
 // ../nanoflux/node_modules/@lucide/svelte/dist/icons/eye-closed.svelte
-var rest_excludes11 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root20 = from_html(`<!--
+var rest_excludes12 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root21 = from_html(`<!--
 @lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -10457,7 +10673,7 @@ Lucide SVG icon component, renders SVG Element with children.
 
 <!>`, 1);
 function Eye_closed($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes11);
+  let props = rest_props($$props, rest_excludes12);
   const iconNode = [
     ["path", { d: "m15 18-.722-3.25" }],
     ["path", { d: "M2 8a10.645 10.645 0 0 0 20 0" }],
@@ -10465,7 +10681,7 @@ function Eye_closed($$anchor, $$props) {
     ["path", { d: "m4 15 1.726-2.05" }],
     ["path", { d: "m9 18 .722-3.25" }]
   ];
-  var fragment = root20();
+  var fragment = root21();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -10479,7 +10695,7 @@ function Eye_closed($$anchor, $$props) {
 if (undefined) {}
 var eye_closed_default = Eye_closed;
 // ../nanoflux/web/src/components/buttons/ItemFilterToggle.svelte
-var root21 = from_html(`
+var root22 = from_html(`
     <!>
   `, 1);
 var root_117 = from_html(`
@@ -10498,14 +10714,14 @@ function ItemFilterToggle($$anchor, $$props) {
   var node = sibling(child(button));
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root21();
+      var fragment_1 = root22();
       var node_1 = sibling(first_child(fragment_1));
       eye_default(node_1, spread_props(() => iconProps));
       next();
       append($$anchor2, fragment_1);
     };
     var alternate = ($$anchor2) => {
-      var fragment_2 = root21();
+      var fragment_2 = root22();
       var node_2 = sibling(first_child(fragment_2));
       eye_closed_default(node_2, spread_props(() => iconProps));
       next();
@@ -10537,8 +10753,8 @@ var ItemFilterToggle_default = ItemFilterToggle;
 delegate(["click"]);
 
 // ../nanoflux/node_modules/@lucide/svelte/dist/icons/check-check.svelte
-var rest_excludes12 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root22 = from_html(`<!--
+var rest_excludes13 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root23 = from_html(`<!--
 @lucide/svelte v1.33.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -10559,12 +10775,12 @@ Lucide SVG icon component, renders SVG Element with children.
 
 <!>`, 1);
 function Check_check($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes12);
+  let props = rest_props($$props, rest_excludes13);
   const iconNode = [
     ["path", { d: "M18 6 7 17l-5-5" }],
     ["path", { d: "m22 10-7.5 7.5L13 16" }]
   ];
-  var fragment = root22();
+  var fragment = root23();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -10578,7 +10794,7 @@ function Check_check($$anchor, $$props) {
 if (undefined) {}
 var check_check_default = Check_check;
 // ../nanoflux/web/src/components/buttons/MarkAllReadButton.svelte
-var root23 = from_html(`
+var root24 = from_html(`
 
 <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
   <!>
@@ -10588,7 +10804,7 @@ function MarkAllReadButton($$anchor, $$props) {
   const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
   const label = user_derived(() => t("items.markAllRead"));
   next();
-  var fragment = root23();
+  var fragment = root24();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   check_check_default(node, spread_props(() => iconProps));
@@ -10607,13 +10823,13 @@ var MarkAllReadButton_default = MarkAllReadButton;
 delegate(["click"]);
 
 // ../nanoflux/web/src/components/ItemList.svelte
-var root24 = from_html(`
+var root25 = from_html(`
   <p class="py-6 text-sm text-red-500"> </p>
 `, 1);
 var root_118 = from_html(`
   <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root_26 = from_html(`
+var root_27 = from_html(`
               <p class="mt-2 line-clamp-2 text-sm text-neutral-400 dark:text-neutral-500"> </p>
             `, 1);
 var root_35 = from_html(`
@@ -10786,7 +11002,7 @@ function ItemList($$anchor, $$props) {
   var node_2 = sibling(div, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root24();
+      var fragment_1 = root25();
       var p = sibling(first_child(fragment_1));
       var text2 = child(p, true);
       reset(p);
@@ -10828,7 +11044,7 @@ function ItemList($$anchor, $$props) {
         var node_4 = sibling(a_1, 2);
         {
           var consequent_2 = ($$anchor4) => {
-            var fragment_5 = root_26();
+            var fragment_5 = root_27();
             var p_2 = sibling(first_child(fragment_5));
             var text_5 = child(p_2);
             reset(p_2);
@@ -10940,96 +11156,451 @@ if (undefined) {}
 var ItemList_default = ItemList;
 delegate(["click"]);
 
-// ../nanoflux/web/src/App.svelte
-var root25 = from_html(`
+// ../nanoflux/web/src/components/buttons/LanguageToggle.svelte
+var root26 = from_html(`
+
+<button type="button" class="inline-flex min-w-[2rem] cursor-pointer items-center justify-center rounded-md p-1.5 text-xs font-medium text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"> </button>`, 1);
+function LanguageToggle($$anchor, $$props) {
+  push($$props, true);
+  const next2 = user_derived(() => nextLocale(localeState.locale));
+  const label = user_derived(() => get2(next2) === "en" ? "EN" : get2(next2) === "zh-Hans" ? "简" : "繁");
+  const aria = user_derived(() => get2(next2) === "en" ? t("lang.switchToEn") : get2(next2) === "zh-Hans" ? t("lang.switchToZhHans") : t("lang.switchToZhHant"));
+  next();
+  var fragment = root26();
+  var button = sibling(first_child(fragment));
+  var text2 = child(button);
+  reset(button);
+  template_effect(() => {
+    set_attribute2(button, "aria-label", get2(aria));
+    set_attribute2(button, "title", get2(aria));
+    set_text(text2, `
+  ${get2(label) ?? ""}
+`);
+  });
+  delegated("click", button, function(...$$args) {
+    toggleLocale?.apply(this, $$args);
+  });
+  append($$anchor, fragment);
+  pop();
+}
+if (undefined) {}
+var LanguageToggle_default = LanguageToggle;
+delegate(["click"]);
+
+// ../nanoflux/node_modules/@lucide/svelte/dist/icons/moon.svelte
+var rest_excludes14 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root27 = from_html(`<!--
+@lucide/svelte v1.33.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMjAuOTg1IDEyLjQ4NmE5IDkgMCAxIDEtOS40NzMtOS40NzJjLjQwNS0uMDIyLjYxNy40Ni40MDIuODAzYTYgNiAwIDAgMCA4LjI2OCA4LjI2OGMuMzQ0LS4yMTUuODI1LS4wMDQuODAzLjQwMSIgLz4KPC9zdmc+Cg==) - https://lucide.dev/icons/moon
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Moon($$anchor, $$props) {
+  let props = rest_props($$props, rest_excludes14);
+  const iconNode = [
+    [
+      "path",
+      {
+        d: "M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"
+      }
+    ]
+  ];
+  var fragment = root27();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "moon" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var moon_default = Moon;
+// ../nanoflux/node_modules/@lucide/svelte/dist/icons/sun.svelte
+var rest_excludes15 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root28 = from_html(`<!--
+@lucide/svelte v1.33.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI0IiAvPgogIDxwYXRoIGQ9Ik0xMiAydjIiIC8+CiAgPHBhdGggZD0iTTEyIDIwdjIiIC8+CiAgPHBhdGggZD0ibTQuOTMgNC45MyAxLjQxIDEuNDEiIC8+CiAgPHBhdGggZD0ibTE3LjY2IDE3LjY2IDEuNDEgMS40MSIgLz4KICA8cGF0aCBkPSJNMiAxMmgyIiAvPgogIDxwYXRoIGQ9Ik0yMCAxMmgyIiAvPgogIDxwYXRoIGQ9Im02LjM0IDE3LjY2LTEuNDEgMS40MSIgLz4KICA8cGF0aCBkPSJtMTkuMDcgNC45My0xLjQxIDEuNDEiIC8+Cjwvc3ZnPgo=) - https://lucide.dev/icons/sun
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Sun($$anchor, $$props) {
+  let props = rest_props($$props, rest_excludes15);
+  const iconNode = [
+    ["circle", { cx: "12", cy: "12", r: "4" }],
+    ["path", { d: "M12 2v2" }],
+    ["path", { d: "M12 20v2" }],
+    ["path", { d: "m4.93 4.93 1.41 1.41" }],
+    ["path", { d: "m17.66 17.66 1.41 1.41" }],
+    ["path", { d: "M2 12h2" }],
+    ["path", { d: "M20 12h2" }],
+    ["path", { d: "m6.34 17.66-1.41 1.41" }],
+    ["path", { d: "m19.07 4.93-1.41 1.41" }]
+  ];
+  var fragment = root28();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "sun" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var sun_default = Sun;
+// ../nanoflux/web/src/components/buttons/ThemeToggle.svelte
+var root29 = from_html(`
     <!>
   `, 1);
 var root_119 = from_html(`
-          <!>
-        `, 1);
-var root_27 = from_html(`
-    <div class="min-w-0 flex-1">
-      <div class="mx-auto max-w-page px-5 py-10 md:py-16">
-        <!>
-      </div>
-    </div>
-  `, 1);
-var root_36 = from_html(`
 
-<main class="w-full font-sans md:flex">
+<button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
   <!>
-  <!>
-</main>`, 1);
-function App($$anchor) {
-  const $route = () => store_get(route, "$route", $$stores);
-  const [$$stores, $$cleanup] = setup_stores();
+</button>`, 1);
+function ThemeToggle($$anchor, $$props) {
+  push($$props, false);
+  const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
+  init();
   next();
-  var fragment = root_36();
-  var main = sibling(first_child(fragment));
-  var node = sibling(child(main));
-  Header_default(node, {});
-  var node_1 = sibling(node, 2);
+  var fragment = root_119();
+  var button = sibling(first_child(fragment));
+  var node = sibling(child(button));
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root25();
-      var node_2 = sibling(first_child(fragment_1));
-      SettingsManager_default(node_2, {});
+      var fragment_1 = root29();
+      var node_1 = sibling(first_child(fragment_1));
+      sun_default(node_1, spread_props(() => iconProps));
       next();
       append($$anchor2, fragment_1);
     };
-    var alternate_1 = ($$anchor2) => {
-      var fragment_2 = root_27();
-      var div = sibling(first_child(fragment_2));
-      var div_1 = sibling(child(div));
-      var node_3 = sibling(child(div_1));
+    var alternate = ($$anchor2) => {
+      var fragment_2 = root29();
+      var node_2 = sibling(first_child(fragment_2));
+      moon_default(node_2, spread_props(() => iconProps));
+      next();
+      append($$anchor2, fragment_2);
+    };
+    if_block(node, ($$render) => {
+      if (themeState.mode === "dark")
+        $$render(consequent);
+      else
+        $$render(alternate, -1);
+    });
+  }
+  next();
+  reset(button);
+  template_effect(($0, $1) => {
+    set_attribute2(button, "aria-label", $0);
+    set_attribute2(button, "title", $1);
+  }, [
+    () => themeState.mode === "dark" ? t("theme.switchToLight") : t("theme.switchToDark"),
+    () => themeState.mode === "dark" ? t("theme.lightMode") : t("theme.darkMode")
+  ]);
+  delegated("click", button, function(...$$args) {
+    toggleTheme?.apply(this, $$args);
+  });
+  append($$anchor, fragment);
+  pop();
+}
+if (undefined) {}
+var ThemeToggle_default = ThemeToggle;
+delegate(["click"]);
+
+// ../nanoflux/web/src/components/LoginGate.svelte
+var root30 = from_html(`
+      <p class="mt-3 text-sm text-red-500"> </p>
+    `, 1);
+var root_120 = from_html(`
+
+<main class="flex min-h-screen items-center justify-center px-5">
+  <form class="w-full max-w-sm">
+    <div class="flex items-center justify-between">
+      <h1 class="text-lg font-medium tracking-tight">NanoFlux</h1>
+      <div class="flex items-center gap-1">
+        <!>
+        <!>
+      </div>
+    </div>
+    <p class="mt-3 text-sm text-neutral-500 dark:text-neutral-400"> </p>
+    <label class="mt-8 block">
+      <span class="sr-only"> </span>
+      <input type="password" name="password" autocomplete="current-password"/>
+    </label>
+    <!>
+    <button type="submit" class="mt-8 w-full cursor-pointer rounded-md bg-neutral-900 py-2 text-sm text-white transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-neutral-100 dark:text-neutral-900"> </button>
+  </form>
+</main>`, 1);
+function LoginGate($$anchor, $$props) {
+  push($$props, true);
+  const inputClass = "w-full border-0 border-b border-neutral-200 bg-transparent py-2 text-sm outline-none placeholder:text-neutral-300 focus:border-neutral-900 dark:border-neutral-700 dark:placeholder:text-neutral-600 dark:focus:border-neutral-100";
+  let password = state("");
+  let submitting = state(false);
+  let error = state("");
+  async function handleSubmit(event2) {
+    event2.preventDefault();
+    if (get2(submitting))
+      return;
+    set(error, "");
+    set(submitting, true);
+    try {
+      await submitLogin(get2(password));
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "";
+      if (message === "Invalid password")
+        set(error, t("auth.invalid"), true);
+      else if (message === "Too many login attempts")
+        set(error, t("auth.tooMany"), true);
+      else
+        set(error, message || t("auth.failed"), true);
+    } finally {
+      set(submitting, false);
+    }
+  }
+  next();
+  var fragment = root_120();
+  var main = sibling(first_child(fragment));
+  var form = sibling(child(main));
+  var div = sibling(child(form));
+  var div_1 = sibling(child(div), 3);
+  var node = sibling(child(div_1));
+  LanguageToggle_default(node, {});
+  var node_1 = sibling(node, 2);
+  ThemeToggle_default(node_1, {});
+  next();
+  reset(div_1);
+  next();
+  reset(div);
+  var p = sibling(div, 2);
+  var text2 = child(p);
+  reset(p);
+  var label = sibling(p, 2);
+  var span = sibling(child(label));
+  var text_1 = child(span, true);
+  reset(span);
+  var input = sibling(span, 2);
+  remove_input_defaults(input);
+  set_class(input, 1, clsx2(inputClass));
+  next();
+  reset(label);
+  var node_2 = sibling(label, 2);
+  {
+    var consequent = ($$anchor2) => {
+      var fragment_1 = root30();
+      var p_1 = sibling(first_child(fragment_1));
+      var text_2 = child(p_1, true);
+      reset(p_1);
+      next();
+      template_effect(() => set_text(text_2, get2(error)));
+      append($$anchor2, fragment_1);
+    };
+    if_block(node_2, ($$render) => {
+      if (get2(error))
+        $$render(consequent);
+    });
+  }
+  var button = sibling(node_2, 2);
+  var text_3 = child(button);
+  reset(button);
+  next();
+  reset(form);
+  next();
+  reset(main);
+  template_effect(($0, $1, $2, $3) => {
+    set_text(text2, `
+      ${$0 ?? ""}
+    `);
+    set_text(text_1, $1);
+    set_attribute2(input, "placeholder", $2);
+    input.disabled = get2(submitting);
+    button.disabled = get2(submitting) || !get2(password);
+    set_text(text_3, `
+      ${$3 ?? ""}
+    `);
+  }, [
+    () => t("auth.hint"),
+    () => t("auth.password"),
+    () => t("auth.password"),
+    () => get2(submitting) ? t("auth.submitting") : t("auth.submit")
+  ]);
+  event("submit", form, handleSubmit);
+  bind_value(input, () => get2(password), ($$value) => set(password, $$value));
+  append($$anchor, fragment);
+  pop();
+}
+if (undefined) {}
+var LoginGate_default = LoginGate;
+
+// ../nanoflux/web/src/App.svelte
+var root31 = from_html(`
+  <main class="flex min-h-screen items-center justify-center px-5 text-sm text-neutral-400"> </main>
+`, 1);
+var root_121 = from_html(`
+  <!>
+`, 1);
+var root_28 = from_html(`
+      <!>
+    `, 1);
+var root_36 = from_html(`
+            <!>
+          `, 1);
+var root_44 = from_html(`
+      <div class="min-w-0 flex-1">
+        <div class="mx-auto max-w-page px-5 py-10 md:py-16">
+          <!>
+        </div>
+      </div>
+    `, 1);
+var root_53 = from_html(`
+  <main class="w-full font-sans md:flex">
+    <!>
+    <!>
+  </main>
+`, 1);
+var root_63 = from_html(`
+
+<!>`, 1);
+function App($$anchor, $$props) {
+  push($$props, true);
+  const $route = () => store_get(route, "$route", $$stores);
+  const [$$stores, $$cleanup] = setup_stores();
+  onMount(() => {
+    initAuth();
+  });
+  const locked = user_derived(() => authState.required && !authState.authenticated);
+  next();
+  var fragment = root_63();
+  var node = sibling(first_child(fragment));
+  {
+    var consequent = ($$anchor2) => {
+      var fragment_1 = root31();
+      var main = sibling(first_child(fragment_1));
+      var text2 = child(main);
+      reset(main);
+      next();
+      template_effect(($0) => set_text(text2, `
+    ${$0 ?? ""}
+  `), [() => t("items.loading")]);
+      append($$anchor2, fragment_1);
+    };
+    var consequent_1 = ($$anchor2) => {
+      var fragment_2 = root_121();
+      var node_1 = sibling(first_child(fragment_2));
+      LoginGate_default(node_1, {});
+      next();
+      append($$anchor2, fragment_2);
+    };
+    var alternate_2 = ($$anchor2) => {
+      var fragment_3 = root_53();
+      var main_1 = sibling(first_child(fragment_3));
+      var node_2 = sibling(child(main_1));
+      Header_default(node_2, {});
+      var node_3 = sibling(node_2, 2);
       {
-        var consequent_1 = ($$anchor3) => {
-          var fragment_3 = root_119();
-          var node_4 = sibling(first_child(fragment_3));
-          FeedsManager_default(node_4, {});
-          next();
-          append($$anchor3, fragment_3);
-        };
         var consequent_2 = ($$anchor3) => {
-          var fragment_4 = root_119();
-          var node_5 = sibling(first_child(fragment_4));
-          ExportPage_default(node_5, {});
+          var fragment_4 = root_28();
+          var node_4 = sibling(first_child(fragment_4));
+          SettingsManager_default(node_4, {});
           next();
           append($$anchor3, fragment_4);
         };
-        var alternate = ($$anchor3) => {
-          var fragment_5 = root_119();
-          var node_6 = sibling(first_child(fragment_5));
-          ItemList_default(node_6, {});
+        var alternate_1 = ($$anchor3) => {
+          var fragment_5 = root_44();
+          var div = sibling(first_child(fragment_5));
+          var div_1 = sibling(child(div));
+          var node_5 = sibling(child(div_1));
+          {
+            var consequent_3 = ($$anchor4) => {
+              var fragment_6 = root_36();
+              var node_6 = sibling(first_child(fragment_6));
+              FeedsManager_default(node_6, {});
+              next();
+              append($$anchor4, fragment_6);
+            };
+            var consequent_4 = ($$anchor4) => {
+              var fragment_7 = root_36();
+              var node_7 = sibling(first_child(fragment_7));
+              ExportPage_default(node_7, {});
+              next();
+              append($$anchor4, fragment_7);
+            };
+            var alternate = ($$anchor4) => {
+              var fragment_8 = root_36();
+              var node_8 = sibling(first_child(fragment_8));
+              ItemList_default(node_8, {});
+              next();
+              append($$anchor4, fragment_8);
+            };
+            if_block(node_5, ($$render) => {
+              if ($route() === "/feeds")
+                $$render(consequent_3);
+              else if ($route() === "/export")
+                $$render(consequent_4, 1);
+              else
+                $$render(alternate, -1);
+            });
+          }
+          next();
+          reset(div_1);
+          next();
+          reset(div);
           next();
           append($$anchor3, fragment_5);
         };
         if_block(node_3, ($$render) => {
-          if ($route() === "/feeds")
-            $$render(consequent_1);
-          else if ($route() === "/export")
-            $$render(consequent_2, 1);
+          if ($route() === "/settings")
+            $$render(consequent_2);
           else
-            $$render(alternate, -1);
+            $$render(alternate_1, -1);
         });
       }
       next();
-      reset(div_1);
+      reset(main_1);
       next();
-      reset(div);
-      next();
-      append($$anchor2, fragment_2);
+      append($$anchor2, fragment_3);
     };
-    if_block(node_1, ($$render) => {
-      if ($route() === "/settings")
+    if_block(node, ($$render) => {
+      if (authState.loading)
         $$render(consequent);
+      else if (get2(locked))
+        $$render(consequent_1, 1);
       else
-        $$render(alternate_1, -1);
+        $$render(alternate_2, -1);
     });
   }
-  next();
-  reset(main);
   append($$anchor, fragment);
+  pop();
   $$cleanup();
 }
 if (undefined) {}
