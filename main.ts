@@ -1,16 +1,7 @@
 import { join } from "node:path";
 import { Elysia } from "elysia";
-import {
-  adminPasswordStrengthError,
-  resolveAdminPassword,
-  resolveHost,
-  resolvePort,
-} from "./shared/env";
-import {
-  isLocalhostAddress,
-  isLocalhostRestricted,
-  withLocalhostOnly,
-} from "./shared/localhost-only";
+import { requireAdminPassword, resolvePort } from "./shared/env";
+import { withLocalhostOnly } from "./shared/localhost-only";
 import { createAuthRoutes, withAdminAuth } from "./api/auth";
 import { buildWebManifest } from "./shared/manifest";
 import { DEFAULT_LOCALE, parseLocale, type Locale } from "./shared/locale";
@@ -61,6 +52,15 @@ function manifestLocale(query: Record<string, string | undefined>): Locale {
   return parseLocale(query.locale ?? query.lang) ?? DEFAULT_LOCALE;
 }
 
+let adminPassword: string;
+try {
+  adminPassword = requireAdminPassword();
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(message);
+  process.exit(1);
+}
+
 await ensureGoogleConnectivity();
 await loadAppConfig();
 {
@@ -77,27 +77,10 @@ await loadAppConfig();
 }
 console.log(`[fever] config loaded enabled=${isFeverEnabled()}`);
 
-const host = resolveHost();
-const restrictLocalhost = isLocalhostRestricted(host);
-const adminPassword = resolveAdminPassword();
-const adminAuthRequired = !restrictLocalhost;
-
-if (adminAuthRequired) {
-  if (!adminPassword) {
-    console.error(
-      "ADMIN_PASSWORD is required when HOST is not 127.0.0.1. Set it in .env before exposing the operator UI.",
-    );
-    process.exit(1);
-  }
-  const strengthError = adminPasswordStrengthError(adminPassword);
-  if (strengthError) {
-    console.error(strengthError);
-    process.exit(1);
-  }
-}
+const BIND_HOST = "0.0.0.0";
 
 const adminAuth = {
-  required: adminAuthRequired,
+  required: true,
   password: adminPassword,
 };
 
@@ -108,37 +91,18 @@ const restRoutes = new Elysia()
   .use(translateRoutes)
   .use(feverRoutes);
 
-const guardedRestRoutes = restrictLocalhost
-  ? withLocalhostOnly(restRoutes)
-  : withAdminAuth(restRoutes, adminAuth);
-
 const protectedBackendRoutes = new Elysia()
-  .use(guardedRestRoutes)
+  .use(withAdminAuth(restRoutes, adminAuth))
   .use(withLocalhostOnly(mcpRoutes));
-
-function forbidIfRemote(ctx: {
-  request: Request;
-  server: { requestIP: (request: Request) => { address: string } | null } | null;
-  set: { status?: number | string };
-}): { error: string } | null {
-  if (!restrictLocalhost) return null;
-  const address = ctx.server?.requestIP(ctx.request)?.address;
-  if (isLocalhostAddress(address)) return null;
-  ctx.set.status = 403;
-  return { error: "Forbidden" };
-}
 
 async function feverGet(ctx: {
   request: Request;
   query: Record<string, string | undefined>;
-  server: { requestIP: (request: Request) => { address: string } | null } | null;
   set: { status?: number | string; headers: Record<string, unknown> };
 }) {
   if (!isFeverApiQuery(ctx.query)) {
     return indexHtml();
   }
-  const forbidden = forbidIfRemote(ctx);
-  if (forbidden) return forbidden;
   return handleFeverRequest(ctx);
 }
 
@@ -146,11 +110,8 @@ async function feverPost(ctx: {
   request: Request;
   query: Record<string, string | undefined>;
   body?: unknown;
-  server: { requestIP: (request: Request) => { address: string } | null } | null;
   set: { status?: number | string; headers: Record<string, unknown> };
 }) {
-  const forbidden = forbidIfRemote(ctx);
-  if (forbidden) return forbidden;
   return handleFeverRequest(ctx);
 }
 
@@ -197,29 +158,23 @@ const app = new Elysia().use(publicRoutes);
 
 const port = resolvePort();
 try {
-  app.listen({ port, hostname: host });
+  app.listen({ port, hostname: BIND_HOST });
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
   console.error(
-    `[listen] failed on ${host}:${port} — another NanoFlux instance may already be running: ${message}`,
+    `[listen] failed on ${BIND_HOST}:${port} — another NanoFlux instance may already be running: ${message}`,
   );
   process.exit(1);
 }
 
 if (!app.server) {
-  console.error(`[listen] failed on ${host}:${port} — server did not start`);
+  console.error(`[listen] failed on ${BIND_HOST}:${port} — server did not start`);
   process.exit(1);
 }
 
-if (restrictLocalhost) {
-  console.log(
-    `Listening on http://localhost:${app.server.port} (REST/Fever/MCP: localhost only)`,
-  );
-} else {
-  console.log(
-    `Listening on http://${host}:${app.server.port}/ (operator UI/REST require ADMIN_PASSWORD; MCP: localhost only)`,
-  );
-}
+console.log(
+  `Listening on http://${BIND_HOST}:${app.server.port}/ (operator UI/REST require ADMIN_PASSWORD; MCP: localhost only)`,
+);
 
 // Start cron only after we own the listen port, so a failed bind cannot leave
 // orphan fetchers writing to the same SQLite database.

@@ -1,12 +1,5 @@
 import { Elysia, type AnyElysia } from "elysia";
 
-export const DEFAULT_HOST = "127.0.0.1";
-
-/** `HOST=127.0.0.1` enables REST/Fever localhost-only middleware. MCP is always localhost-only. */
-export function isLocalhostRestricted(host: string): boolean {
-  return host === DEFAULT_HOST;
-}
-
 const LOCALHOST_ADDRESSES = new Set([
   "127.0.0.1",
   "::1",

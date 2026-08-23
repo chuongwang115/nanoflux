@@ -1,11 +1,5 @@
 import { readLiteralEnvValue } from "./dotenv-literal";
-import { DEFAULT_HOST } from "./localhost-only";
 import { passwordStrengthError } from "./password-strength";
-
-export function resolveHost(): string {
-  const raw = Bun.env.HOST?.trim();
-  return raw || DEFAULT_HOST;
-}
 
 export function resolvePort(): number {
   const raw = Bun.env.PORT?.trim();
@@ -29,4 +23,19 @@ export function resolveAdminPassword(): string {
 
 export function adminPasswordStrengthError(password: string): string | null {
   return passwordStrengthError(password, "ADMIN_PASSWORD");
+}
+
+/** Fail startup when ADMIN_PASSWORD is missing or too weak. */
+export function requireAdminPassword(): string {
+  const password = resolveAdminPassword();
+  if (!password) {
+    throw new Error(
+      "ADMIN_PASSWORD is not set. Copy .env.example to .env and set ADMIN_PASSWORD.",
+    );
+  }
+  const strengthError = adminPasswordStrengthError(password);
+  if (strengthError) {
+    throw new Error(strengthError);
+  }
+  return password;
 }

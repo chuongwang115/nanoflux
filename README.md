@@ -37,7 +37,7 @@ Typical RSS readers optimize for human browsing. NanoFlux optimizes for **agent 
 
 Read state (`is_read`) and agent consumption (`is_ingested`) are independent. Opening an article in the UI or Reeder does not mark it ingested for MCP, and `get_uningested_news` does not mark it read for Fever/UI.
 
-Run it on localhost next to your agent runtime. MCP (`/mcp`) accepts only local clients and does not use `ADMIN_PASSWORD`. When `HOST=127.0.0.1`, REST and Fever also accept only local clients. When you bind a public address (`HOST=0.0.0.0`), the operator UI and REST API require `ADMIN_PASSWORD` before they can be used.
+The server listens on all interfaces. MCP (`/mcp`) accepts only local clients and does not use `ADMIN_PASSWORD`. The operator UI and REST API require `ADMIN_PASSWORD`.
 
 ## Features
 
@@ -71,7 +71,7 @@ Run it on localhost next to your agent runtime. MCP (`/mcp`) accepts only local 
 - `/export`: Excel by time range
 - Home list shows cover thumbnails when an item has a `cover` URL
 - PWA shell (installable; manifest at `/manifest.webmanifest`), trilingual UI (English / Simplified Chinese / Traditional Chinese), light/dark theme, adjustable font size
-- When bound publicly (`HOST` is not `127.0.0.1`), a login screen gates the UI; the sidebar shows **Sign out** after authentication
+- A login screen gates the UI; the sidebar shows **Sign out** after authentication
 
 ## Tech Stack
 
@@ -125,8 +125,7 @@ Create a `.env` file at the project root (see `.env.example`).
 | Variable | Default | Description |
 | --- | --- | --- |
 | `PORT` | `3000` in `.env.example` | HTTP listen port (required; startup fails when omitted) |
-| `HOST` | `127.0.0.1` | Bind address. `127.0.0.1` also restricts REST and Fever to localhost. MCP is always localhost-only (no admin password). Use `0.0.0.0` to listen on all interfaces; the operator UI and REST then require `ADMIN_PASSWORD`. |
-| `ADMIN_PASSWORD` | — | Operator password. Required at startup when `HOST` is not `127.0.0.1`. Must be at least 8 characters and include letters, digits, and symbols. Unused on localhost. |
+| `ADMIN_PASSWORD` | — | Operator password. Required at startup. Must be at least 8 characters and include letters, digits, and symbols. |
 | `DB_PATH` | `data.sqlite` | SQLite database file path |
 
 ### AI filter and title translation (optional)
@@ -259,7 +258,7 @@ Service logs are written to the `logs/` directory.
 
 Primary interface: `http://localhost:<PORT>/mcp` (JSON response mode enabled; `PORT` from `.env`).
 
-Only localhost clients can reach this endpoint, including when `HOST=0.0.0.0`. It does not use `ADMIN_PASSWORD`.
+Only localhost clients can reach this endpoint. It does not use `ADMIN_PASSWORD`.
 
 ### Client configuration
 
@@ -319,11 +318,11 @@ News query tools return stored items from the database. Each item includes integ
 
 ## REST API
 
-REST is available for scripts and the operator UI. JSON endpoints return `{ code, message, data }` unless noted otherwise (e.g. OPML / Excel downloads). `code` is `0` on success. When `HOST=127.0.0.1`, these routes are localhost-only (Fever `/fever` uses the same restriction). When `HOST` is not `127.0.0.1`, REST (except `/api/auth/*`) requires a session cookie from `POST /api/auth/login` or `Authorization: Bearer <ADMIN_PASSWORD>`. MCP is always localhost-only and is not gated by `ADMIN_PASSWORD`. The Fever protocol uses its own user/password.
+REST is available for scripts and the operator UI. JSON endpoints return `{ code, message, data }` unless noted otherwise (e.g. OPML / Excel downloads). `code` is `0` on success. REST (except `/api/auth/*`) requires a session cookie from `POST /api/auth/login` or `Authorization: Bearer <ADMIN_PASSWORD>`. MCP is always localhost-only and is not gated by `ADMIN_PASSWORD`. The Fever protocol uses its own user/password.
 
 ### Auth — `/api/auth`
 
-Used when `HOST` is not `127.0.0.1` (`required: true`). On localhost bind, `GET /api/auth/status` reports `{ required: false, authenticated: true }` and login is a no-op.
+`GET /api/auth/status` reports `{ required: true, authenticated }`.
 
 | Method | Path | Description |
 | --- | --- | --- |
@@ -420,13 +419,13 @@ Fever-compatible readers (for example [Reeder](https://reederapp.com)) can sync 
 
 **Endpoint:** `http://localhost:<PORT>/fever/` (trailing slash optional). GET is used when the query looks like a Fever request (`api`, `feeds`, `groups`, `items`, `unread_item_ids`, `saved_item_ids`, or `mark`); otherwise GET `/fever` serves the operator UI. POST always goes to the API. `api_version` is `3`.
 
-When `HOST=127.0.0.1`, only localhost clients can reach this endpoint. Bind `0.0.0.0` if a reader on another device must connect, and keep Fever disabled until credentials are set.
+Readers on another device can connect to this endpoint. Keep Fever disabled until credentials are set.
 
 ### Client setup
 
 1. Open `/settings#fever` in the operator UI (or `POST /api/fever`) and set **User**, **Password**, then turn Fever **On**
 2. In the reader, add a Fever account:
-   - Server: `http://localhost:<PORT>/fever/` (or `http://<lan-host>:<PORT>/fever/` when not localhost-restricted)
+   - Server: `http://localhost:<PORT>/fever/` (or `http://<lan-host>:<PORT>/fever/` from another device)
    - Email / username and password: the same values stored in `config.json` under `fever`
 3. The reader sends `api_key` as `md5("<user>:<password>")`. Auth failure returns `{ "api_version": 3, "auth": 0 }`
 
