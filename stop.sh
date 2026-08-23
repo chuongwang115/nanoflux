@@ -3,24 +3,48 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
+OS="$(uname -s)"
 LABEL="com.nanoflux.app"
 PLIST="${HOME}/Library/LaunchAgents/${LABEL}.plist"
+SERVICE_NAME="nanoflux"
 
 stopped=0
 
-if [[ -f "$PLIST" ]]; then
-  if launchctl list 2>/dev/null | grep -q "$LABEL"; then
-    echo "Stopping LaunchAgent ${LABEL}..."
-    launchctl bootout "gui/$(id -u)" "$PLIST" 2>/dev/null || launchctl unload "$PLIST" 2>/dev/null || true
+stop_linux_service() {
+  export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+  if systemctl --user is-active --quiet "$SERVICE_NAME" 2>/dev/null; then
+    echo "Stopping systemd user service ${SERVICE_NAME}..."
+    systemctl --user stop "$SERVICE_NAME"
     stopped=1
-    echo "Stopped NanoFlux LaunchAgent."
+    echo "Stopped NanoFlux systemd user service."
   fi
-fi
+}
+
+stop_macos_service() {
+  if [[ -f "$PLIST" ]]; then
+    if launchctl list 2>/dev/null | grep -q "$LABEL"; then
+      echo "Stopping LaunchAgent ${LABEL}..."
+      launchctl bootout "gui/$(id -u)" "$PLIST" 2>/dev/null || launchctl unload "$PLIST" 2>/dev/null || true
+      stopped=1
+      echo "Stopped NanoFlux LaunchAgent."
+    fi
+  fi
+}
+
+case "$OS" in
+  Linux) stop_linux_service ;;
+  Darwin) stop_macos_service ;;
+esac
 
 PORT="$(bash "./scripts/read-env-port.sh")"
-pids="$(lsof -tiTCP:"$PORT" -sTCP:LISTEN 2>/dev/null || true)"
+pids=""
+if command -v lsof >/dev/null 2>&1; then
+  pids="$(lsof -tiTCP:"$PORT" -sTCP:LISTEN 2>/dev/null || true)"
+elif command -v ss >/dev/null 2>&1; then
+  pids="$(ss -lptn "sport = :${PORT}" 2>/dev/null | sed -n 's/.*pid=\([0-9]*\).*/\1/p' | sort -u | tr '\n' ' ' || true)"
+fi
 
-if [[ -n "$pids" ]]; then
+if [[ -n "${pids:-}" ]]; then
   echo "Stopping process on port ${PORT}..."
   # shellcheck disable=SC2086
   kill $pids 2>/dev/null || true

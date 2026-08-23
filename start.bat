@@ -37,16 +37,17 @@ if errorlevel 1 (
 echo.
 echo ========================================
 echo   About to start NanoFlux (background)
-echo   Browser: http://localhost:%PORT%/
+echo   Admin: http://localhost:%PORT%/
 echo ========================================
 echo.
 echo Press any key to continue...
 pause >nul
 echo.
 
-powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "Start-Process -FilePath '%BUN_CMD%' -ArgumentList 'run','start' -WorkingDirectory '%WORKDIR%' -WindowStyle Hidden; $p=%PORT%; $u='http://localhost:'+$p+'/'; $deadline=(Get-Date).AddMinutes(2); while((Get-Date) -lt $deadline){try{$t=New-Object Net.Sockets.TcpClient;$t.Connect('127.0.0.1',$p);$t.Close();Start-Process $u;break}catch{Start-Sleep -Milliseconds 500}}"
+powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "Start-Process -FilePath '%BUN_CMD%' -ArgumentList 'run','start' -WorkingDirectory '%WORKDIR%' -WindowStyle Hidden"
 
-echo NanoFlux is running. This window will close shortly.
+echo NanoFlux is running. Admin: http://localhost:%PORT%/
+echo This window will close shortly.
 ping -n 3 127.0.0.1 >nul
 
 endlocal

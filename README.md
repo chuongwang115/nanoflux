@@ -233,13 +233,13 @@ Keep NanoFlux running as a long-lived local service next to your agent host.
 | macOS / Linux | `./start.sh` | `./stop.sh` |
 | Windows | `start.bat` | `stop.bat` |
 
-These scripts install dependencies if needed, start NanoFlux in the background, and open the browser automatically.
+These scripts install dependencies if needed and start NanoFlux in the background. They print the admin URL; they do not open a browser.
 
 ### Auto-start on boot
 
 The install scripts build the frontend once (`bun run build:web`), then register a service that runs `bun run main.ts` (backend only; it does not rebuild on each boot).
 
-**macOS** — register as a user LaunchAgent:
+**macOS / Linux** — `./install-service.sh` registers a user service (LaunchAgent on macOS, systemd `--user` on Linux):
 
 ```bash
 chmod +x start.sh stop.sh install-service.sh uninstall-service.sh
@@ -247,9 +247,11 @@ chmod +x start.sh stop.sh install-service.sh uninstall-service.sh
 ./uninstall-service.sh # remove
 ```
 
+On Linux the unit is `~/.config/systemd/user/nanoflux.service`. The installer also tries `loginctl enable-linger` so the service starts at boot without an active login session. Check status with `systemctl --user status nanoflux`.
+
 **Windows** — run `install-service.bat` as Administrator to register an auto-start service (uses [NSSM](https://nssm.cc/) as a wrapper). Run `uninstall-service.bat` to remove it.
 
-Service logs are written to the `logs/` directory on both platforms.
+Service logs are written to the `logs/` directory.
 
 ## MCP
 
