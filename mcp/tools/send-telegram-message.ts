@@ -9,31 +9,17 @@ function escapeHtml(value: string): string {
     .replaceAll(">", "&gt;");
 }
 
-/** Convert ISO 3166-1 alpha-2 to a regional-indicator flag emoji (e.g. CN → 🇨🇳). */
-function countryCodeToFlag(country: string): string {
-  const code = country.trim().toUpperCase();
-  if (!/^[A-Z]{2}$/.test(code)) {
-    throw new Error(
-      `Invalid country code "${country.trim()}": expected a single ISO 3166-1 alpha-2 code (e.g. CN)`,
-    );
-  }
-  const base = 0x1f1e6; // Regional Indicator Symbol Letter A
-  return String.fromCodePoint(
-    base + code.charCodeAt(0) - 65,
-    base + code.charCodeAt(1) - 65,
-  );
-}
-
 function buildTelegramText(
   title: string,
   url: string,
-  country?: string | null,
+  tag?: string | null,
 ): string {
-  const flag =
-    country != null && country.trim() !== ""
-      ? `${countryCodeToFlag(country)} `
-      : "";
-  return `${flag}<b>${escapeHtml(title.trim())}</b>\n${escapeHtml(url.trim())}`;
+  const trimmedTag = tag?.trim() ?? "";
+  const headline =
+    trimmedTag !== ""
+      ? `【${escapeHtml(trimmedTag)}】${escapeHtml(title.trim())}`
+      : escapeHtml(title.trim());
+  return `<b>${headline}</b>\n${escapeHtml(url.trim())}`;
 }
 
 export function registerSendTelegramMessage(server: McpServer): void {
@@ -41,7 +27,7 @@ export function registerSendTelegramMessage(server: McpServer): void {
     "send_telegram_message",
     {
       description:
-        "Post a title + URL message to the configured Telegram channel via Bot API. The title is rendered in bold (HTML). Optional country is at most one ISO 3166-1 alpha-2 code and is shown as a flag emoji before the title. Uses TELEGRAM_BOT_TOKEN and TELEGRAM_CHANNEL_ID from the server environment. The bot must be an admin of that channel.",
+        "Post a title + URL message to the configured Telegram channel via Bot API. The title is rendered in bold (HTML). Optional tag is at most one item (country, industry, company, etc.); when set, the headline is shown as 【tag】title (all bold). Uses TELEGRAM_BOT_TOKEN and TELEGRAM_CHANNEL_ID from the server environment. The bot must be an admin of that channel.",
       inputSchema: {
         title: z
           .string()
@@ -53,17 +39,18 @@ export function registerSendTelegramMessage(server: McpServer): void {
           .url()
           .max(2048)
           .describe("Link URL to include after the title"),
-        country: z
+        tag: z
           .string()
           .trim()
-          .regex(/^$|^[A-Za-z]{2}$/, {
+          .max(64)
+          .refine((value) => value === "" || !/[,，;；|/]/.test(value), {
             message:
-              "country must be a single ISO 3166-1 alpha-2 code (exactly one country, e.g. CN)",
+              "tag must be a single item (country, industry, company, etc.); do not pass a list",
           })
           .optional()
           .nullable()
           .describe(
-            "At most one ISO 3166-1 alpha-2 country code (exactly 2 letters, e.g. CN). Do not pass multiple countries or a list. Shown as a flag emoji before the title. Omit, null, or empty to skip",
+            "Optional single tag: country, industry, company, etc. At most one item; do not pass a list. When set, the bold headline is 【tag】title. Omit, null, or empty to skip",
           ),
         disable_notification: z
           .boolean()
@@ -71,9 +58,9 @@ export function registerSendTelegramMessage(server: McpServer): void {
           .describe("When true, send silently without notifying subscribers"),
       },
     },
-    async ({ title, url, country, disable_notification }) => {
+    async ({ title, url, tag, disable_notification }) => {
       try {
-        const text = buildTelegramText(title, url, country);
+        const text = buildTelegramText(title, url, tag);
         if (text.length > 4096) {
           throw new Error(
             `Combined title + url exceeds Telegram limit (${text.length}/4096)`,
