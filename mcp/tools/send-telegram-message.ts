@@ -70,13 +70,9 @@ export function registerSendTelegramMessage(server: McpServer): void {
           .describe(
             "Optional HTML body between the title and URL. Use b/i/u/s/a/code/pre/blockquote; br, p, h1–h6, ul/ol/li are normalized for Telegram. Omit, null, or empty to skip",
           ),
-        disable_notification: z
-          .boolean()
-          .optional()
-          .describe("When true, send silently without notifying subscribers"),
       },
     },
-    async ({ title, url, tag, content, disable_notification }) => {
+    async ({ title, url, tag, content }) => {
       try {
         const text = buildTelegramText(title, url, tag, content);
         if (text.length > TELEGRAM_TEXT_LIMIT) {
@@ -87,7 +83,6 @@ export function registerSendTelegramMessage(server: McpServer): void {
         const result = await sendTelegramMessage({
           text,
           parseMode: "HTML",
-          disableNotification: disable_notification,
         });
 
         return {

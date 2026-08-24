@@ -70,13 +70,9 @@ export function registerSendTelegramDigest(server: McpServer): void {
           .describe(
             "Report body as HTML. Use b/i/u/s/a/code/pre/blockquote for formatting; br, p, h1–h6, ul/ol/li are normalized for Telegram",
           ),
-        disable_notification: z
-          .boolean()
-          .optional()
-          .describe("When true, send silently without notifying subscribers"),
       },
     },
-    async ({ title, content, disable_notification }) => {
+    async ({ title, content }) => {
       try {
         const text = buildDigestText(title, content);
         if (!text.replace(/<[^>]+>/g, "").trim()) {
@@ -90,7 +86,6 @@ export function registerSendTelegramDigest(server: McpServer): void {
         const result = await sendTelegramMessage({
           text,
           parseMode: "HTML",
-          disableNotification: disable_notification,
         });
 
         return {

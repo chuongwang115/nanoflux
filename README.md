@@ -302,8 +302,8 @@ News query tools return stored items from the database. Each item includes integ
 | `get_filter_prompt` | Get the AI content filter (`prompt`, `enabled`, `active`). `enabled` is the stored switch; `active` is true only when filtering will actually run (`enabled` and non-empty prompt) |
 | `update_filter_prompt` | Set `prompt` and/or `enabled` (both optional). Empty prompt or `enabled: false` skips LLM filtering. Applies to newly fetched items only |
 | `get_current_time` | Return the server's current UTC time |
-| `send_telegram_message` | Post a title + URL to the configured Telegram channel (`title`, `url`; optional `tag`, HTML `content`, `disable_notification`). Optional `tag` is a single item (country, industry, company, etc.); when set, the bold headline is `【tag】title`. Optional `content` is HTML (same Telegram HTML rules as `send_telegram_digest`) between title and URL. Message is `<b>【tag】title</b>\n[content]\nurl`. Target is always `TELEGRAM_CHANNEL_ID`; bot must be a channel admin |
-| `send_telegram_digest` | Post a daily-report message (`title`, HTML `content`; optional `disable_notification`). Title is bold and escaped; `content` is agent-written HTML (`parse_mode=HTML`). Combined title + body must be ≤ 4096 characters |
+| `send_telegram_message` | Post a title + URL to the configured Telegram channel (`title`, `url`; optional `tag`, HTML `content`). Optional `tag` is a single item (country, industry, company, etc.); when set, the bold headline is `【tag】title`. Optional `content` is HTML (same Telegram HTML rules as `send_telegram_digest`) between title and URL. Message is `<b>【tag】title</b>\n[content]\nurl`. Target is always `TELEGRAM_CHANNEL_ID`; bot must be a channel admin |
+| `send_telegram_digest` | Post a daily-report message (`title`, HTML `content`). Title is bold and escaped; `content` is agent-written HTML (`parse_mode=HTML`). Combined title + body must be ≤ 4096 characters |
 
 `send_telegram_digest` sends `parse_mode=HTML`. Telegram-native tags pass through; common layout tags are normalized; other tags are stripped (inner text kept). Do not dump raw articles.
 
