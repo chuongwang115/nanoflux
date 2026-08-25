@@ -45,6 +45,7 @@ export const items = sqliteTable(
     title: text("title").notNull(),
     content: text("content"),
     link: text("link").notNull(),
+    source: text("source").notNull().default(""),
     cover: text("cover"),
     published_at: text("published_at").notNull(),
     created_at: text("created_at")

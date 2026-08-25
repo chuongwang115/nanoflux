@@ -119,6 +119,7 @@ type ItemRow = {
   feed_id: number;
   title: string;
   link: string;
+  source: string;
   content: string | null;
   cover: string | null;
   published_at: string;
@@ -130,7 +131,7 @@ function toFeverItem(row: ItemRow): FeverItem {
     id: row.id,
     feed_id: row.feed_id,
     title: row.title,
-    author: "",
+    author: row.source,
     html: feverItemHtml(row.content, row.cover),
     url: row.link,
     is_saved: 0,
@@ -144,6 +145,7 @@ const itemColumns = {
   feed_id: items.feed_id,
   title: items.title,
   link: items.link,
+  source: items.source,
   content: items.content,
   cover: items.cover,
   published_at: items.published_at,

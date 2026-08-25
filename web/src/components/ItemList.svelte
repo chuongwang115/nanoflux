@@ -186,6 +186,11 @@
                 {item.content}
               </p>
             {/if}
+            {#if item.source}
+              <p class="mt-2 text-xs text-neutral-400 dark:text-neutral-500">
+                {item.source}
+              </p>
+            {/if}
           </div>
           {#if item.cover}
             <a
@@ -193,7 +198,7 @@
               target="_blank"
               rel="noopener noreferrer"
               onclick={() => handleOpenItem(item)}
-              class="block aspect-[4/3] w-40 shrink-0 overflow-hidden rounded-md"
+              class="block aspect-[4/3] w-50 shrink-0 overflow-hidden rounded-md"
               tabindex="-1"
               aria-hidden="true"
             >

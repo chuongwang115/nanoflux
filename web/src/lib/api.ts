@@ -18,6 +18,7 @@ export type Item = {
   guid: string;
   title: string;
   link: string;
+  source: string;
   content: string | null;
   cover: string | null;
   published_at: string;

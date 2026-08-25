@@ -13,6 +13,33 @@ import { getFeed } from "./feeds";
 import { feeds, items, DEFAULT_LIMIT, MAX_LIMIT } from "./schema";
 import { newItemId, decodeCursor, parseItemId, parseTimeRange, TimeUnit, toUtcIso } from "./utils";
 
+const COMMON_SECOND_LEVEL_SUFFIXES = new Set([
+  "ac", "co", "com", "edu", "firm", "gen", "go", "gob", "gov", "ind",
+  "mil", "net", "ne", "nom", "or", "org", "sch",
+]);
+
+/** Return the registrable-looking domain used as an item's source. */
+function sourceFromLink(link: string): string {
+  try {
+    const hostname = new URL(link).hostname.toLowerCase().replace(/^www\./, "");
+    if (!hostname || hostname === "localhost" || /^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname)) {
+      return hostname;
+    }
+
+    const labels = hostname.split(".");
+    if (
+      labels.length > 2 &&
+      labels.at(-1)!.length === 2 &&
+      COMMON_SECOND_LEVEL_SUFFIXES.has(labels.at(-2)!)
+    ) {
+      return labels.slice(-3).join(".");
+    }
+    return labels.length > 2 ? labels.slice(-2).join(".") : hostname;
+  } catch {
+    return "";
+  }
+}
+
 export function getItems(options?: {
   since?: string;
   until?: string;
@@ -78,6 +105,7 @@ export function getItems(options?: {
         guid: items.guid,
         title: items.title,
         link: items.link,
+        source: items.source,
         content: items.content,
         cover: items.cover,
         published_at: items.published_at,
@@ -186,6 +214,7 @@ export function addItems(
           guid: newItem.guid,
           title: newItem.title,
           link: newItem.link,
+          source: sourceFromLink(newItem.link),
           content: newItem.content,
           cover: newItem.cover,
           published_at: newItem.published_at,

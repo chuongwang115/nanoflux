@@ -55,7 +55,7 @@ The server listens on all interfaces. MCP (`/mcp`) accepts only local clients an
 
 - Newly created feeds are fetched immediately (no wait for the next cron tick)
 - Adaptive polling (5–30 min per feed) based on publish frequency; each minute tick processes at most 3 due feeds, and each feed processes at most 10 new items per run (backlog requeues in ~1 min)
-- Cover images stored on each item (RSS media / enclosure / iTunes / item HTML first, then Open Graph / Twitter / `image_src` / first body image when the article page is fetched)
+- Cover images and a source domain are stored on each item. The source is derived from the article URL (for example, `www.example.com` becomes `example.com`). Covers use RSS media / enclosure / iTunes / item HTML first, then Open Graph / Twitter / `image_src` / first body image when the article page is fetched
 - Full-text extraction when an RSS summary is too short; Google News article links are resolved to the publisher URL first; HTML is decoded with charset detection (Content-Type, BOM, meta/`<?xml` encoding, with UTF-8 / GB18030 fallback)
 - AI filter runs only when `enabled` is true and `prompt` is non-empty; you can turn filtering off without clearing the prompt
 - Optional title translation runs after the filter when `translate.enabled` is true; titles already in the target language are skipped; LLM failure keeps the original title (**fail-open**)
@@ -69,7 +69,7 @@ The server listens on all interfaces. MCP (`/mcp`) accepts only local clients an
 - `/feeds`: preview, CRUD, sort, **add by keyword** (Google News RSS for the last 3 days; language inferred from the keyword), **subscribe WeChat 公众号**, **OPML export**
 - `/settings`: **Preferences** (font size, UI language, theme), **Filter**, **Translate**, and **Fever** (enable switch, user/password, endpoint URL). Legacy `/filter`, `/filters`, `/translate`, and `/fever` URLs open the same settings page
 - `/export`: Excel by time range
-- Home list shows cover thumbnails when an item has a `cover` URL
+- Home list shows the article source domain and a 4:3 cover thumbnail when an item has a `cover` URL
 - PWA shell (installable; manifest at `/manifest.webmanifest`), trilingual UI (English / Simplified Chinese / Traditional Chinese), light/dark theme, adjustable font size
 - A login screen gates the UI; the sidebar shows **Sign out** after authentication
 
@@ -357,7 +357,7 @@ Query parameters for `GET /api/feeds`:
 
 ### Items — `/api/items`
 
-Each item includes `content` (RSS summary or scraped full text), optional `cover` (image URL), `is_read`, and `is_ingested`. Soft-deleted rows are omitted from list and export responses. REST mark-read endpoints update `is_read` only; they do not set `is_ingested`. Excel export still writes published time, title, content, and original link (no cover column).
+Each item includes `content` (RSS summary or scraped full text), `source` (the article's source domain), optional `cover` (image URL), `is_read`, and `is_ingested`. Soft-deleted rows are omitted from list and export responses. REST mark-read endpoints update `is_read` only; they do not set `is_ingested`. Excel export still writes published time, title, content, and original link (no cover column).
 
 | Method | Path | Description |
 | --- | --- | --- |
@@ -437,7 +437,7 @@ Authenticated responses include `auth: 1` and `last_refreshed_on_time` (unix sec
 | --- | --- |
 | `groups` | One group `{ id: 1, title: "NanoFlux" }` plus `feeds_groups` |
 | `feeds` | All feeds (`id`, `favicon_id`, `title`, `url`, `site_url`, `is_spark`, `last_updated_on_time`) plus `feeds_groups`. `site_url` is the feed URL origin; every feed uses `favicon_id` `1` |
-| `items` | Up to **50** items. Optional `since_id` (newer than), `max_id` (older than), or `with_ids` (comma-separated, max 50). Each item: integer `id` / `feed_id`, `title`, empty `author`, `html`, `url`, `is_saved: 0`, `is_read` (`0` or `1` from the store), `created_on_time`. Soft-deleted items are omitted. `html` is escaped article text as `<p>` blocks, with a cover `<img>` prepended when `cover` is set. Also returns `total_items` |
+| `items` | Up to **50** items. Optional `since_id` (newer than), `max_id` (older than), or `with_ids` (comma-separated, max 50). Each item: integer `id` / `feed_id`, `title`, `author` (the article source domain), `html`, `url`, `is_saved: 0`, `is_read` (`0` or `1` from the store), `created_on_time`. Soft-deleted items are omitted. `html` is escaped article text as `<p>` blocks, with a cover `<img>` prepended when `cover` is set. Also returns `total_items` |
 | `unread_item_ids` | Comma-separated IDs of undeleted items with `is_read = 0`, oldest first. Empty string when none |
 | `saved_item_ids` | Always `""` (starring is not implemented) |
 | `mark` | Mutation (typically POST). Requires `as` and `id`. `mark=item&as=read\|unread&id=<item>` sets `is_read` on that undeleted item. `mark=feed&as=read&id=<feed>` and `mark=group&as=read&id=1` mark matching undeleted unread items as read when `published_at` is at or before `before` (unix seconds; omitted means now). Other `as` values (including saved/unsaved) are ignored. Applied before other flags so a combined `unread_item_ids` request sees the new state |
@@ -451,7 +451,7 @@ Favicons, links, unread counts, and starring over Fever are **not** implemented.
 3. Each feed is fetched over HTTP with the `NanoFlux/1.0` user agent (15 s timeout) and parsed as RSS/Atom. Concurrent fetches of the same feed id are ignored.
 4. Each entry gets a normalized GUID: MD5 hex of the article link (feeds that already provide an MD5 GUID are kept as-is). Per-feed known GUIDs are stored in the `last_guids` column; entries already seen by this feed or already present in the database (global GUID uniqueness, including soft-deleted rows) are skipped.
 5. At most **10** unseen candidates are enriched and inserted per feed per run. For each of those, Google News article links (`news.google.com/.../articles/...`) are resolved to the publisher URL (embedded token decode, or Google's batchexecute RPC) and the stored `link` is updated when resolution succeeds. Cover is taken from the RSS item when present (media thumbnail/content, image enclosure, iTunes image, or an image in the item HTML). If the RSS summary is shorter than ~80 word tokens (counted with `Intl.Segmenter` for Chinese and English — roughly ~200 Chinese characters or ~80 English words), or cover is still missing, the article page is fetched (desktop browser user agent, 15 s timeout, up to 3 concurrent requests), decoded with charset detection, and parsed with Firefox Readability (plus WeChat/CMS selector fallback) to fill in `content` and, if needed, `cover` from Open Graph / Twitter / `link rel=image_src` / first suitable `<img>`. Already-known entries skip scraping. Unprocessed backlog entries stay out of `last_guids` so the next catch-up run can pick them up.
-6. New items are assigned an integer `id` (UTC compact datetime + per-second sequence), deduplicated globally by `guid` (same article from different feeds is stored once), evaluated by the AI filter when it is active (`enabled` and non-empty prompt), then title-translated when `translate.enabled` is true, and inserted into SQLite with `is_read = 0` and `is_ingested = 0`. On pass (or when filtering is off, or fail-open), `is_deleted = 0` and `deleted_reason` is `null`. On AI reject, `is_deleted = 1` and `deleted_reason` stores the model’s reason when present; rejected items skip translation. Translation fail-open keeps the original title.
+6. New items are assigned an integer `id` (UTC compact datetime + per-second sequence), deduplicated globally by `guid` (same article from different feeds is stored once), evaluated by the AI filter when it is active (`enabled` and non-empty prompt), then title-translated when `translate.enabled` is true. The source domain is derived from the article URL, then the item is inserted into SQLite with `is_read = 0` and `is_ingested = 0`. On pass (or when filtering is off, or fail-open), `is_deleted = 0` and `deleted_reason` is `null`. On AI reject, `is_deleted = 1` and `deleted_reason` stores the model’s reason when present; rejected items skip translation. Translation fail-open keeps the original title.
 7. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear. If a feed still has unprocessed new items after the 10-item cap, the next fetch is scheduled in **1 minute** (catch-up) while keeping the adaptive interval for later.
 8. Daily at 01:00 UTC, items older than 90 days are hard-deleted.
 
