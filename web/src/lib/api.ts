@@ -315,10 +315,27 @@ export async function markItemRead(id: number) {
   assertApiOk(body);
 }
 
+export async function blockSource(source: string): Promise<{ deleted: number }> {
+  const body = await request<{
+    code: number;
+    message: string;
+    data?: { deleted: number };
+  }>("/api/items/block-source", {
+    method: "POST",
+    body: JSON.stringify({ source }),
+  });
+  assertApiOk(body);
+  if (!body.data) {
+    throw new Error(body.message || "Failed to block source");
+  }
+  return body.data;
+}
+
 export type FilterConfig = {
   prompt: string;
   enabled: boolean;
   keywords: string;
+  sources: string[];
 };
 
 type FilterApiResult = {
@@ -337,9 +354,13 @@ function normalizeFilterConfig(
     typeof data?.keywords === "string"
       ? data.keywords
       : (defaults?.keywords ?? "");
+  const sources = Array.isArray(data?.sources)
+    ? data.sources.filter((source): source is string => typeof source === "string")
+    : (defaults?.sources ?? []);
   return {
     prompt,
     keywords,
+    sources,
     enabled:
       typeof data?.enabled === "boolean"
         ? data.enabled
@@ -362,6 +383,7 @@ export function updateFilter(payload: {
   prompt?: string;
   enabled?: boolean;
   keywords?: string;
+  sources?: string[];
 }) {
   return request<FilterApiResult>("/api/filter", {
     method: "POST",

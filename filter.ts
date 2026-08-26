@@ -35,10 +35,17 @@ export function hasKeywordFilter(): boolean {
   );
 }
 
+/** Whether source filtering is active under the shared filter switch. */
+export function hasSourceFilter(): boolean {
+  const { sources, enabled } = getFilterState();
+  return enabled && sources.length > 0;
+}
+
 export async function updateFilterConfig(partial: {
   prompt?: string;
   enabled?: boolean;
   keywords?: string;
+  sources?: string[];
 }): Promise<FilterConfig> {
   return updateFilterState(partial);
 }

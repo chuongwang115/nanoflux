@@ -10,6 +10,7 @@ export type FilterConfig = {
   prompt: string;
   enabled: boolean;
   keywords: string;
+  sources: string[];
 };
 
 export type TranslateConfig = {
@@ -50,6 +51,7 @@ const DEFAULT_FILTER: FilterConfig = {
   prompt: "",
   enabled: false,
   keywords: "",
+  sources: [],
 };
 const DEFAULT_TRANSLATE: TranslateConfig = {
   prompt: "",
@@ -85,6 +87,16 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>;
 }
 
+function normalizeFilterSource(source: string): string {
+  const trimmed = source.trim().toLocaleLowerCase();
+  try {
+    return new URL(trimmed.includes("://") ? trimmed : `https://${trimmed}`)
+      .hostname.replace(/^www\./, "");
+  } catch {
+    return trimmed.replace(/^www\./, "");
+  }
+}
+
 export function parseFilterConfig(parsed: unknown): {
   config: FilterConfig;
   needsPersist: boolean;
@@ -95,7 +107,7 @@ export function parseFilterConfig(parsed: unknown): {
         const prompt = typeof entry.prompt === "string" ? entry.prompt : "";
         if (prompt.trim()) {
           return {
-            config: { prompt, enabled: true, keywords: "" },
+            config: { prompt, enabled: true, keywords: "", sources: [] },
             needsPersist: true,
           };
         }
@@ -114,6 +126,7 @@ export function parseFilterConfig(parsed: unknown): {
         prompt,
         enabled: prompt.trim().length > 0,
         keywords: "",
+        sources: [],
       },
       needsPersist: true,
     };
@@ -128,16 +141,20 @@ export function parseFilterConfig(parsed: unknown): {
   const hasEnabled = "enabled" in record;
   const enabled = hasEnabled ? Boolean(record.enabled) : prompt.trim().length > 0;
   const keywords = typeof record.keywords === "string" ? record.keywords : "";
+  const sources = Array.isArray(record.sources)
+    ? [...new Set(record.sources.filter((source): source is string => typeof source === "string").map(normalizeFilterSource).filter(Boolean))]
+    : [];
   const needsPersist =
     !hasEnabled ||
     !("keywords" in record) ||
+    !Array.isArray(record.sources) ||
     "keywordEnabled" in record ||
     "id" in record ||
     "name" in record ||
     "whitelist" in record ||
     "blacklist" in record ||
     "filters" in record;
-  return { config: { prompt, enabled, keywords }, needsPersist };
+  return { config: { prompt, enabled, keywords, sources }, needsPersist };
 }
 
 export function parseTranslateConfig(parsed: unknown): TranslateConfig {
@@ -287,6 +304,7 @@ export async function updateFilterState(partial: {
   prompt?: string;
   enabled?: boolean;
   keywords?: string;
+  sources?: string[];
 }): Promise<FilterConfig> {
   if (typeof partial.prompt === "string") {
     config.filter.prompt = partial.prompt;
@@ -296,6 +314,16 @@ export async function updateFilterState(partial: {
   }
   if (typeof partial.keywords === "string") {
     config.filter.keywords = partial.keywords;
+  }
+  if (Array.isArray(partial.sources)) {
+    config.filter.sources = [
+      ...new Set(
+        partial.sources
+          .filter((source): source is string => typeof source === "string")
+          .map(normalizeFilterSource)
+          .filter(Boolean),
+      ),
+    ];
   }
   await persist();
   return getFilterState();

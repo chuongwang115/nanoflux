@@ -1,5 +1,5 @@
 import Parser from "rss-parser";
-import { addItems, getExistingGuids } from "../../db/items";
+import { addItems, getExistingGuids, sourceFromLink } from "../../db/items";
 import { getDueFeeds, updateFeedFetchState } from "../../db/feeds";
 import type { Feed } from "../../db/schema";
 import { parseFeedGuids, serializeFeedGuids } from "../../db/utils";
@@ -131,7 +131,10 @@ export async function fetchFeed(feed: Feed): Promise<{
     const batch = candidates.slice(0, MAX_NEW_ITEMS_PER_FEED);
     const remaining = candidates.length - batch.length;
     const unprocessed = new Set(candidates.slice(MAX_NEW_ITEMS_PER_FEED).map((entry) => entry.guid));
-    const enriched = await enrichItemsContent(batch);
+    const enriched = (await enrichItemsContent(batch)).map((item) => ({
+      ...item,
+      source: sourceFromLink(item.link),
+    }));
     const filtered = await filterItems(enriched);
     const translated = await translateItemTitles(filtered);
     const inserted = addItems(feed.id, translated);

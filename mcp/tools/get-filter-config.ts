@@ -3,6 +3,7 @@ import {
   getFilterConfig,
   hasFilterPrompt,
   hasKeywordFilter,
+  hasSourceFilter,
 } from "../../filter";
 
 export function registerGetFilterConfig(server: McpServer): void {
@@ -10,7 +11,7 @@ export function registerGetFilterConfig(server: McpServer): void {
     "get_filter_config",
     {
       description:
-        "Get the AI and keyword content filter configuration. Keyword filtering rejects title matches before AI filtering.",
+        "Get the source, keyword, and AI content filter configuration. Sources are rejected first, then title keywords, then AI filtering.",
     },
     async () => {
       try {
@@ -21,7 +22,7 @@ export function registerGetFilterConfig(server: McpServer): void {
               text: JSON.stringify(
                 {
                   ...getFilterConfig(),
-                  active: hasFilterPrompt() || hasKeywordFilter(),
+                  active: hasFilterPrompt() || hasKeywordFilter() || hasSourceFilter(),
                 },
                 null,
                 2,

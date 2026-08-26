@@ -31,7 +31,7 @@ Typical RSS readers optimize for human browsing. NanoFlux optimizes for **agent 
 
 1. **Ingest** — adaptive polling of RSS/Atom, Google News keyword feeds, and WeChat official accounts
 2. **Normalize** — GUID dedupe, Google News link resolution, full-text extraction when the feed summary is thin
-3. **Filter** — optional title keyword blacklist and LLM prompt behind one on/off switch
+3. **Filter** — optional source and title keyword blacklists plus an LLM prompt behind one on/off switch
 4. **Translate** — optional LLM title translation into English, Simplified Chinese, or Traditional Chinese (skips titles already in the target language)
 5. **Serve** — MCP so agents can consume **uningested** items (marking them `is_ingested`), soft-delete items, manage feeds / filter settings, and push Telegram headlines or HTML digests; REST and the operator UI for the same store; Fever API so RSS readers can pull feeds and articles and mark them **read** (`is_read`)
 
@@ -57,7 +57,7 @@ The server listens on all interfaces. MCP (`/mcp`) accepts only local clients an
 - Adaptive polling (5–30 min per feed) based on publish frequency; each minute tick processes at most 3 due feeds, and each feed processes at most 10 new items per run (backlog requeues in ~1 min)
 - Cover images and a source domain are stored on each item. The source is derived from the article URL (for example, `www.example.com` becomes `example.com`). Covers use RSS media / enclosure / iTunes / item HTML first, then Open Graph / Twitter / `image_src` / first body image when the article page is fetched
 - Full-text extraction when an RSS summary is too short; Google News article links are resolved to the publisher URL first; HTML is decoded with charset detection (Content-Type, BOM, meta/`<?xml` encoding, with UTF-8 / GB18030 fallback)
-- When `filter.enabled` is true, title keywords are checked first; a matching item is rejected immediately and does not call the LLM. Items not matching a keyword are LLM-filtered only when `prompt` is non-empty.
+- When `filter.enabled` is true, source domains are checked first, then title keywords; either match rejects the item immediately without calling the LLM. Remaining items are LLM-filtered only when `prompt` is non-empty.
 - Optional title translation runs after the filter when `translate.enabled` is true; titles already in the target language are skipped; LLM failure keeps the original title (**fail-open**)
 - AI-rejected items are soft-deleted (`is_deleted = 1`) with `deleted_reason` set to the model’s reason when present; they stay in the database so the same `guid` is not ingested again
 - Soft-delete (`is_deleted`) also covers operator/MCP deletes. Hidden items are omitted from MCP, REST, UI, and export
@@ -189,6 +189,7 @@ Filter, title translation, and Fever credentials live in a single `config.json` 
 | --- | --- | --- |
 | `filter` | `prompt` | Instructions for the AI relevance filter. Leave empty to skip LLM scoring even if `enabled` is true. |
 | `filter` | `keywords` | Comma-separated title keywords to reject. English and Chinese commas are both supported. Keyword matching is case-insensitive. |
+| `filter` | `sources` | Source domains to reject before title keywords and AI filtering. Stored as an array and matched case-insensitively. |
 | `filter` | `enabled` | Whether the filter is turned on. Set `false` to skip scoring without clearing `prompt`. |
 | `translate` | `prompt` | Instructions for title translation. |
 | `translate` | `enabled` | Whether new items get their titles translated. |
@@ -197,7 +198,7 @@ Filter, title translation, and Fever credentials live in a single `config.json` 
 | `fever` | `user` | Fever username (trimmed). Required when `enabled` is true. |
 | `fever` | `password` | Fever password. Required when `enabled` is true. Must be at least 8 characters and include letters, digits, and symbols. Leave the password field blank in the UI/REST update body to keep the stored value. |
 
-Filtering is **active** when `filter.enabled` is true and either `filter.keywords` contains at least one keyword or `filter.prompt` is non-empty. Keyword matches are always evaluated first.
+Filtering is **active** when `filter.enabled` is true and sources, keywords, or an AI prompt are configured. Source matches are evaluated first, followed by keyword matches, then AI filtering.
 
 The Fever `api_key` is `md5("<user>:<password>")` (lowercase hex), matching the original Fever protocol. Enabling Fever without both user and password is rejected. Setting or enabling a password that is not at least 8 characters with letters, digits, and symbols is also rejected.
 
@@ -367,6 +368,7 @@ Each item includes `content` (RSS summary or scraped full text), `source` (the a
 | `GET` | `/api/items/export.xlsx` | Download matching items as Excel (`Content-Disposition: nanoflux-export.xlsx`) |
 | `POST` | `/api/items/:id/read` | Mark one item as read |
 | `POST` | `/api/items/read-all` | Mark all items up to a timestamp as read (soft-deleted items are skipped) |
+| `POST` | `/api/items/block-source` | Add a source to `filter.sources` and soft-delete all visible news from that source |
 
 Query parameters for `GET /api/items`:
 
@@ -389,6 +391,8 @@ Query parameters for `GET /api/items/export.xlsx`:
 Exported columns: published time, title, content, and original link.
 
 `POST /api/items/read-all` accepts `{ until }` to bulk mark-read up to that timestamp.
+
+`POST /api/items/block-source` accepts `{ source }`. The operator UI exposes this action with a block icon beside each source; it immediately removes every currently listed item from that source. The source remains in the filter configuration for future fetched items (when filtering is enabled).
 
 ### Filter — `/api/filter`
 
@@ -453,7 +457,7 @@ Favicons, links, unread counts, and starring over Fever are **not** implemented.
 3. Each feed is fetched over HTTP with the `NanoFlux/1.0` user agent (15 s timeout) and parsed as RSS/Atom. Concurrent fetches of the same feed id are ignored.
 4. Each entry gets a normalized GUID: MD5 hex of the article link (feeds that already provide an MD5 GUID are kept as-is). Per-feed known GUIDs are stored in the `last_guids` column; entries already seen by this feed or already present in the database (global GUID uniqueness, including soft-deleted rows) are skipped.
 5. At most **10** unseen candidates are enriched and inserted per feed per run. For each of those, Google News article links (`news.google.com/.../articles/...`) are resolved to the publisher URL (embedded token decode, or Google's batchexecute RPC) and the stored `link` is updated when resolution succeeds. Cover is taken from the RSS item when present (media thumbnail/content, image enclosure, iTunes image, or an image in the item HTML). If the RSS summary is shorter than ~80 word tokens (counted with `Intl.Segmenter` for Chinese and English — roughly ~200 Chinese characters or ~80 English words), or cover is still missing, the article page is fetched (desktop browser user agent, 15 s timeout, up to 3 concurrent requests), decoded with charset detection, and parsed with Firefox Readability (plus WeChat/CMS selector fallback) to fill in `content` and, if needed, `cover` from Open Graph / Twitter / `link rel=image_src` / first suitable `<img>`. Already-known entries skip scraping. Unprocessed backlog entries stay out of `last_guids` so the next catch-up run can pick them up.
-6. New items are assigned an integer `id` (UTC compact datetime + per-second sequence), deduplicated globally by `guid` (same article from different feeds is stored once), then filtered before translation. When filtering is enabled, a title matching a configured keyword is soft-deleted immediately and skips LLM filtering; non-matches are evaluated by the AI filter when its prompt is non-empty. Title translation runs afterwards when `translate.enabled` is true. The source domain is derived from the article URL, then the item is inserted into SQLite with `is_read = 0` and `is_ingested = 0`. On pass (or when filtering is off, or on LLM fail-open), `is_deleted = 0` and `deleted_reason` is `null`. Rejected items have `is_deleted = 1`, skip translation, and keep the matching keyword or model reason in `deleted_reason`. Translation fail-open keeps the original title.
+6. New items are assigned an integer `id` (UTC compact datetime + per-second sequence), deduplicated globally by `guid` (same article from different feeds is stored once), then filtered before translation. When filtering is enabled, a configured source domain is rejected first, then a title matching a configured keyword; either is soft-deleted immediately and skips LLM filtering. Remaining items are evaluated by the AI filter when its prompt is non-empty. Title translation runs afterwards when `translate.enabled` is true. The source domain is derived from the article URL, then the item is inserted into SQLite with `is_read = 0` and `is_ingested = 0`. On pass (or when filtering is off, or on LLM fail-open), `is_deleted = 0` and `deleted_reason` is `null`. Rejected items have `is_deleted = 1`, skip translation, and keep the matching source, keyword, or model reason in `deleted_reason`. Translation fail-open keeps the original title.
 7. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear. If a feed still has unprocessed new items after the 10-item cap, the next fetch is scheduled in **1 minute** (catch-up) while keeping the adaptive interval for later.
 8. Daily at 01:00 UTC, items older than 90 days are hard-deleted.
 

@@ -19,7 +19,7 @@ const COMMON_SECOND_LEVEL_SUFFIXES = new Set([
 ]);
 
 /** Return the registrable-looking domain used as an item's source. */
-function sourceFromLink(link: string): string {
+export function sourceFromLink(link: string): string {
   try {
     const hostname = new URL(link).hostname.toLowerCase().replace(/^www\./, "");
     if (!hostname || hostname === "localhost" || /^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname)) {
@@ -297,6 +297,35 @@ export function deleteItem(id: number, reason: string): boolean {
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to delete item ${id}: ${detail}`);
+  }
+}
+
+/** Soft-delete every visible item from a source after it is blocked. */
+export function deleteItemsBySource(source: string): number {
+  try {
+    const normalizedSource = source.trim().toLocaleLowerCase();
+    if (!normalizedSource) {
+      throw new Error("Source is required");
+    }
+
+    const result = db
+      .update(items)
+      .set({
+        is_deleted: 1,
+        deleted_reason: `Source filter: ${normalizedSource}`,
+      })
+      .where(
+        and(
+          eq(items.source, normalizedSource),
+          eq(items.is_deleted, 0),
+        ),
+      )
+      .run();
+
+    return result.changes;
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to delete items from source: ${detail}`);
   }
 }
 

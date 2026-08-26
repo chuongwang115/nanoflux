@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   hasFilterPrompt,
   hasKeywordFilter,
+  hasSourceFilter,
   updateFilterConfig,
 } from "../../filter";
 
@@ -11,7 +12,7 @@ export function registerUpdateFilterConfig(server: McpServer): void {
     "update_filter_config",
     {
       description:
-        "Set AI and keyword content filters for newly fetched articles. When keyword filtering is enabled, matching titles are rejected before AI filtering.",
+        "Set source, keyword, and AI content filters for newly fetched articles. Source matches are rejected first, followed by title keyword matches, then AI filtering.",
       inputSchema: {
         prompt: z
           .string()
@@ -29,14 +30,19 @@ export function registerUpdateFilterConfig(server: McpServer): void {
           .string()
           .optional()
           .describe("Comma-separated title keywords to reject when keyword filtering is enabled."),
+        sources: z
+          .array(z.string())
+          .optional()
+          .describe("Source domains to reject before keyword and AI filtering."),
       },
     },
-    async ({ prompt, enabled, keywords }) => {
+    async ({ prompt, enabled, keywords, sources }) => {
       try {
         const updated = await updateFilterConfig({
           prompt,
           enabled,
           keywords,
+          sources,
         });
         return {
           content: [
@@ -48,7 +54,8 @@ export function registerUpdateFilterConfig(server: McpServer): void {
                   prompt: updated.prompt,
                   enabled: updated.enabled,
                   keywords: updated.keywords,
-                  active: hasFilterPrompt() || hasKeywordFilter(),
+                  sources: updated.sources,
+                  active: hasFilterPrompt() || hasKeywordFilter() || hasSourceFilter(),
                 },
                 null,
                 2,

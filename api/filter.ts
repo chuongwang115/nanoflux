@@ -22,6 +22,7 @@ async function updateFilterHandler({
     prompt?: string;
     enabled?: boolean;
     keywords?: string;
+    sources?: string[];
   };
 }) {
   try {
@@ -29,6 +30,7 @@ async function updateFilterHandler({
       prompt?: string;
       enabled?: boolean;
       keywords?: string;
+      sources?: string[];
     } = {};
     if (typeof body?.prompt === "string") {
       payload.prompt = body.prompt;
@@ -38,6 +40,9 @@ async function updateFilterHandler({
     }
     if (typeof body?.keywords === "string") {
       payload.keywords = body.keywords;
+    }
+    if (Array.isArray(body?.sources)) {
+      payload.sources = body.sources;
     }
     const updated = await updateFilterConfig(payload);
     return { code: 0, message: "ok", data: updated };
@@ -55,5 +60,6 @@ export const routes = new Elysia({ prefix: "/api/filter" })
       prompt: t.Optional(t.String()),
       enabled: t.Optional(t.Boolean()),
       keywords: t.Optional(t.String()),
+      sources: t.Optional(t.Array(t.String())),
     }),
   });

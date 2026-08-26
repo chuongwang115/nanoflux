@@ -3,6 +3,7 @@ import {
   getFilterPrompt,
   hasFilterPrompt,
   hasKeywordFilter,
+  hasSourceFilter,
 } from "../../filter";
 import { applyAiFilter } from "./ai";
 
@@ -50,14 +51,23 @@ function matchingKeyword(title: string): string | null {
   );
 }
 
+function matchingSource(source: string | undefined): string | null {
+  if (!hasSourceFilter() || !source) return null;
+  const normalizedSource = source.trim().toLocaleLowerCase();
+  return getFilterConfig().sources.includes(normalizedSource)
+    ? normalizedSource
+    : null;
+}
+
 export async function filterItems<
-  T extends { title: string; content: string | null },
+  T extends { title: string; content: string | null; source?: string },
 >(items: T[]): Promise<(T & ItemFilterResult)[]> {
   if (items.length === 0) return [];
 
   const keywordActive = hasKeywordFilter();
+  const sourceActive = hasSourceFilter();
   const aiActive = hasFilterPrompt();
-  if (!keywordActive && !aiActive) {
+  if (!sourceActive && !keywordActive && !aiActive) {
     console.log(
       `[filter] inactive — skip AI for ${items.length} item(s) (deleted_reason stays null)`,
     );
@@ -69,13 +79,25 @@ export async function filterItems<
   }
 
   console.log(
-    `[filter] keyword=${keywordActive ? "on" : "off"} AI=${aiActive ? "on" : "off"} for ${items.length} item(s)`,
+    `[filter] source=${sourceActive ? "on" : "off"} keyword=${keywordActive ? "on" : "off"} AI=${aiActive ? "on" : "off"} for ${items.length} item(s)`,
   );
   const filtered: (T & ItemFilterResult)[] = [];
   let passed = 0;
   let rejected = 0;
   let keywordRejected = 0;
+  let sourceRejected = 0;
   for (const item of items) {
+    const source = matchingSource(item.source);
+    if (source) {
+      rejected += 1;
+      sourceRejected += 1;
+      filtered.push({
+        ...item,
+        is_deleted: 1,
+        deleted_reason: `Source filter: ${source}`,
+      });
+      continue;
+    }
     const keyword = matchingKeyword(item.title);
     if (keyword) {
       rejected += 1;
@@ -93,7 +115,7 @@ export async function filterItems<
     filtered.push({ ...item, ...verdict });
   }
   console.log(
-    `[filter] done passed=${passed} rejected=${rejected} keywordRejected=${keywordRejected}`,
+    `[filter] done passed=${passed} rejected=${rejected} sourceRejected=${sourceRejected} keywordRejected=${keywordRejected}`,
   );
   return filtered;
 }

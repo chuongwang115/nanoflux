@@ -1,9 +1,11 @@
 import { Elysia } from "elysia";
 import {
+  deleteItemsBySource,
   getItems,
   markItemsRead,
   markItemRead,
 } from "../db/items";
+import { getFilterConfig, updateFilterConfig } from "../filter";
 import { DEFAULT_LOCALE, parseLocale } from "../shared/locale";
 import { buildItemsExport, type ExportLocale } from "../services/export/items-export";
 import { DEFAULT_LIMIT, MAX_LIMIT } from "../db/schema";
@@ -150,8 +152,28 @@ function markItemReadHandler({ params }: {
   }
 }
 
+async function blockSourceHandler({ body }: { body: { source?: string } }) {
+  try {
+    const source = body.source?.trim().toLocaleLowerCase() ?? "";
+    if (!source) {
+      return { code: 400, message: "Source is required" };
+    }
+
+    const current = getFilterConfig();
+    const sources = [...new Set([...current.sources, source])];
+    const filter = await updateFilterConfig({ sources });
+    const deleted = deleteItemsBySource(source);
+    return { code: 0, message: "ok", data: { source, deleted, filter } };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to block source";
+    return { code: 500, message };
+  }
+}
+
 export const routes = new Elysia({ prefix: "/api/items" })
   .get("/", getItemsHandler)
   .get("/export.xlsx", exportItemsHandler)
   .post("/read-all", markItemsReadHandler)
+  .post("/block-source", blockSourceHandler)
   .post("/:id/read", markItemReadHandler);

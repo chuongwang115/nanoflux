@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import CircleX from "@lucide/svelte/icons/circle-x";
   import { t } from "../lib/locale.svelte";
   import {
+    blockSource,
     fetchItemsPage,
     markAllItemsRead,
     markItemRead,
@@ -23,6 +25,7 @@
   let sentinel = $state<HTMLDivElement | null>(null);
   let filter = $state<ItemFilter>("unread");
   let loadGeneration = 0;
+  let blockingSources = $state(new Set<string>());
   /** Bumps every minute so relative timestamps stay current. */
   let now = $state(Date.now());
 
@@ -108,6 +111,22 @@
     });
   }
 
+  async function handleBlockSource(source: string): Promise<void> {
+    if (blockingSources.has(source)) return;
+    blockingSources = new Set([...blockingSources, source]);
+    error = "";
+    try {
+      await blockSource(source);
+      items = items.filter((item) => item.source !== source);
+    } catch (e) {
+      error = e instanceof Error ? e.message : t("items.blockSourceFailed");
+    } finally {
+      const next = new Set(blockingSources);
+      next.delete(source);
+      blockingSources = next;
+    }
+  }
+
   export async function markAllRead() {
     if (items.length === 0) return;
     const until = items.reduce<string | undefined>((max, item) => {
@@ -187,8 +206,18 @@
               </p>
             {/if}
             {#if item.source}
-              <p class="mt-2 text-xs text-neutral-400 dark:text-neutral-500">
+              <p class="mt-2 flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500">
                 {item.source}
+                <button
+                  type="button"
+                  class="inline-flex cursor-pointer items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-wait disabled:opacity-50 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                  aria-label={`${t("items.blockSource")} ${item.source}`}
+                  title={t("items.blockSource")}
+                  disabled={blockingSources.has(item.source)}
+                  onclick={() => void handleBlockSource(item.source)}
+                >
+                  <CircleX size={14} strokeWidth={1.5} aria-hidden={true} />
+                </button>
               </p>
             {/if}
           </div>
