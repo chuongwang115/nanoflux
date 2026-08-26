@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import CircleX from "@lucide/svelte/icons/circle-x";
+  import Ban from "@lucide/svelte/icons/ban";
   import { t } from "../lib/locale.svelte";
   import {
     blockSource,
@@ -26,6 +26,7 @@
   let filter = $state<ItemFilter>("unread");
   let loadGeneration = 0;
   let blockingSources = $state(new Set<string>());
+  let failedCovers = $state(new Set<number>());
   /** Bumps every minute so relative timestamps stay current. */
   let now = $state(Date.now());
 
@@ -109,6 +110,20 @@
         );
       }
     });
+  }
+
+  /** Retry through the same-origin proxy only when a direct image request fails. */
+  function handleCoverError(event: Event, item: Item): void {
+    const image = event.currentTarget;
+    if (!(image instanceof HTMLImageElement)) return;
+
+    if (image.dataset.proxyFallback !== "true") {
+      image.dataset.proxyFallback = "true";
+      image.src = `/api/items/${item.id}/cover`;
+      return;
+    }
+
+    failedCovers = new Set([...failedCovers, item.id]);
   }
 
   async function handleBlockSource(source: string): Promise<void> {
@@ -206,22 +221,22 @@
               </p>
             {/if}
             {#if item.source}
-              <p class="mt-2 flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500">
-                {item.source}
+              <p class="group mt-2 flex h-4 items-center gap-1 text-xs leading-4 text-neutral-400 dark:text-neutral-500">
+                <span>{item.source}</span>
                 <button
                   type="button"
-                  class="inline-flex cursor-pointer items-center justify-center rounded p-0.5 text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-wait disabled:opacity-50 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                  class="inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded p-0 text-neutral-400 opacity-0 transition-[color,background-color,opacity] group-hover:opacity-100 focus-visible:opacity-100 hover:bg-red-50 hover:text-red-600 disabled:cursor-wait disabled:opacity-50 dark:hover:bg-red-950/40 dark:hover:text-red-400"
                   aria-label={`${t("items.blockSource")} ${item.source}`}
                   title={t("items.blockSource")}
                   disabled={blockingSources.has(item.source)}
                   onclick={() => void handleBlockSource(item.source)}
                 >
-                  <CircleX size={14} strokeWidth={1.5} aria-hidden={true} />
+                  <Ban size={14} strokeWidth={1.5} aria-hidden={true} />
                 </button>
               </p>
             {/if}
           </div>
-          {#if item.cover}
+          {#if item.cover && !failedCovers.has(item.id)}
             <a
               href={item.link}
               target="_blank"
@@ -237,6 +252,7 @@
                 class="h-full w-full bg-neutral-100 object-cover dark:bg-neutral-800"
                 loading="lazy"
                 referrerpolicy="no-referrer"
+                onerror={(event) => handleCoverError(event, item)}
               />
             </a>
           {/if}

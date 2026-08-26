@@ -1,6 +1,6 @@
-// ../nanoflux/node_modules/esm-env/true.js
+// node_modules/esm-env/true.js
 var true_default = true;
-// ../nanoflux/node_modules/svelte/src/internal/shared/utils.js
+// node_modules/svelte/src/internal/shared/utils.js
 var is_array = Array.isArray;
 var index_of = Array.prototype.indexOf;
 var includes = Array.prototype.includes;
@@ -50,7 +50,7 @@ function to_array(value, n) {
   return array;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/constants.js
+// node_modules/svelte/src/internal/client/constants.js
 var DERIVED = 1 << 1;
 var EFFECT = 1 << 2;
 var RENDER_EFFECT = 1 << 3;
@@ -96,7 +96,7 @@ var ELEMENT_NODE = 1;
 var TEXT_NODE = 3;
 var COMMENT_NODE = 8;
 
-// ../nanoflux/node_modules/svelte/src/internal/shared/errors.js
+// node_modules/svelte/src/internal/shared/errors.js
 function invariant_violation(message) {
   if (true_default) {
     const error = new Error(`invariant_violation
@@ -120,7 +120,7 @@ https://svelte.dev/e/lifecycle_outside_component`);
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/errors.js
+// node_modules/svelte/src/internal/client/errors.js
 function async_derived_orphan() {
   if (true_default) {
     const error = new Error(`async_derived_orphan
@@ -320,7 +320,7 @@ https://svelte.dev/e/svelte_boundary_reset_onerror`);
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/constants.js
+// node_modules/svelte/src/constants.js
 var EACH_ITEM_REACTIVE = 1;
 var EACH_INDEX_REACTIVE = 1 << 1;
 var EACH_IS_CONTROLLED = 1 << 2;
@@ -351,7 +351,7 @@ var NAMESPACE_HTML = "http://www.w3.org/1999/xhtml";
 var NAMESPACE_SVG = "http://www.w3.org/2000/svg";
 var ATTACHMENT_KEY = "@attach";
 
-// ../nanoflux/node_modules/svelte/src/internal/client/warnings.js
+// node_modules/svelte/src/internal/client/warnings.js
 var bold = "font-weight: bold";
 var normal = "font-weight: normal";
 function await_reactivity_loss(name) {
@@ -445,7 +445,7 @@ https://svelte.dev/e/svelte_boundary_reset_noop`, bold, normal);
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/hydration.js
+// node_modules/svelte/src/internal/client/dom/hydration.js
 var hydrating = false;
 function set_hydrating(value) {
   hydrating = value;
@@ -508,7 +508,7 @@ function read_hydration_instruction(node) {
   return node.data;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/reactivity/equality.js
+// node_modules/svelte/src/internal/client/reactivity/equality.js
 function equals(value) {
   return value === this.v;
 }
@@ -519,7 +519,7 @@ function safe_equals(value) {
   return !safe_not_equal(value, this.v);
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/flags/index.js
+// node_modules/svelte/src/internal/flags/index.js
 var async_mode_flag = false;
 var legacy_mode_flag = false;
 var tracing_mode_flag = false;
@@ -527,7 +527,7 @@ function enable_legacy_mode_flag() {
   legacy_mode_flag = true;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dev/tracing.js
+// node_modules/svelte/src/internal/client/dev/tracing.js
 var tracing_expressions = null;
 function tag(source, label) {
   source.label = label;
@@ -539,7 +539,7 @@ function tag_proxy(value, label) {
   return value;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/shared/dev.js
+// node_modules/svelte/src/internal/shared/dev.js
 function get_error(label) {
   const error = new Error;
   const stack = get_stack();
@@ -591,7 +591,7 @@ function invariant(condition, message) {
     invariant_violation(message);
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/shared/context.js
+// node_modules/svelte/src/internal/shared/context.js
 function get_parent_context(context) {
   let parent = context.p;
   while (parent !== null && parent.c === null) {
@@ -606,7 +606,7 @@ function get_or_init_context_map(context, name) {
   return context.c ??= new Map(get_parent_context(context) || undefined);
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/context.js
+// node_modules/svelte/src/internal/client/context.js
 var component_context = null;
 function set_component_context(context) {
   component_context = context;
@@ -663,7 +663,7 @@ function is_runes() {
   return !legacy_mode_flag || component_context !== null && component_context.l === null;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/task.js
+// node_modules/svelte/src/internal/client/dom/task.js
 var micro_tasks = [];
 function run_micro_tasks() {
   var tasks = micro_tasks;
@@ -686,7 +686,7 @@ function flush_tasks() {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/error-handling.js
+// node_modules/svelte/src/internal/client/error-handling.js
 var adjustments = new WeakMap;
 function handle_error(error) {
   var effect = active_effect;
@@ -762,7 +762,7 @@ function apply_adjustments(error) {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/reactivity/status.js
+// node_modules/svelte/src/internal/client/reactivity/status.js
 var STATUS_MASK = ~(DIRTY | MAYBE_DIRTY | CLEAN);
 function set_signal_status(signal, status) {
   signal.f = signal.f & STATUS_MASK | status;
@@ -775,7 +775,7 @@ function update_derived_status(derived) {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/reactivity/utils.js
+// node_modules/svelte/src/internal/client/reactivity/utils.js
 function clear_marked(deps) {
   if (deps === null)
     return;
@@ -797,7 +797,7 @@ function defer_effect(effect, dirty_effects, maybe_dirty_effects) {
   set_signal_status(effect, CLEAN);
 }
 
-// ../nanoflux/node_modules/svelte/src/store/utils.js
+// node_modules/svelte/src/store/utils.js
 function subscribe_to_store(store, run2, invalidate) {
   if (store == null) {
     run2(undefined);
@@ -809,7 +809,7 @@ function subscribe_to_store(store, run2, invalidate) {
   return unsub.unsubscribe ? () => unsub.unsubscribe() : unsub;
 }
 
-// ../nanoflux/node_modules/svelte/src/store/shared/index.js
+// node_modules/svelte/src/store/shared/index.js
 var subscriber_queue = [];
 function writable(value, start = noop) {
   let stop = null;
@@ -858,7 +858,7 @@ function get(store) {
   return value;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/reactivity/store.js
+// node_modules/svelte/src/internal/client/reactivity/store.js
 var legacy_is_updating_store = false;
 var is_store_binding = false;
 var IS_UNMOUNTED = Symbol("unmounted");
@@ -920,7 +920,7 @@ function capture_store_binding(fn) {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/misc.js
+// node_modules/svelte/src/internal/client/dom/elements/misc.js
 function autofocus(dom, value) {
   if (value) {
     const body = document.body;
@@ -953,7 +953,7 @@ function add_form_reset_listener() {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/bindings/shared.js
+// node_modules/svelte/src/internal/client/dom/elements/bindings/shared.js
 function without_reactive_context(fn) {
   var previous_reaction = active_reaction;
   var previous_effect = active_effect;
@@ -980,7 +980,7 @@ function listen_to_event_and_reset_event(element, event, handler, on_reset = han
   add_form_reset_listener();
 }
 
-// ../nanoflux/node_modules/svelte/src/reactivity/create-subscriber.js
+// node_modules/svelte/src/reactivity/create-subscriber.js
 function createSubscriber(start) {
   let subscribers = 0;
   let version = source(0);
@@ -1011,7 +1011,7 @@ function createSubscriber(start) {
   };
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/blocks/boundary.js
+// node_modules/svelte/src/internal/client/dom/blocks/boundary.js
 var flags = EFFECT_TRANSPARENT | EFFECT_PRESERVED;
 function boundary(node, props, children, transform_error) {
   new Boundary(node, props, children, transform_error);
@@ -1313,7 +1313,7 @@ class Boundary {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/reactivity/async.js
+// node_modules/svelte/src/internal/client/reactivity/async.js
 function flatten(blockers, sync, async, fn) {
   const d = is_runes() ? derived : derived_safe_equal;
   var pending = blockers.filter((b) => !b.settled);
@@ -1406,7 +1406,7 @@ function increment_pending() {
   };
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/reactivity/deriveds.js
+// node_modules/svelte/src/internal/client/reactivity/deriveds.js
 var reactivity_loss_tracker = null;
 function set_reactivity_loss_tracker(v) {
   reactivity_loss_tracker = v;
@@ -1661,7 +1661,7 @@ function unfreeze_derived_effects(derived2) {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/reactivity/batch.js
+// node_modules/svelte/src/internal/client/reactivity/batch.js
 var first_batch = null;
 var last_batch = null;
 var current_batch = null;
@@ -2365,7 +2365,7 @@ function reset_all(effect) {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/reactivity/sources.js
+// node_modules/svelte/src/internal/client/reactivity/sources.js
 var eager_effects = new Set;
 var old_values = new Map;
 function set_eager_effects(v) {
@@ -2532,7 +2532,7 @@ function mark_reactions(signal, status, updated_during_traversal) {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/proxy.js
+// node_modules/svelte/src/internal/client/proxy.js
 var regex_is_valid_identifier = /^[a-zA-Z_$][a-zA-Z_$0-9]*$/;
 function proxy(value) {
   if (typeof value !== "object" || value === null || STATE_SYMBOL in value) {
@@ -2798,7 +2798,7 @@ function inspectable_array(array) {
   });
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dev/equality.js
+// node_modules/svelte/src/internal/client/dev/equality.js
 function init_array_prototype_warnings() {
   const array_prototype2 = Array.prototype;
   const cleanup = Array.__svelte_cleanup;
@@ -2849,7 +2849,7 @@ function init_array_prototype_warnings() {
   };
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/operations.js
+// node_modules/svelte/src/internal/client/dom/operations.js
 var $window;
 var $document;
 var is_firefox;
@@ -2982,7 +2982,7 @@ function merge_text_nodes(text) {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/reactivity/effects.js
+// node_modules/svelte/src/internal/client/reactivity/effects.js
 function validate_effect(rune) {
   if (active_effect === null) {
     if (active_reaction === null) {
@@ -3334,10 +3334,10 @@ function move_effect(effect2, fragment) {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/legacy.js
+// node_modules/svelte/src/internal/client/legacy.js
 var captured_signals = null;
 
-// ../nanoflux/node_modules/svelte/src/internal/client/runtime.js
+// node_modules/svelte/src/internal/client/runtime.js
 var is_updating_effect = false;
 var is_destroying_effect = false;
 function set_is_destroying_effect(value) {
@@ -3782,7 +3782,7 @@ function deep_read(value, visited = new Set) {
     }
   }
 }
-// ../nanoflux/node_modules/svelte/src/utils.js
+// node_modules/svelte/src/utils.js
 function is_capture_event(name) {
   return name.endsWith("capture") && name !== "gotpointercapture" && name !== "lostpointercapture";
 }
@@ -3910,12 +3910,27 @@ var RAW_TEXT_ELEMENTS = ["textarea", "script", "style", "title"];
 function is_raw_text_element(name) {
   return RAW_TEXT_ELEMENTS.includes(name);
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/dev/css.js
+// node_modules/svelte/src/internal/client/dev/css.js
 var all_styles = new Map;
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/events.js
+// node_modules/svelte/src/internal/client/dom/elements/events.js
 var event_symbol = Symbol("events");
 var all_registered_events = new Set;
 var root_event_handles = new Set;
+function replay_events(dom) {
+  if (!hydrating)
+    return;
+  dom.removeAttribute("onload");
+  dom.removeAttribute("onerror");
+  const event = dom.__e;
+  if (event !== undefined) {
+    dom.__e = undefined;
+    queueMicrotask(() => {
+      if (dom.isConnected) {
+        dom.dispatchEvent(event);
+      }
+    });
+  }
+}
 function create_event(event_name, dom, handler, options = {}) {
   function target_handler(event) {
     if (!options.capture) {
@@ -4040,7 +4055,7 @@ function handle_event_propagation(event2) {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/reconciler.js
+// node_modules/svelte/src/internal/client/dom/reconciler.js
 var policy = globalThis?.window?.trustedTypes && /* @__PURE__ */ globalThis.window.trustedTypes.createPolicy("svelte-trusted-html", {
   createHTML: (html) => {
     return html;
@@ -4055,7 +4070,7 @@ function create_fragment_from_html(html) {
   return elem.content;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/template.js
+// node_modules/svelte/src/internal/client/dom/template.js
 function assign_nodes(start, end) {
   var effect2 = active_effect;
   if (effect2.nodes === null) {
@@ -4155,7 +4170,7 @@ function append(anchor, dom) {
   anchor.before(dom);
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/render.js
+// node_modules/svelte/src/internal/client/render.js
 var should_intro = true;
 function set_should_intro(value) {
   should_intro = value;
@@ -4307,7 +4322,7 @@ function unmount(component, options) {
   }
   return Promise.resolve();
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/blocks/branches.js
+// node_modules/svelte/src/internal/client/dom/blocks/branches.js
 class BranchManager {
   anchor;
   #batches = new Map;
@@ -4428,7 +4443,7 @@ class BranchManager {
     }
   }
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/blocks/if.js
+// node_modules/svelte/src/internal/client/dom/blocks/if.js
 function if_block(node, fn, elseif = false) {
   var marker;
   if (hydrating) {
@@ -4463,9 +4478,9 @@ function if_block(node, fn, elseif = false) {
     }
   }, flags2);
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/blocks/key.js
+// node_modules/svelte/src/internal/client/dom/blocks/key.js
 var NAN = Symbol("NaN");
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/blocks/each.js
+// node_modules/svelte/src/internal/client/dom/blocks/each.js
 function index(_, i) {
   return i;
 }
@@ -4903,7 +4918,7 @@ function validate_each_keys(array, key_fn) {
     keys.set(key, i);
   }
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/blocks/snippet.js
+// node_modules/svelte/src/internal/client/dom/blocks/snippet.js
 function snippet(node, get_snippet, ...args) {
   var branches = new BranchManager(node);
   block(() => {
@@ -4914,7 +4929,7 @@ function snippet(node, get_snippet, ...args) {
     branches.ensure(snippet2, snippet2 && ((anchor) => snippet2(anchor, ...args)));
   }, EFFECT_TRANSPARENT);
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/timing.js
+// node_modules/svelte/src/internal/client/timing.js
 var now = true_default ? () => performance.now() : () => Date.now();
 var raf = {
   tick: (_) => (true_default ? requestAnimationFrame : noop)(_),
@@ -4922,13 +4937,13 @@ var raf = {
   tasks: new Set
 };
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/transitions.js
+// node_modules/svelte/src/internal/client/dom/elements/transitions.js
 var animation_effect_override = null;
 function set_animation_effect_override(v) {
   animation_effect_override = v;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/blocks/svelte-element.js
+// node_modules/svelte/src/internal/client/dom/blocks/svelte-element.js
 function element(node, get_tag, is_svg, render_fn, get_namespace, location) {
   let was_hydrating = hydrating;
   if (hydrating) {
@@ -5005,7 +5020,7 @@ function element(node, get_tag, is_svg, render_fn, get_namespace, location) {
     set_hydrate_node(anchor);
   }
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/attachments.js
+// node_modules/svelte/src/internal/client/dom/elements/attachments.js
 function attach(node, get_fn) {
   var fn = undefined;
   var e;
@@ -5023,7 +5038,7 @@ function attach(node, get_fn) {
     }
   });
 }
-// ../nanoflux/node_modules/clsx/dist/clsx.mjs
+// node_modules/clsx/dist/clsx.mjs
 function r(e) {
   var t, f, n = "";
   if (typeof e == "string" || typeof e == "number")
@@ -5044,7 +5059,7 @@ function clsx() {
   return n;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/shared/attributes.js
+// node_modules/svelte/src/internal/shared/attributes.js
 var replacements = {
   translate: new Map([
     [true, "yes"],
@@ -5179,7 +5194,7 @@ function to_style(value, styles) {
   return value == null ? null : String(value);
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/class.js
+// node_modules/svelte/src/internal/client/dom/elements/class.js
 function set_class(dom, is_html, value, hash2, prev_classes, next_classes) {
   var prev = dom[CLASS_CACHE];
   if (hydrating || prev !== value || prev === undefined) {
@@ -5205,7 +5220,7 @@ function set_class(dom, is_html, value, hash2, prev_classes, next_classes) {
   return next_classes;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/style.js
+// node_modules/svelte/src/internal/client/dom/elements/style.js
 function update_styles(dom, prev = {}, next2, priority) {
   for (var key in next2) {
     var value = next2[key];
@@ -5241,7 +5256,7 @@ function set_style(dom, value, prev_styles, next_styles) {
   return next_styles;
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/bindings/select.js
+// node_modules/svelte/src/internal/client/dom/elements/bindings/select.js
 function select_option(select, value, mounting = false) {
   if (select.multiple) {
     if (value == undefined) {
@@ -5290,7 +5305,7 @@ function get_option_value(option) {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/attributes.js
+// node_modules/svelte/src/internal/client/dom/elements/attributes.js
 var CLASS = Symbol("class");
 var STYLE = Symbol("style");
 var IS_CUSTOM_ELEMENT = Symbol("is custom element");
@@ -5578,7 +5593,7 @@ function srcset_url_equal(element2, srcset) {
   var urls = split_srcset(srcset);
   return urls.length === element_urls.length && urls.every(([url, width], i) => width === element_urls[i][1] && (src_url_equal(element_urls[i][0], url) || src_url_equal(url, element_urls[i][0])));
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/bindings/input.js
+// node_modules/svelte/src/internal/client/dom/elements/bindings/input.js
 function bind_value(input, get3, set2 = get3) {
   var batches = new WeakSet;
   listen_to_event_and_reset_event(input, "input", async (is_reset) => {
@@ -5645,7 +5660,7 @@ function is_numberlike_input(input) {
 function to_number(value) {
   return value === "" ? null : +value;
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/bindings/size.js
+// node_modules/svelte/src/internal/client/dom/elements/bindings/size.js
 class ResizeObserverSingleton {
   #listeners = new WeakMap;
   #observer;
@@ -5679,7 +5694,7 @@ class ResizeObserverSingleton {
     }));
   }
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/bindings/this.js
+// node_modules/svelte/src/internal/client/dom/elements/bindings/this.js
 function is_bound_this(bound_value, element_or_component) {
   return bound_value === element_or_component || bound_value?.[STATE_SYMBOL] === element_or_component;
 }
@@ -5720,7 +5735,7 @@ function bind_this(element_or_component = {}, update2, get_value, get_parts) {
   });
   return element_or_component;
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/legacy/lifecycle.js
+// node_modules/svelte/src/internal/client/dom/legacy/lifecycle.js
 function init(immutable = false) {
   const context = component_context;
   const callbacks = context.l.u;
@@ -5775,7 +5790,7 @@ function observe_all(context, props) {
   }
   props();
 }
-// ../nanoflux/node_modules/svelte/src/internal/client/reactivity/props.js
+// node_modules/svelte/src/internal/client/reactivity/props.js
 var rest_props_handler = {
   get(target, key) {
     if (target.exclude.has(key))
@@ -5982,7 +5997,7 @@ function prop(props, key, flags2, fallback) {
     return get2(d);
   };
 }
-// ../nanoflux/node_modules/svelte/src/legacy/legacy-client.js
+// node_modules/svelte/src/legacy/legacy-client.js
 function createClassComponent(options) {
   return new Svelte4Component(options);
 }
@@ -6060,7 +6075,7 @@ class Svelte4Component {
   }
 }
 
-// ../nanoflux/node_modules/svelte/src/internal/client/dom/elements/custom-element.js
+// node_modules/svelte/src/internal/client/dom/elements/custom-element.js
 var SvelteElement;
 if (typeof HTMLElement === "function") {
   SvelteElement = class extends HTMLElement {
@@ -6236,7 +6251,7 @@ function get_custom_elements_slots(element2) {
   });
   return result;
 }
-// ../nanoflux/node_modules/svelte/src/index-client.js
+// node_modules/svelte/src/index-client.js
 if (true_default) {
   let throw_rune_error = function(rune) {
     if (!(rune in globalThis)) {
@@ -6281,15 +6296,15 @@ function init_update_callbacks(context) {
   return l.u ??= { a: [], b: [], m: [] };
 }
 
-// ../nanoflux/node_modules/svelte/src/version.js
+// node_modules/svelte/src/version.js
 var PUBLIC_VERSION = "5";
 
-// ../nanoflux/node_modules/svelte/src/internal/disclose-version.js
+// node_modules/svelte/src/internal/disclose-version.js
 if (typeof window !== "undefined") {
   ((window.__svelte ??= {}).v ??= new Set).add(PUBLIC_VERSION);
 }
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/defaultAttributes.js
+// node_modules/@lucide/svelte/dist/defaultAttributes.js
 var defaultAttributes = {
   xmlns: "http://www.w3.org/2000/svg",
   width: 24,
@@ -6303,7 +6318,7 @@ var defaultAttributes = {
 };
 var defaultAttributes_default = defaultAttributes;
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/utils/hasA11yProp.js
+// node_modules/@lucide/svelte/dist/utils/hasA11yProp.js
 var hasA11yProp = (props) => {
   for (const prop2 in props) {
     if (prop2.startsWith("aria-") || prop2 === "role" || prop2 === "title") {
@@ -6313,11 +6328,11 @@ var hasA11yProp = (props) => {
   return false;
 };
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/context.js
+// node_modules/@lucide/svelte/dist/context.js
 var LucideContext = Symbol("lucide-context");
 var getLucideContext = () => getContext(LucideContext);
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/Icon.svelte
+// node_modules/@lucide/svelte/dist/Icon.svelte
 var rest_excludes = new Set([
   "$$slots",
   "$$events",
@@ -6388,10 +6403,10 @@ function Icon($$anchor, $$props) {
 if (undefined) {}
 var Icon_default = Icon;
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/download.svelte
+// node_modules/@lucide/svelte/dist/icons/download.svelte
 var rest_excludes2 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root2 = from_html(`<!--
-@lucide/svelte v1.33.0 - ISC
+@lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -6430,10 +6445,10 @@ function Download($$anchor, $$props) {
 }
 if (undefined) {}
 var download_default = Download;
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/log-out.svelte
+// node_modules/@lucide/svelte/dist/icons/log-out.svelte
 var rest_excludes3 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root3 = from_html(`<!--
-@lucide/svelte v1.33.0 - ISC
+@lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -6472,10 +6487,10 @@ function Log_out($$anchor, $$props) {
 }
 if (undefined) {}
 var log_out_default = Log_out;
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/newspaper.svelte
+// node_modules/@lucide/svelte/dist/icons/newspaper.svelte
 var rest_excludes4 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root4 = from_html(`<!--
-@lucide/svelte v1.33.0 - ISC
+@lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -6523,10 +6538,10 @@ function Newspaper($$anchor, $$props) {
 }
 if (undefined) {}
 var newspaper_default = Newspaper;
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/panel-left-close.svelte
+// node_modules/@lucide/svelte/dist/icons/panel-left-close.svelte
 var rest_excludes5 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root5 = from_html(`<!--
-@lucide/svelte v1.33.0 - ISC
+@lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -6568,10 +6583,10 @@ function Panel_left_close($$anchor, $$props) {
 }
 if (undefined) {}
 var panel_left_close_default = Panel_left_close;
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/panel-left-open.svelte
+// node_modules/@lucide/svelte/dist/icons/panel-left-open.svelte
 var rest_excludes6 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root6 = from_html(`<!--
-@lucide/svelte v1.33.0 - ISC
+@lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -6613,10 +6628,10 @@ function Panel_left_open($$anchor, $$props) {
 }
 if (undefined) {}
 var panel_left_open_default = Panel_left_open;
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/rss.svelte
+// node_modules/@lucide/svelte/dist/icons/rss.svelte
 var rest_excludes7 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root7 = from_html(`<!--
-@lucide/svelte v1.33.0 - ISC
+@lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -6655,7 +6670,7 @@ function Rss($$anchor, $$props) {
 }
 if (undefined) {}
 var rss_default = Rss;
-// ../nanoflux/web/src/lib/router.ts
+// web/src/lib/router.ts
 var scrollByRoute = new Map;
 var route = writable("/");
 var SUBPAGE_PATH_SUFFIXES = [
@@ -6774,10 +6789,10 @@ function navClick(next2) {
   };
 }
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/settings.svelte
+// node_modules/@lucide/svelte/dist/icons/settings.svelte
 var rest_excludes8 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root8 = from_html(`<!--
-@lucide/svelte v1.33.0 - ISC
+@lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -6820,7 +6835,7 @@ function Settings($$anchor, $$props) {
 }
 if (undefined) {}
 var settings_default = Settings;
-// ../nanoflux/shared/locale.ts
+// shared/locale.ts
 var LOCALES = ["en", "zh-Hans", "zh-Hant"];
 var DEFAULT_LOCALE = "zh-Hans";
 function parseLocale(value) {
@@ -6863,7 +6878,7 @@ function nextLocale(locale) {
   return LOCALES[(index2 + 1) % LOCALES.length] ?? DEFAULT_LOCALE;
 }
 
-// ../nanoflux/shared/manifest.ts
+// shared/manifest.ts
 var PWA_META_DESCRIPTION = {
   "zh-Hans": "面向 AI Agent 的新闻服务",
   "zh-Hant": "面向 AI Agent 的新聞服務",
@@ -6873,7 +6888,7 @@ function manifestHref(locale) {
   return `/manifest.webmanifest?locale=${locale}`;
 }
 
-// ../nanoflux/web/src/lib/i18n/messages.ts
+// web/src/lib/i18n/messages.ts
 var messages = {
   "zh-Hans": {
     "items.latest": "最新资讯",
@@ -6889,6 +6904,8 @@ var messages = {
     "items.noMore": "没有更多了",
     "items.loadFailed": "加载失败",
     "items.markAllRead": "全部已读",
+    "items.blockSource": "屏蔽此来源并删除已有新闻",
+    "items.blockSourceFailed": "屏蔽来源失败",
     "items.filterBy": "筛选",
     "items.filterUnread": "未读",
     "items.filterAll": "全部",
@@ -6937,6 +6954,11 @@ var messages = {
     "feeds.exportOpmlFailed": "导出失败",
     "filters.hint": "设置大模型过滤提示词。关闭过滤后提示词会保留，新抓取的资讯默认通过。",
     "filters.enabled": "AI 过滤",
+    "filters.keywords": "过滤关键词",
+    "filters.keywordsPlaceholder": "多个关键词用逗号分隔",
+    "filters.sources": "过滤来源",
+    "filters.sourcesPlaceholder": "输入域名后按 Enter",
+    "filters.removeSource": "移除来源",
     "filters.on": "开启",
     "filters.off": "关闭",
     "filters.prompt": "AI 过滤提示词",
@@ -7030,6 +7052,8 @@ var messages = {
     "items.noMore": "沒有更多了",
     "items.loadFailed": "載入失敗",
     "items.markAllRead": "全部已讀",
+    "items.blockSource": "封鎖此來源並刪除既有新聞",
+    "items.blockSourceFailed": "封鎖來源失敗",
     "items.filterBy": "篩選",
     "items.filterUnread": "未讀",
     "items.filterAll": "全部",
@@ -7078,6 +7102,11 @@ var messages = {
     "feeds.exportOpmlFailed": "匯出失敗",
     "filters.hint": "設定大模型過濾提示詞。關閉過濾後提示詞會保留，新擷取的資訊預設通過。",
     "filters.enabled": "AI 過濾",
+    "filters.keywords": "過濾關鍵詞",
+    "filters.keywordsPlaceholder": "多個關鍵詞請用逗號分隔",
+    "filters.sources": "過濾來源",
+    "filters.sourcesPlaceholder": "輸入網域後按 Enter",
+    "filters.removeSource": "移除來源",
     "filters.on": "開啟",
     "filters.off": "關閉",
     "filters.prompt": "AI 過濾提示詞",
@@ -7171,6 +7200,8 @@ var messages = {
     "items.noMore": "No more news",
     "items.loadFailed": "Failed to load",
     "items.markAllRead": "Mark all as read",
+    "items.blockSource": "Block this source and delete existing news",
+    "items.blockSourceFailed": "Failed to block source",
     "items.filterBy": "Filter",
     "items.filterUnread": "Unread",
     "items.filterAll": "All",
@@ -7219,6 +7250,11 @@ var messages = {
     "feeds.exportOpmlFailed": "Export failed",
     "filters.hint": "Set the AI filter prompt. Turning the filter off keeps the prompt; new items pass by default.",
     "filters.enabled": "AI filter",
+    "filters.keywords": "Filter keywords",
+    "filters.keywordsPlaceholder": "Separate multiple keywords with commas",
+    "filters.sources": "Filter sources",
+    "filters.sourcesPlaceholder": "Enter a domain and press Enter",
+    "filters.removeSource": "Remove source",
     "filters.on": "On",
     "filters.off": "Off",
     "filters.prompt": "AI filter prompt",
@@ -7300,7 +7336,7 @@ var messages = {
   }
 };
 
-// ../nanoflux/web/src/lib/locale.ts
+// web/src/lib/locale.ts
 function applyDocumentLocale(locale) {
   if (typeof document === "undefined")
     return;
@@ -7311,7 +7347,7 @@ function applyDocumentLocale(locale) {
     manifest.href = manifestHref(locale);
 }
 
-// ../nanoflux/web/src/lib/locale.svelte.ts
+// web/src/lib/locale.svelte.ts
 var STORAGE_KEY = "nanoflux-locale";
 function readStored() {
   try {
@@ -7352,7 +7388,7 @@ function tf(key2, vars) {
   return Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, String(v)), t(key2));
 }
 
-// ../nanoflux/web/src/components/buttons/SettingsButton.svelte
+// web/src/components/buttons/SettingsButton.svelte
 var root9 = from_html(`
 
 <a>
@@ -7400,7 +7436,7 @@ if (undefined) {}
 var SettingsButton_default = SettingsButton;
 delegate(["click"]);
 
-// ../nanoflux/web/src/lib/api.ts
+// web/src/lib/api.ts
 var unauthorizedListeners = new Set;
 function onUnauthorized(listener) {
   unauthorizedListeners.add(listener);
@@ -7584,10 +7620,25 @@ async function markItemRead(id) {
   });
   assertApiOk(body);
 }
+async function blockSource(source2) {
+  const body = await request("/api/items/block-source", {
+    method: "POST",
+    body: JSON.stringify({ source: source2 })
+  });
+  assertApiOk(body);
+  if (!body.data) {
+    throw new Error(body.message || "Failed to block source");
+  }
+  return body.data;
+}
 function normalizeFilterConfig(data, defaults) {
   const prompt = typeof data?.prompt === "string" ? data.prompt : defaults?.prompt ?? "";
+  const keywords = typeof data?.keywords === "string" ? data.keywords : defaults?.keywords ?? "";
+  const sources = Array.isArray(data?.sources) ? data.sources.filter((source2) => typeof source2 === "string") : defaults?.sources ?? [];
   return {
     prompt,
+    keywords,
+    sources,
     enabled: typeof data?.enabled === "boolean" ? data.enabled : typeof defaults?.enabled === "boolean" ? defaults.enabled : false
   };
 }
@@ -7711,7 +7762,7 @@ async function logoutAdmin() {
   return normalizeAuthStatus(body.data);
 }
 
-// ../nanoflux/web/src/lib/auth.svelte.ts
+// web/src/lib/auth.svelte.ts
 var authState = proxy({ loading: true, required: false, authenticated: true });
 onUnauthorized(() => {
   authState.required = true;
@@ -7740,7 +7791,7 @@ async function submitLogout() {
   authState.authenticated = status.authenticated;
 }
 
-// ../nanoflux/web/src/lib/sidebar.svelte.ts
+// web/src/lib/sidebar.svelte.ts
 var STORAGE_KEY2 = "nanoflux-sidebar";
 function readStored2() {
   try {
@@ -7763,7 +7814,7 @@ function toggleSidebar() {
   } catch {}
 }
 
-// ../nanoflux/web/src/components/Header.svelte
+// web/src/components/Header.svelte
 var root10 = from_html(`
         <!>
       `, 1);
@@ -7992,10 +8043,10 @@ if (undefined) {}
 var Header_default = Header;
 delegate(["click"]);
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/pencil.svelte
+// node_modules/@lucide/svelte/dist/icons/pencil.svelte
 var rest_excludes9 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root11 = from_html(`<!--
-@lucide/svelte v1.33.0 - ISC
+@lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -8038,10 +8089,10 @@ function Pencil($$anchor, $$props) {
 }
 if (undefined) {}
 var pencil_default = Pencil;
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/trash-2.svelte
+// node_modules/@lucide/svelte/dist/icons/trash-2.svelte
 var rest_excludes10 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root12 = from_html(`<!--
-@lucide/svelte v1.33.0 - ISC
+@lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -8082,7 +8133,7 @@ function Trash_2($$anchor, $$props) {
 }
 if (undefined) {}
 var trash_2_default = Trash_2;
-// ../nanoflux/web/src/lib/utils.ts
+// web/src/lib/utils.ts
 function formatTime(iso, nowMs = Date.now()) {
   if (!iso)
     return "";
@@ -8110,7 +8161,7 @@ function formatTime(iso, nowMs = Date.now()) {
   });
 }
 
-// ../nanoflux/shared/google-news.ts
+// shared/google-news.ts
 function googleNewsLanguageFromKeyword(keyword) {
   return /[\u4e00-\u9fff]/.test(keyword) ? "zh-CN" : "en-US";
 }
@@ -8124,7 +8175,7 @@ function buildKeywordGoogleNewsFeedUrl(keyword) {
   return `https://news.google.com/rss/search?q=${q}+when:3d&hl=${language}`;
 }
 
-// ../nanoflux/web/src/components/FeedsManager.svelte
+// web/src/components/FeedsManager.svelte
 var root13 = from_html(`
         <button type="button" class="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"> </button>
         <button type="button" class="text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"> </button>
@@ -9284,10 +9335,10 @@ if (undefined) {}
 var FeedsManager_default = FeedsManager;
 delegate(["input", "click", "keydown"]);
 
-// ../nanoflux/node_modules/svelte/src/internal/flags/legacy.js
+// node_modules/svelte/src/internal/flags/legacy.js
 enable_legacy_mode_flag();
 
-// ../nanoflux/web/src/lib/fontSize.svelte.ts
+// web/src/lib/fontSize.svelte.ts
 var STORAGE_KEY3 = "nanoflux-font-size";
 var MIGRATION_KEY = "nanoflux-font-size-v2";
 function migrateStoredFontSize() {
@@ -9339,7 +9390,7 @@ function setFontSize(f) {
   applyFontSize(f);
 }
 
-// ../nanoflux/web/src/lib/theme.svelte.ts
+// web/src/lib/theme.svelte.ts
 var STORAGE_KEY4 = "nanoflux-theme";
 function readStored4() {
   try {
@@ -9373,7 +9424,7 @@ function toggleTheme() {
   setTheme(themeState.mode === "light" ? "dark" : "light");
 }
 
-// ../nanoflux/web/src/components/PreferencesManager.svelte
+// web/src/components/PreferencesManager.svelte
 var root14 = from_html(`
           <button type="button"> </button>
         `, 1);
@@ -9557,11 +9608,15 @@ if (undefined) {}
 var PreferencesManager_default = PreferencesManager;
 delegate(["click"]);
 
-// ../nanoflux/web/src/components/FiltersManager.svelte
+// web/src/components/FiltersManager.svelte
 var root15 = from_html(`
     <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
   `, 1);
 var root_112 = from_html(`
+            <span class="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2.5 py-1 text-xs text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"> <button type="button" class="text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100">×</button>
+            </span>
+          `, 1);
+var root_23 = from_html(`
     <div class="space-y-8">
       <div class="space-y-3">
         <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
@@ -9571,6 +9626,19 @@ var root_112 = from_html(`
         </div>
       </div>
 
+      <div class="space-y-3">
+        <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
+        <div class="flex min-h-11 flex-wrap items-center gap-2 border-b border-neutral-200 py-2 focus-within:border-neutral-900 dark:border-neutral-700 dark:focus-within:border-neutral-100">
+          <!>
+          <input class="min-w-40 flex-1 bg-transparent text-sm outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-600"/>
+        </div>
+      </div>
+
+      <label class="block space-y-3">
+        <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
+        <textarea></textarea>
+      </label>
+
       <label class="block space-y-3">
         <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
         <textarea></textarea>
@@ -9579,10 +9647,10 @@ var root_112 = from_html(`
       <button type="button" class="text-sm text-neutral-900 underline-offset-4 hover:underline disabled:opacity-50 dark:text-neutral-100"> </button>
     </div>
   `, 1);
-var root_23 = from_html(`
+var root_32 = from_html(`
     <p class="mt-3 text-sm text-red-500"> </p>
   `, 1);
-var root_32 = from_html(`
+var root_42 = from_html(`
 
 <section class="mb-10">
   <p class="mb-6 text-sm text-neutral-400 dark:text-neutral-500"> </p>
@@ -9595,12 +9663,17 @@ function FiltersManager($$anchor, $$props) {
   const textareaClass = "min-h-48 resize-y " + inputClass;
   let prompt = state("");
   let enabled = state(false);
+  let keywords = state("");
+  let sources = state(proxy([]));
+  let sourceInput = state("");
   let savedPrompt = state("");
   let savedEnabled = state(false);
+  let savedKeywords = state("");
+  let savedSources = state(proxy([]));
   let formError = state("");
   let loading = state(true);
   let saving = state(false);
-  const isDirty = user_derived(() => get2(prompt).trim() !== get2(savedPrompt) || get2(enabled) !== get2(savedEnabled));
+  const isDirty = user_derived(() => get2(prompt).trim() !== get2(savedPrompt) || get2(enabled) !== get2(savedEnabled) || get2(keywords).trim() !== get2(savedKeywords) || get2(sources).join("\x00") !== get2(savedSources).join("\x00"));
   const saveDisabled = user_derived(() => get2(saving) || get2(loading) || !get2(isDirty));
   function toggleClass(active) {
     return active ? "text-neutral-900 underline underline-offset-4 decoration-neutral-900 dark:text-neutral-100 dark:decoration-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300";
@@ -9612,8 +9685,12 @@ function FiltersManager($$anchor, $$props) {
       const filter = await fetchFilter();
       set(prompt, filter.prompt, true);
       set(enabled, filter.enabled, true);
+      set(keywords, filter.keywords, true);
+      set(sources, filter.sources, true);
       set(savedPrompt, filter.prompt, true);
       set(savedEnabled, filter.enabled, true);
+      set(savedKeywords, filter.keywords, true);
+      set(savedSources, filter.sources, true);
     } catch (e) {
       set(formError, e instanceof Error ? e.message : t("filters.loadFailed"), true);
     } finally {
@@ -9626,22 +9703,50 @@ function FiltersManager($$anchor, $$props) {
     set(formError, "");
     set(saving, true);
     try {
-      const updated = await updateFilter({ prompt: get2(prompt).trim(), enabled: get2(enabled) });
+      const updated = await updateFilter({
+        prompt: get2(prompt).trim(),
+        enabled: get2(enabled),
+        keywords: get2(keywords).trim(),
+        sources: get2(sources)
+      });
       set(prompt, updated.prompt, true);
       set(enabled, updated.enabled, true);
       set(savedPrompt, updated.prompt, true);
       set(savedEnabled, updated.enabled, true);
+      set(keywords, updated.keywords, true);
+      set(savedKeywords, updated.keywords, true);
+      set(sources, updated.sources, true);
+      set(savedSources, updated.sources, true);
     } catch (err) {
       set(formError, err instanceof Error ? err.message : t("filters.saveFailed"), true);
     } finally {
       set(saving, false);
     }
   }
+  function addSource() {
+    const candidates = get2(sourceInput).split(/[,，\s]+/).map((source2) => source2.trim().toLocaleLowerCase().replace(/^https?:\/\//, "").split("/")[0]?.replace(/^www\./, "") ?? "").filter(Boolean);
+    if (candidates.length) {
+      set(sources, [...new Set([...get2(sources), ...candidates])], true);
+    }
+    set(sourceInput, "");
+  }
+  function removeSource(source2) {
+    set(sources, get2(sources).filter((item) => item !== source2), true);
+  }
+  function handleSourceKeydown(event2) {
+    if (event2.key === "Enter" || event2.key === ",") {
+      event2.preventDefault();
+      addSource();
+    }
+    if (event2.key === "Backspace" && !get2(sourceInput) && get2(sources).length) {
+      set(sources, get2(sources).slice(0, -1), true);
+    }
+  }
   onMount(() => {
     loadFilter();
   });
   next();
-  var fragment = root_32();
+  var fragment = root_42();
   var section = sibling(first_child(fragment));
   var p = sibling(child(section));
   var text2 = child(p);
@@ -9658,7 +9763,7 @@ function FiltersManager($$anchor, $$props) {
       append($$anchor2, fragment_1);
     };
     var alternate = ($$anchor2) => {
-      var fragment_2 = root_112();
+      var fragment_2 = root_23();
       var div = sibling(first_child(fragment_2));
       var div_1 = sibling(child(div));
       var span = sibling(child(div_1));
@@ -9675,22 +9780,62 @@ function FiltersManager($$anchor, $$props) {
       reset(div_2);
       next();
       reset(div_1);
-      var label = sibling(div_1, 2);
-      var span_1 = sibling(child(label));
+      var div_3 = sibling(div_1, 2);
+      var span_1 = sibling(child(div_3));
       var text_5 = child(span_1);
       reset(span_1);
-      var textarea = sibling(span_1, 2);
+      var div_4 = sibling(span_1, 2);
+      var node_1 = sibling(child(div_4));
+      each(node_1, 17, () => get2(sources), index, ($$anchor3, source2) => {
+        next();
+        var fragment_3 = root_112();
+        var span_2 = sibling(first_child(fragment_3));
+        var text_6 = child(span_2);
+        var button_2 = sibling(text_6);
+        next();
+        reset(span_2);
+        next();
+        template_effect(($0) => {
+          set_text(text_6, `
+              ${get2(source2) ?? ""}
+              `);
+          set_attribute2(button_2, "aria-label", $0);
+          button_2.disabled = get2(saving);
+        }, [() => `${t("filters.removeSource")} ${get2(source2)}`]);
+        delegated("click", button_2, () => removeSource(get2(source2)));
+        append($$anchor3, fragment_3);
+      });
+      var input = sibling(node_1, 2);
+      remove_input_defaults(input);
+      next();
+      reset(div_4);
+      next();
+      reset(div_3);
+      var label = sibling(div_3, 2);
+      var span_3 = sibling(child(label));
+      var text_7 = child(span_3);
+      reset(span_3);
+      var textarea = sibling(span_3, 2);
       remove_textarea_child(textarea);
-      set_class(textarea, 1, clsx2(textareaClass));
+      set_class(textarea, 1, "min-h-32 resize-y w-full border-0 border-b border-neutral-200 bg-transparent py-2 text-sm outline-none placeholder:text-neutral-300 focus:border-neutral-900 dark:border-neutral-700 dark:placeholder:text-neutral-600 dark:focus:border-neutral-100");
       next();
       reset(label);
-      var button_2 = sibling(label, 2);
-      var text_6 = child(button_2);
-      reset(button_2);
+      var label_1 = sibling(label, 2);
+      var span_4 = sibling(child(label_1));
+      var text_8 = child(span_4);
+      reset(span_4);
+      var textarea_1 = sibling(span_4, 2);
+      remove_textarea_child(textarea_1);
+      set_class(textarea_1, 1, clsx2(textareaClass));
+      next();
+      reset(label_1);
+      var button_3 = sibling(label_1, 2);
+      var text_9 = child(button_3);
+      reset(button_3);
       next();
       reset(div);
       next();
-      template_effect(($0, $1, $2, $3, $4, $5, $6, $7) => {
+      template_effect(($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) => {
         set_text(text_2, `
           ${$0 ?? ""}
         `);
@@ -9710,10 +9855,20 @@ function FiltersManager($$anchor, $$props) {
         set_text(text_5, `
           ${$6 ?? ""}
         `);
+        input.disabled = get2(saving);
+        set_attribute2(input, "placeholder", $7);
+        set_text(text_7, `
+          ${$8 ?? ""}
+        `);
         textarea.disabled = get2(saving);
-        button_2.disabled = get2(saveDisabled);
-        set_text(text_6, `
-        ${$7 ?? ""}
+        set_attribute2(textarea, "placeholder", $9);
+        set_text(text_8, `
+          ${$10 ?? ""}
+        `);
+        textarea_1.disabled = get2(saving);
+        button_3.disabled = get2(saveDisabled);
+        set_text(text_9, `
+        ${$11 ?? ""}
       `);
       }, [
         () => t("filters.enabled"),
@@ -9722,13 +9877,21 @@ function FiltersManager($$anchor, $$props) {
         () => t("filters.on"),
         () => toggleClass(!get2(enabled)),
         () => t("filters.off"),
+        () => t("filters.sources"),
+        () => t("filters.sourcesPlaceholder"),
+        () => t("filters.keywords"),
+        () => t("filters.keywordsPlaceholder"),
         () => t("filters.prompt"),
         () => get2(saving) ? t("filters.saving") : t("filters.save")
       ]);
       delegated("click", button, () => set(enabled, true));
       delegated("click", button_1, () => set(enabled, false));
-      bind_value(textarea, () => get2(prompt), ($$value) => set(prompt, $$value));
-      delegated("click", button_2, () => void handleSave());
+      delegated("keydown", input, handleSourceKeydown);
+      event("blur", input, addSource);
+      bind_value(input, () => get2(sourceInput), ($$value) => set(sourceInput, $$value));
+      bind_value(textarea, () => get2(keywords), ($$value) => set(keywords, $$value));
+      bind_value(textarea_1, () => get2(prompt), ($$value) => set(prompt, $$value));
+      delegated("click", button_3, () => void handleSave());
       append($$anchor2, fragment_2);
     };
     if_block(node, ($$render) => {
@@ -9738,18 +9901,18 @@ function FiltersManager($$anchor, $$props) {
         $$render(alternate, -1);
     });
   }
-  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var fragment_3 = root_23();
-      var p_2 = sibling(first_child(fragment_3));
-      var text_7 = child(p_2, true);
+      var fragment_4 = root_32();
+      var p_2 = sibling(first_child(fragment_4));
+      var text_10 = child(p_2, true);
       reset(p_2);
       next();
-      template_effect(() => set_text(text_7, get2(formError)));
-      append($$anchor2, fragment_3);
+      template_effect(() => set_text(text_10, get2(formError)));
+      append($$anchor2, fragment_4);
     };
-    if_block(node_1, ($$render) => {
+    if_block(node_2, ($$render) => {
       if (get2(formError))
         $$render(consequent_1);
     });
@@ -9764,9 +9927,9 @@ function FiltersManager($$anchor, $$props) {
 }
 if (undefined) {}
 var FiltersManager_default = FiltersManager;
-delegate(["click"]);
+delegate(["click", "keydown"]);
 
-// ../nanoflux/web/src/components/TranslateManager.svelte
+// web/src/components/TranslateManager.svelte
 var root16 = from_html(`
     <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
   `, 1);
@@ -9801,7 +9964,7 @@ var root_24 = from_html(`
 var root_33 = from_html(`
     <p class="mt-3 text-sm text-red-500"> </p>
   `, 1);
-var root_42 = from_html(`
+var root_43 = from_html(`
 
 <section class="mb-10">
   <p class="mb-6 text-sm text-neutral-400 dark:text-neutral-500"> </p>
@@ -9870,7 +10033,7 @@ function TranslateManager($$anchor, $$props) {
     loadTranslate();
   });
   next();
-  var fragment = root_42();
+  var fragment = root_43();
   var section = sibling(first_child(fragment));
   var p = sibling(child(section));
   var text2 = child(p);
@@ -10032,7 +10195,7 @@ if (undefined) {}
 var TranslateManager_default = TranslateManager;
 delegate(["click"]);
 
-// ../nanoflux/shared/password-strength.ts
+// shared/password-strength.ts
 function isStrongPassword(password) {
   if (password.length < 8)
     return false;
@@ -10042,7 +10205,7 @@ function isStrongPassword(password) {
   return hasLetter && hasDigit && hasSymbol;
 }
 
-// ../nanoflux/web/src/components/FeverManager.svelte
+// web/src/components/FeverManager.svelte
 var root17 = from_html(`
     <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
   `, 1);
@@ -10315,7 +10478,7 @@ if (undefined) {}
 var FeverManager_default = FeverManager;
 delegate(["click"]);
 
-// ../nanoflux/web/src/components/SettingsManager.svelte
+// web/src/components/SettingsManager.svelte
 var root18 = from_html(`
         <button type="button" role="tab"> </button>
       `, 1);
@@ -10454,7 +10617,7 @@ if (undefined) {}
 var SettingsManager_default = SettingsManager;
 delegate(["click"]);
 
-// ../nanoflux/web/src/components/ExportPage.svelte
+// web/src/components/ExportPage.svelte
 var root19 = from_html(`
       <p class="text-sm text-red-500"> </p>
     `, 1);
@@ -10604,10 +10767,51 @@ if (undefined) {}
 var ExportPage_default = ExportPage;
 delegate(["click"]);
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/eye.svelte
+// node_modules/@lucide/svelte/dist/icons/ban.svelte
 var rest_excludes11 = new Set(["$$slots", "$$events", "$$legacy"]);
 var root20 = from_html(`<!--
-@lucide/svelte v1.33.0 - ISC
+@lucide/svelte v1.34.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIgLz4KICA8cGF0aCBkPSJNNC45MjkgNC45MjkgMTkuMDcgMTkuMDcxIiAvPgo8L3N2Zz4K) - https://lucide.dev/icons/ban
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Ban($$anchor, $$props) {
+  let props = rest_props($$props, rest_excludes11);
+  const iconNode = [
+    ["circle", { cx: "12", cy: "12", r: "10" }],
+    ["path", { d: "M4.929 4.929 19.07 19.071" }]
+  ];
+  var fragment = root20();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "ban" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var ban_default = Ban;
+// node_modules/@lucide/svelte/dist/icons/eye.svelte
+var rest_excludes12 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root21 = from_html(`<!--
+@lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -10627,7 +10831,7 @@ Lucide SVG icon component, renders SVG Element with children.
 
 <!>`, 1);
 function Eye($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes11);
+  let props = rest_props($$props, rest_excludes12);
   const iconNode = [
     [
       "path",
@@ -10637,7 +10841,7 @@ function Eye($$anchor, $$props) {
     ],
     ["circle", { cx: "12", cy: "12", r: "3" }]
   ];
-  var fragment = root20();
+  var fragment = root21();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -10650,10 +10854,10 @@ function Eye($$anchor, $$props) {
 }
 if (undefined) {}
 var eye_default = Eye;
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/eye-closed.svelte
-var rest_excludes12 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root21 = from_html(`<!--
-@lucide/svelte v1.33.0 - ISC
+// node_modules/@lucide/svelte/dist/icons/eye-closed.svelte
+var rest_excludes13 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root22 = from_html(`<!--
+@lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -10673,7 +10877,7 @@ Lucide SVG icon component, renders SVG Element with children.
 
 <!>`, 1);
 function Eye_closed($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes12);
+  let props = rest_props($$props, rest_excludes13);
   const iconNode = [
     ["path", { d: "m15 18-.722-3.25" }],
     ["path", { d: "M2 8a10.645 10.645 0 0 0 20 0" }],
@@ -10681,7 +10885,7 @@ function Eye_closed($$anchor, $$props) {
     ["path", { d: "m4 15 1.726-2.05" }],
     ["path", { d: "m9 18 .722-3.25" }]
   ];
-  var fragment = root21();
+  var fragment = root22();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -10694,8 +10898,8 @@ function Eye_closed($$anchor, $$props) {
 }
 if (undefined) {}
 var eye_closed_default = Eye_closed;
-// ../nanoflux/web/src/components/buttons/ItemFilterToggle.svelte
-var root22 = from_html(`
+// web/src/components/buttons/ItemFilterToggle.svelte
+var root23 = from_html(`
     <!>
   `, 1);
 var root_117 = from_html(`
@@ -10714,14 +10918,14 @@ function ItemFilterToggle($$anchor, $$props) {
   var node = sibling(child(button));
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root22();
+      var fragment_1 = root23();
       var node_1 = sibling(first_child(fragment_1));
       eye_default(node_1, spread_props(() => iconProps));
       next();
       append($$anchor2, fragment_1);
     };
     var alternate = ($$anchor2) => {
-      var fragment_2 = root22();
+      var fragment_2 = root23();
       var node_2 = sibling(first_child(fragment_2));
       eye_closed_default(node_2, spread_props(() => iconProps));
       next();
@@ -10752,10 +10956,10 @@ if (undefined) {}
 var ItemFilterToggle_default = ItemFilterToggle;
 delegate(["click"]);
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/check-check.svelte
-var rest_excludes13 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root23 = from_html(`<!--
-@lucide/svelte v1.33.0 - ISC
+// node_modules/@lucide/svelte/dist/icons/check-check.svelte
+var rest_excludes14 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root24 = from_html(`<!--
+@lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -10775,12 +10979,12 @@ Lucide SVG icon component, renders SVG Element with children.
 
 <!>`, 1);
 function Check_check($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes13);
+  let props = rest_props($$props, rest_excludes14);
   const iconNode = [
     ["path", { d: "M18 6 7 17l-5-5" }],
     ["path", { d: "m22 10-7.5 7.5L13 16" }]
   ];
-  var fragment = root23();
+  var fragment = root24();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -10793,8 +10997,8 @@ function Check_check($$anchor, $$props) {
 }
 if (undefined) {}
 var check_check_default = Check_check;
-// ../nanoflux/web/src/components/buttons/MarkAllReadButton.svelte
-var root24 = from_html(`
+// web/src/components/buttons/MarkAllReadButton.svelte
+var root25 = from_html(`
 
 <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
   <!>
@@ -10804,7 +11008,7 @@ function MarkAllReadButton($$anchor, $$props) {
   const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
   const label = user_derived(() => t("items.markAllRead"));
   next();
-  var fragment = root24();
+  var fragment = root25();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   check_check_default(node, spread_props(() => iconProps));
@@ -10822,8 +11026,8 @@ if (undefined) {}
 var MarkAllReadButton_default = MarkAllReadButton;
 delegate(["click"]);
 
-// ../nanoflux/web/src/components/ItemList.svelte
-var root25 = from_html(`
+// web/src/components/ItemList.svelte
+var root26 = from_html(`
   <p class="py-6 text-sm text-red-500"> </p>
 `, 1);
 var root_118 = from_html(`
@@ -10833,11 +11037,19 @@ var root_27 = from_html(`
               <p class="mt-2 line-clamp-2 text-sm text-neutral-400 dark:text-neutral-500"> </p>
             `, 1);
 var root_35 = from_html(`
-            <a target="_blank" rel="noopener noreferrer" class="block aspect-[4/3] w-40 shrink-0 overflow-hidden rounded-md" tabindex="-1" aria-hidden="true">
+              <p class="group mt-2 flex h-4 items-center gap-1 text-xs leading-4 text-neutral-400 dark:text-neutral-500">
+                <span> </span>
+                <button type="button" class="inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded p-0 text-neutral-400 opacity-0 transition-[color,background-color,opacity] group-hover:opacity-100 focus-visible:opacity-100 hover:bg-red-50 hover:text-red-600 disabled:cursor-wait disabled:opacity-50 dark:hover:bg-red-950/40 dark:hover:text-red-400">
+                  <!>
+                </button>
+              </p>
+            `, 1);
+var root_44 = from_html(`
+            <a target="_blank" rel="noopener noreferrer" class="block aspect-[4/3] w-50 shrink-0 overflow-hidden rounded-md" tabindex="-1" aria-hidden="true">
               <img alt="" class="h-full w-full bg-neutral-100 object-cover dark:bg-neutral-800" loading="lazy" referrerpolicy="no-referrer"/>
             </a>
           `, 1);
-var root_43 = from_html(`
+var root_52 = from_html(`
       <li class="py-5">
         <article class="flex items-start gap-4">
           <div class="min-w-0 flex-1">
@@ -10848,20 +11060,21 @@ var root_43 = from_html(`
             </div>
             <a target="_blank" rel="noopener noreferrer"> </a>
             <!>
+            <!>
           </div>
           <!>
         </article>
       </li>
     `, 1);
-var root_52 = from_html(`
+var root_62 = from_html(`
   <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
     <!>
   </ul>
 `, 1);
-var root_62 = from_html(`
+var root_72 = from_html(`
   <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root_72 = from_html(`
+var root_82 = from_html(`
 
 <div class="mb-6 flex items-center justify-end gap-0.5">
   <!>
@@ -10884,6 +11097,8 @@ function ItemList($$anchor, $$props) {
   let sentinel = state(null);
   let filter = state("unread");
   let loadGeneration = 0;
+  let blockingSources = state(proxy(new Set));
+  let failedCovers = state(proxy(new Set));
   let now2 = state(proxy(Date.now()));
   const filterIsRead = user_derived(() => get2(filter) === "unread" ? 0 : undefined);
   function resetList() {
@@ -10955,6 +11170,33 @@ function ItemList($$anchor, $$props) {
       }
     });
   }
+  function handleCoverError(event2, item) {
+    const image = event2.currentTarget;
+    if (!(image instanceof HTMLImageElement))
+      return;
+    if (image.dataset.proxyFallback !== "true") {
+      image.dataset.proxyFallback = "true";
+      image.src = `/api/items/${item.id}/cover`;
+      return;
+    }
+    set(failedCovers, new Set([...get2(failedCovers), item.id]), true);
+  }
+  async function handleBlockSource(source2) {
+    if (get2(blockingSources).has(source2))
+      return;
+    set(blockingSources, new Set([...get2(blockingSources), source2]), true);
+    set(error, "");
+    try {
+      await blockSource(source2);
+      set(items, get2(items).filter((item) => item.source !== source2), true);
+    } catch (e) {
+      set(error, e instanceof Error ? e.message : t("items.blockSourceFailed"), true);
+    } finally {
+      const next2 = new Set(get2(blockingSources));
+      next2.delete(source2);
+      set(blockingSources, next2, true);
+    }
+  }
   async function markAllRead() {
     if (get2(items).length === 0)
       return;
@@ -10986,7 +11228,7 @@ function ItemList($$anchor, $$props) {
   });
   var $$exports = { markAllRead };
   next();
-  var fragment = root_72();
+  var fragment = root_82();
   var div = sibling(first_child(fragment));
   var node = sibling(child(div));
   ItemFilterToggle_default(node, {
@@ -11002,7 +11244,7 @@ function ItemList($$anchor, $$props) {
   var node_2 = sibling(div, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root25();
+      var fragment_1 = root26();
       var p = sibling(first_child(fragment_1));
       var text2 = child(p, true);
       reset(p);
@@ -11020,12 +11262,12 @@ function ItemList($$anchor, $$props) {
       append($$anchor2, fragment_2);
     };
     var alternate = ($$anchor2) => {
-      var fragment_3 = root_52();
+      var fragment_3 = root_62();
       var ul = sibling(first_child(fragment_3));
       var node_3 = sibling(child(ul));
       each(node_3, 17, () => get2(items), (item) => item.id, ($$anchor3, item) => {
         next();
-        var fragment_4 = root_43();
+        var fragment_4 = root_52();
         var li = sibling(first_child(fragment_4));
         var article = sibling(child(li));
         var div_1 = sibling(child(article));
@@ -11059,13 +11301,47 @@ function ItemList($$anchor, $$props) {
               $$render(consequent_2);
           });
         }
-        next();
-        reset(div_1);
-        var node_5 = sibling(div_1, 2);
+        var node_5 = sibling(node_4, 2);
         {
           var consequent_3 = ($$anchor4) => {
             var fragment_6 = root_35();
-            var a_2 = sibling(first_child(fragment_6));
+            var p_3 = sibling(first_child(fragment_6));
+            var span_1 = sibling(child(p_3));
+            var text_6 = child(span_1, true);
+            reset(span_1);
+            var button = sibling(span_1, 2);
+            var node_6 = sibling(child(button));
+            ban_default(node_6, { size: 14, strokeWidth: 1.5, "aria-hidden": true });
+            next();
+            reset(button);
+            next();
+            reset(p_3);
+            next();
+            template_effect(($0, $1, $2) => {
+              set_text(text_6, get2(item).source);
+              set_attribute2(button, "aria-label", $0);
+              set_attribute2(button, "title", $1);
+              button.disabled = $2;
+            }, [
+              () => `${t("items.blockSource")} ${get2(item).source}`,
+              () => t("items.blockSource"),
+              () => get2(blockingSources).has(get2(item).source)
+            ]);
+            delegated("click", button, () => void handleBlockSource(get2(item).source));
+            append($$anchor4, fragment_6);
+          };
+          if_block(node_5, ($$render) => {
+            if (get2(item).source)
+              $$render(consequent_3);
+          });
+        }
+        next();
+        reset(div_1);
+        var node_7 = sibling(div_1, 2);
+        {
+          var consequent_4 = ($$anchor4) => {
+            var fragment_7 = root_44();
+            var a_2 = sibling(first_child(fragment_7));
             var img = sibling(child(a_2));
             next();
             reset(a_2);
@@ -11075,11 +11351,14 @@ function ItemList($$anchor, $$props) {
               set_attribute2(img, "src", get2(item).cover);
             });
             delegated("click", a_2, () => handleOpenItem(get2(item)));
-            append($$anchor4, fragment_6);
+            event("error", img, (event2) => handleCoverError(event2, get2(item)));
+            replay_events(img);
+            append($$anchor4, fragment_7);
           };
-          if_block(node_5, ($$render) => {
-            if (get2(item).cover)
-              $$render(consequent_3);
+          var d = user_derived(() => get2(item).cover && !get2(failedCovers).has(get2(item).id));
+          if_block(node_7, ($$render) => {
+            if (get2(d))
+              $$render(consequent_4);
           });
         }
         next();
@@ -11116,38 +11395,38 @@ function ItemList($$anchor, $$props) {
         $$render(alternate, -1);
     });
   }
-  var node_6 = sibling(node_2, 2);
+  var node_8 = sibling(node_2, 2);
   {
-    var consequent_4 = ($$anchor2) => {
-      var fragment_7 = root_62();
-      var p_3 = sibling(first_child(fragment_7));
-      var text_6 = child(p_3);
-      reset(p_3);
-      next();
-      template_effect(($0) => set_text(text_6, `
-    ${$0 ?? ""}
-  `), [() => t("items.loading")]);
-      append($$anchor2, fragment_7);
-    };
     var consequent_5 = ($$anchor2) => {
-      var fragment_8 = root_62();
+      var fragment_8 = root_72();
       var p_4 = sibling(first_child(fragment_8));
       var text_7 = child(p_4);
       reset(p_4);
       next();
       template_effect(($0) => set_text(text_7, `
     ${$0 ?? ""}
-  `), [() => t("items.noMore")]);
+  `), [() => t("items.loading")]);
       append($$anchor2, fragment_8);
     };
-    if_block(node_6, ($$render) => {
+    var consequent_6 = ($$anchor2) => {
+      var fragment_9 = root_72();
+      var p_5 = sibling(first_child(fragment_9));
+      var text_8 = child(p_5);
+      reset(p_5);
+      next();
+      template_effect(($0) => set_text(text_8, `
+    ${$0 ?? ""}
+  `), [() => t("items.noMore")]);
+      append($$anchor2, fragment_9);
+    };
+    if_block(node_8, ($$render) => {
       if (get2(loading))
-        $$render(consequent_4);
+        $$render(consequent_5);
       else if (!get2(hasMore) && get2(items).length > 0)
-        $$render(consequent_5, 1);
+        $$render(consequent_6, 1);
     });
   }
-  var div_3 = sibling(node_6, 2);
+  var div_3 = sibling(node_8, 2);
   bind_this(div_3, ($$value) => set(sentinel, $$value), () => get2(sentinel));
   append($$anchor, fragment);
   return pop($$exports);
@@ -11156,8 +11435,8 @@ if (undefined) {}
 var ItemList_default = ItemList;
 delegate(["click"]);
 
-// ../nanoflux/web/src/components/buttons/LanguageToggle.svelte
-var root26 = from_html(`
+// web/src/components/buttons/LanguageToggle.svelte
+var root27 = from_html(`
 
 <button type="button" class="inline-flex min-w-[2rem] cursor-pointer items-center justify-center rounded-md p-1.5 text-xs font-medium text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"> </button>`, 1);
 function LanguageToggle($$anchor, $$props) {
@@ -11166,7 +11445,7 @@ function LanguageToggle($$anchor, $$props) {
   const label = user_derived(() => get2(next2) === "en" ? "EN" : get2(next2) === "zh-Hans" ? "简" : "繁");
   const aria = user_derived(() => get2(next2) === "en" ? t("lang.switchToEn") : get2(next2) === "zh-Hans" ? t("lang.switchToZhHans") : t("lang.switchToZhHant"));
   next();
-  var fragment = root26();
+  var fragment = root27();
   var button = sibling(first_child(fragment));
   var text2 = child(button);
   reset(button);
@@ -11187,10 +11466,10 @@ if (undefined) {}
 var LanguageToggle_default = LanguageToggle;
 delegate(["click"]);
 
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/moon.svelte
-var rest_excludes14 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root27 = from_html(`<!--
-@lucide/svelte v1.33.0 - ISC
+// node_modules/@lucide/svelte/dist/icons/moon.svelte
+var rest_excludes15 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root28 = from_html(`<!--
+@lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -11210,7 +11489,7 @@ Lucide SVG icon component, renders SVG Element with children.
 
 <!>`, 1);
 function Moon($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes14);
+  let props = rest_props($$props, rest_excludes15);
   const iconNode = [
     [
       "path",
@@ -11219,7 +11498,7 @@ function Moon($$anchor, $$props) {
       }
     ]
   ];
-  var fragment = root27();
+  var fragment = root28();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -11232,10 +11511,10 @@ function Moon($$anchor, $$props) {
 }
 if (undefined) {}
 var moon_default = Moon;
-// ../nanoflux/node_modules/@lucide/svelte/dist/icons/sun.svelte
-var rest_excludes15 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root28 = from_html(`<!--
-@lucide/svelte v1.33.0 - ISC
+// node_modules/@lucide/svelte/dist/icons/sun.svelte
+var rest_excludes16 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root29 = from_html(`<!--
+@lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
 See the LICENSE file in the root directory of this source tree.
@@ -11255,7 +11534,7 @@ Lucide SVG icon component, renders SVG Element with children.
 
 <!>`, 1);
 function Sun($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes15);
+  let props = rest_props($$props, rest_excludes16);
   const iconNode = [
     ["circle", { cx: "12", cy: "12", r: "4" }],
     ["path", { d: "M12 2v2" }],
@@ -11267,7 +11546,7 @@ function Sun($$anchor, $$props) {
     ["path", { d: "m6.34 17.66-1.41 1.41" }],
     ["path", { d: "m19.07 4.93-1.41 1.41" }]
   ];
-  var fragment = root28();
+  var fragment = root29();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -11280,8 +11559,8 @@ function Sun($$anchor, $$props) {
 }
 if (undefined) {}
 var sun_default = Sun;
-// ../nanoflux/web/src/components/buttons/ThemeToggle.svelte
-var root29 = from_html(`
+// web/src/components/buttons/ThemeToggle.svelte
+var root30 = from_html(`
     <!>
   `, 1);
 var root_119 = from_html(`
@@ -11299,14 +11578,14 @@ function ThemeToggle($$anchor, $$props) {
   var node = sibling(child(button));
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root29();
+      var fragment_1 = root30();
       var node_1 = sibling(first_child(fragment_1));
       sun_default(node_1, spread_props(() => iconProps));
       next();
       append($$anchor2, fragment_1);
     };
     var alternate = ($$anchor2) => {
-      var fragment_2 = root29();
+      var fragment_2 = root30();
       var node_2 = sibling(first_child(fragment_2));
       moon_default(node_2, spread_props(() => iconProps));
       next();
@@ -11338,8 +11617,8 @@ if (undefined) {}
 var ThemeToggle_default = ThemeToggle;
 delegate(["click"]);
 
-// ../nanoflux/web/src/components/LoginGate.svelte
-var root30 = from_html(`
+// web/src/components/LoginGate.svelte
+var root31 = from_html(`
       <p class="mt-3 text-sm text-red-500"> </p>
     `, 1);
 var root_120 = from_html(`
@@ -11417,7 +11696,7 @@ function LoginGate($$anchor, $$props) {
   var node_2 = sibling(label, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root30();
+      var fragment_1 = root31();
       var p_1 = sibling(first_child(fragment_1));
       var text_2 = child(p_1, true);
       reset(p_1);
@@ -11462,8 +11741,8 @@ function LoginGate($$anchor, $$props) {
 if (undefined) {}
 var LoginGate_default = LoginGate;
 
-// ../nanoflux/web/src/App.svelte
-var root31 = from_html(`
+// web/src/App.svelte
+var root32 = from_html(`
   <main class="flex min-h-screen items-center justify-center px-5 text-sm text-neutral-400"> </main>
 `, 1);
 var root_121 = from_html(`
@@ -11475,7 +11754,7 @@ var root_28 = from_html(`
 var root_36 = from_html(`
             <!>
           `, 1);
-var root_44 = from_html(`
+var root_45 = from_html(`
       <div class="min-w-0 flex-1">
         <div class="mx-auto max-w-page px-5 py-10 md:py-16">
           <!>
@@ -11504,7 +11783,7 @@ function App($$anchor, $$props) {
   var node = sibling(first_child(fragment));
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root31();
+      var fragment_1 = root32();
       var main = sibling(first_child(fragment_1));
       var text2 = child(main);
       reset(main);
@@ -11536,7 +11815,7 @@ function App($$anchor, $$props) {
           append($$anchor3, fragment_4);
         };
         var alternate_1 = ($$anchor3) => {
-          var fragment_5 = root_44();
+          var fragment_5 = root_45();
           var div = sibling(first_child(fragment_5));
           var div_1 = sibling(child(div));
           var node_5 = sibling(child(div_1));
@@ -11606,7 +11885,7 @@ function App($$anchor, $$props) {
 if (undefined) {}
 var App_default = App;
 
-// ../nanoflux/web/src/lib/pwa.ts
+// web/src/lib/pwa.ts
 function registerPwa() {
   if (!("serviceWorker" in navigator))
     return;
@@ -11615,7 +11894,7 @@ function registerPwa() {
   });
 }
 
-// ../nanoflux/web/src/main.ts
+// web/src/main.ts
 initRouter();
 initTheme();
 initSidebar();

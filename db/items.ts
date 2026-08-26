@@ -132,6 +132,21 @@ export function getItems(options?: {
   }
 }
 
+/** Returns the stored cover for a visible item. Used by the same-origin cover proxy. */
+export function getItemCover(id: number): string | null {
+  try {
+    const row = db
+      .select({ cover: items.cover })
+      .from(items)
+      .where(and(eq(items.id, id), eq(items.is_deleted, 0)))
+      .get();
+    return row?.cover ?? null;
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to get item cover: ${detail}`);
+  }
+}
+
 export function getItemsForExport(options: {
   since?: string;
   until?: string;

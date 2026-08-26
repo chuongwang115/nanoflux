@@ -24,7 +24,6 @@ export function registerSearchFeeds(server: McpServer): void {
 
       try {
 
-
         const adjustedLimit = Math.min(
           Math.max(limit ?? DEFAULT_LIMIT, 1),
           MAX_LIMIT,

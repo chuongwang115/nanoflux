@@ -20,8 +20,9 @@ export function registerGetUningestedNews(server: McpServer): void {
           .describe("Max news entries to return (default 20, max 50)"),
       },
     },
+
     async ({ count, limit }) => {
-    
+
       try {
 
         const adjustedLimit = Math.min(

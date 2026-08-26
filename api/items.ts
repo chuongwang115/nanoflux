@@ -1,6 +1,7 @@
 import { Elysia } from "elysia";
 import {
   deleteItemsBySource,
+  getItemCover,
   getItems,
   markItemsRead,
   markItemRead,
@@ -10,6 +11,79 @@ import { DEFAULT_LOCALE, parseLocale } from "../shared/locale";
 import { buildItemsExport, type ExportLocale } from "../services/export/items-export";
 import { DEFAULT_LIMIT, MAX_LIMIT } from "../db/schema";
 import { encodeCursor, parseItemId, parseTimeUnit } from "../db/utils";
+import { httpGet } from "../services/http-fetcher";
+
+const COVER_FETCH_TIMEOUT_MS = 15_000;
+const MAX_COVER_BYTES = 10 * 1024 * 1024;
+
+function coverError(status: number, message: string): Response {
+  return new Response(message, { status, headers: { "Cache-Control": "no-store" } });
+}
+
+async function coverHandler({ params }: { params: { id: string } }): Promise<Response> {
+  const id = parseItemId(params.id);
+  if (id === null) return coverError(400, "Invalid item id");
+
+  const cover = getItemCover(id);
+  if (!cover) return coverError(404, "Cover not found");
+
+  let url: URL;
+  try {
+    url = new URL(cover);
+  } catch {
+    return coverError(404, "Cover not found");
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    return coverError(404, "Cover not found");
+  }
+
+  try {
+    // The URL is read only from our item store rather than a request parameter,
+    // so this endpoint cannot be used as an arbitrary network proxy. Following
+    // redirects is necessary for image CDNs that serve a canonical image URL.
+    const response = await httpGet(url.href, {
+      redirect: "follow",
+      signal: AbortSignal.timeout(COVER_FETCH_TIMEOUT_MS),
+      headers: {
+        Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+        "User-Agent": "NanoFlux cover proxy",
+      },
+    });
+    if (!response.ok) return coverError(502, "Unable to fetch cover");
+
+    const contentType = response.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();
+    if (!contentType?.startsWith("image/")) {
+      return coverError(415, "Cover response is not an image");
+    }
+    const contentLength = Number(response.headers.get("content-length"));
+    if (Number.isFinite(contentLength) && contentLength > MAX_COVER_BYTES) {
+      return coverError(413, "Cover is too large");
+    }
+    if (!response.body) return coverError(502, "Empty cover response");
+
+    let receivedBytes = 0;
+    const limitedBody = response.body.pipeThrough(new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        receivedBytes += chunk.byteLength;
+        if (receivedBytes > MAX_COVER_BYTES) {
+          controller.error(new Error("Cover is too large"));
+          return;
+        }
+        controller.enqueue(chunk);
+      },
+    }));
+
+    return new Response(limitedBody, {
+      headers: {
+        "Content-Type": contentType,
+        "Cache-Control": "private, max-age=86400",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
+  } catch {
+    return coverError(502, "Unable to fetch cover");
+  }
+}
 
 function parseIsRead(raw: unknown): 0 | 1 | undefined {
   if (raw === 0 || raw === "0") return 0;
@@ -174,6 +248,7 @@ async function blockSourceHandler({ body }: { body: { source?: string } }) {
 export const routes = new Elysia({ prefix: "/api/items" })
   .get("/", getItemsHandler)
   .get("/export.xlsx", exportItemsHandler)
+  .get("/:id/cover", coverHandler)
   .post("/read-all", markItemsReadHandler)
   .post("/block-source", blockSourceHandler)
   .post("/:id/read", markItemReadHandler);
