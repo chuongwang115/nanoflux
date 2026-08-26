@@ -24,7 +24,11 @@ function createChatModel(
   return new ChatOpenAI({
     apiKey: config.apiKey,
     model: config.model,
-    temperature: options?.temperature ?? 0,
+    // Some Azure-backed models only accept their provider default.  Omit the
+    // field unless a caller explicitly opts into a supported value.
+    ...(options?.temperature === undefined
+      ? {}
+      : { temperature: options.temperature }),
     timeout: AI_TIMEOUT_MS,
     // Prefer chat completions for OpenAI-compatible providers.
     useResponsesApi: false,
