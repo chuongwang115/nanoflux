@@ -18,15 +18,26 @@ function getFilterHandler() {
 async function updateFilterHandler({
   body,
 }: {
-  body: { prompt?: string; enabled?: boolean };
+  body: {
+    prompt?: string;
+    enabled?: boolean;
+    keywords?: string;
+  };
 }) {
   try {
-    const payload: { prompt?: string; enabled?: boolean } = {};
+    const payload: {
+      prompt?: string;
+      enabled?: boolean;
+      keywords?: string;
+    } = {};
     if (typeof body?.prompt === "string") {
       payload.prompt = body.prompt;
     }
     if (typeof body?.enabled === "boolean") {
       payload.enabled = body.enabled;
+    }
+    if (typeof body?.keywords === "string") {
+      payload.keywords = body.keywords;
     }
     const updated = await updateFilterConfig(payload);
     return { code: 0, message: "ok", data: updated };
@@ -43,5 +54,6 @@ export const routes = new Elysia({ prefix: "/api/filter" })
     body: t.Object({
       prompt: t.Optional(t.String()),
       enabled: t.Optional(t.Boolean()),
+      keywords: t.Optional(t.String()),
     }),
   });

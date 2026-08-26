@@ -2,15 +2,16 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {
   hasFilterPrompt,
+  hasKeywordFilter,
   updateFilterConfig,
 } from "../../filter";
 
-export function registerUpdateFilterPrompt(server: McpServer): void {
+export function registerUpdateFilterConfig(server: McpServer): void {
   server.registerTool(
-    "update_filter_prompt",
+    "update_filter_config",
     {
       description:
-        "Set the AI content filter prompt and/or enabled flag used to decide whether new articles are relevant. Filtering runs only when enabled is true and prompt is non-empty. Changes apply to newly fetched items only.",
+        "Set AI and keyword content filters for newly fetched articles. When keyword filtering is enabled, matching titles are rejected before AI filtering.",
       inputSchema: {
         prompt: z
           .string()
@@ -24,11 +25,19 @@ export function registerUpdateFilterPrompt(server: McpServer): void {
           .describe(
             "Turn AI filtering on or off without clearing the prompt.",
           ),
+        keywords: z
+          .string()
+          .optional()
+          .describe("Comma-separated title keywords to reject when keyword filtering is enabled."),
       },
     },
-    async ({ prompt, enabled }) => {
+    async ({ prompt, enabled, keywords }) => {
       try {
-        const updated = await updateFilterConfig({ prompt, enabled });
+        const updated = await updateFilterConfig({
+          prompt,
+          enabled,
+          keywords,
+        });
         return {
           content: [
             {
@@ -38,7 +47,8 @@ export function registerUpdateFilterPrompt(server: McpServer): void {
                   updated: true,
                   prompt: updated.prompt,
                   enabled: updated.enabled,
-                  active: hasFilterPrompt(),
+                  keywords: updated.keywords,
+                  active: hasFilterPrompt() || hasKeywordFilter(),
                 },
                 null,
                 2,
@@ -50,7 +60,7 @@ export function registerUpdateFilterPrompt(server: McpServer): void {
         const message =
           error instanceof Error
             ? error.message
-            : "Failed to update filter prompt";
+            : "Failed to update filter config";
         return {
           content: [
             {

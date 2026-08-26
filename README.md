@@ -2,7 +2,7 @@
 
 **News Service for AI Agents**
 
-NanoFlux is a local news ingestion and query service built for AI agents. It continuously fetches RSS/Atom (and related) sources, extracts article text and cover images, optionally scores relevance and translates titles with an LLM, and exposes the result over **MCP** and a small REST API so agents can subscribe to sources, pull uningested news, soft-delete items, manage the filter prompt, and optionally push headlines or HTML daily reports to a Telegram channel.
+NanoFlux is a local news ingestion and query service built for AI agents. It continuously fetches RSS/Atom (and related) sources, extracts article text and cover images, optionally filters relevance and translates titles with an LLM, and exposes the result over **MCP** and a small REST API so agents can subscribe to sources, pull uningested news, soft-delete items, manage filter settings, and optionally push headlines or HTML daily reports to a Telegram channel.
 
 A **Fever API** (`/fever`) is also available so RSS readers such as Reeder can sync the same store (feeds, items, unread IDs, and mark-read). A minimal web UI is included for operators to inspect feeds, tweak the filter and title translation, configure Fever, and export data — not as a full-featured RSS reader.
 
@@ -31,9 +31,9 @@ Typical RSS readers optimize for human browsing. NanoFlux optimizes for **agent 
 
 1. **Ingest** — adaptive polling of RSS/Atom, Google News keyword feeds, and WeChat official accounts
 2. **Normalize** — GUID dedupe, Google News link resolution, full-text extraction when the feed summary is thin
-3. **Filter** — optional single LLM prompt plus an on/off switch that marks relevant items for agents
+3. **Filter** — optional title keyword blacklist and LLM prompt behind one on/off switch
 4. **Translate** — optional LLM title translation into English, Simplified Chinese, or Traditional Chinese (skips titles already in the target language)
-5. **Serve** — MCP so agents can consume **uningested** items (marking them `is_ingested`), soft-delete items, manage feeds / the filter prompt, and push Telegram headlines or HTML digests; REST and the operator UI for the same store; Fever API so RSS readers can pull feeds and articles and mark them **read** (`is_read`)
+5. **Serve** — MCP so agents can consume **uningested** items (marking them `is_ingested`), soft-delete items, manage feeds / filter settings, and push Telegram headlines or HTML digests; REST and the operator UI for the same store; Fever API so RSS readers can pull feeds and articles and mark them **read** (`is_read`)
 
 Read state (`is_read`) and agent consumption (`is_ingested`) are independent. Opening an article in the UI or Reeder does not mark it ingested for MCP, and `get_uningested_news` does not mark it read for Fever/UI.
 
@@ -43,7 +43,7 @@ The server listens on all interfaces. MCP (`/mcp`) accepts only local clients an
 
 **For agents (primary)**
 
-- MCP at `/mcp` — feed CRUD, keyword / WeChat subscribe, uningested consumption (`get_uningested_news` → `is_ingested`), item soft-delete, filter prompt read/write, Telegram channel push (headline or daily digest), current time
+- MCP at `/mcp` — feed CRUD, keyword / WeChat subscribe, uningested consumption (`get_uningested_news` → `is_ingested`), item soft-delete, filter configuration read/write, Telegram channel push (headline or daily digest), current time
 - REST API with the same data model (`{ code, message, data }` JSON)
 - Persistent SQLite store with integer IDs and cursor pagination so agents can page through large result sets
 
@@ -57,7 +57,7 @@ The server listens on all interfaces. MCP (`/mcp`) accepts only local clients an
 - Adaptive polling (5–30 min per feed) based on publish frequency; each minute tick processes at most 3 due feeds, and each feed processes at most 10 new items per run (backlog requeues in ~1 min)
 - Cover images and a source domain are stored on each item. The source is derived from the article URL (for example, `www.example.com` becomes `example.com`). Covers use RSS media / enclosure / iTunes / item HTML first, then Open Graph / Twitter / `image_src` / first body image when the article page is fetched
 - Full-text extraction when an RSS summary is too short; Google News article links are resolved to the publisher URL first; HTML is decoded with charset detection (Content-Type, BOM, meta/`<?xml` encoding, with UTF-8 / GB18030 fallback)
-- AI filter runs only when `enabled` is true and `prompt` is non-empty; you can turn filtering off without clearing the prompt
+- When `filter.enabled` is true, title keywords are checked first; a matching item is rejected immediately and does not call the LLM. Items not matching a keyword are LLM-filtered only when `prompt` is non-empty.
 - Optional title translation runs after the filter when `translate.enabled` is true; titles already in the target language are skipped; LLM failure keeps the original title (**fail-open**)
 - AI-rejected items are soft-deleted (`is_deleted = 1`) with `deleted_reason` set to the model’s reason when present; they stay in the database so the same `guid` is not ingested again
 - Soft-delete (`is_deleted`) also covers operator/MCP deletes. Hidden items are omitted from MCP, REST, UI, and export
@@ -130,7 +130,7 @@ Create a `.env` file at the project root (see `.env.example`).
 
 ### AI filter and title translation (optional)
 
-The same OpenAI-compatible endpoint is used for the relevance filter and for title translation. Filtering runs when `filter.enabled` is true and `filter.prompt` is non-empty. Translation runs when `translate.enabled` is true (the extra `translate.prompt` is optional).
+The same OpenAI-compatible endpoint is used for the relevance filter and for title translation. With `filter.enabled` true, configured title keywords are rejected before any LLM call; remaining items use the LLM only when `filter.prompt` is non-empty. Translation runs when `translate.enabled` is true (the extra `translate.prompt` is optional).
 
 | Variable | Description |
 | --- | --- |
@@ -138,7 +138,7 @@ The same OpenAI-compatible endpoint is used for the relevance filter and for tit
 | `LLM_API_KEY` | Bearer token |
 | `LLM_MODEL_NAME` | Model ID (e.g. `gpt-4o-mini`) |
 
-If filtering is off, there is no filter LLM call and items are stored with `is_deleted = 0` and `deleted_reason = null`. If filtering is on but these variables are missing, or the API fails, items still pass through (**fail-open**: `is_deleted = 0`, `deleted_reason` null). Title translation is also fail-open: missing config or API errors leave the original title.
+If filtering is off, items pass through with `is_deleted = 0` and `deleted_reason = null`. Keyword matches are rejected without an LLM call. If LLM filtering is active but these variables are missing, or the API fails, the non-keyword-matched items pass through (**fail-open**: `is_deleted = 0`, `deleted_reason` null). Title translation is also fail-open: missing config or API errors leave the original title.
 
 Changes apply to **newly fetched** items only; existing rows are not re-filtered or re-translated.
 
@@ -188,6 +188,7 @@ Filter, title translation, and Fever credentials live in a single `config.json` 
 | Section | Field | Description |
 | --- | --- | --- |
 | `filter` | `prompt` | Instructions for the AI relevance filter. Leave empty to skip LLM scoring even if `enabled` is true. |
+| `filter` | `keywords` | Comma-separated title keywords to reject. English and Chinese commas are both supported. Keyword matching is case-insensitive. |
 | `filter` | `enabled` | Whether the filter is turned on. Set `false` to skip scoring without clearing `prompt`. |
 | `translate` | `prompt` | Instructions for title translation. |
 | `translate` | `enabled` | Whether new items get their titles translated. |
@@ -196,7 +197,7 @@ Filter, title translation, and Fever credentials live in a single `config.json` 
 | `fever` | `user` | Fever username (trimmed). Required when `enabled` is true. |
 | `fever` | `password` | Fever password. Required when `enabled` is true. Must be at least 8 characters and include letters, digits, and symbols. Leave the password field blank in the UI/REST update body to keep the stored value. |
 
-Filtering is **active** only when both `filter.enabled` is true and `filter.prompt` is non-empty.
+Filtering is **active** when `filter.enabled` is true and either `filter.keywords` contains at least one keyword or `filter.prompt` is non-empty. Keyword matches are always evaluated first.
 
 The Fever `api_key` is `md5("<user>:<password>")` (lowercase hex), matching the original Fever protocol. Enabling Fever without both user and password is rejected. Setting or enabling a password that is not at least 8 characters with letters, digits, and symbols is also rejected.
 
@@ -204,6 +205,7 @@ The Fever `api_key` is `md5("<user>:<password>")` (lowercase hex), matching the 
 {
   "filter": {
     "prompt": "Keep only news directly related to asset management regulation, product launches, or institutional fund flows.",
+    "keywords": "sponsored, giveaway, celebrity gossip",
     "enabled": true
   },
   "translate": {
@@ -277,7 +279,7 @@ Add to your MCP client config (e.g. Cursor or Claude Desktop):
 ### Typical agent loop
 
 1. Ensure sources exist (`add_feed`, `add_feed_by_keyword`, or `add_wechat_feed`)
-2. Optionally set relevance criteria with `update_filter_prompt` (prompt and/or `enabled`)
+2. Optionally set relevance criteria with `update_filter_config` (prompt, keywords, and/or `enabled`)
 3. Call `get_uningested_news` on a schedule; page with `hasMore` until caught up
 4. Use returned `title`, `content`, `link`, and `published_at` in your agent workflow
 5. Optionally `delete_item` (with `reason`) to hide a stored article without allowing it to be fetched again
@@ -299,8 +301,8 @@ News query tools return stored items from the database. Each item includes integ
 | `search_feeds` | Search feeds by keyword in title |
 | `get_uningested_news` | Fetch uningested news from the last `count` days and mark returned articles as ingested (`is_ingested=1`). When `hasMore` is true, call again with the same `count` (and `limit`) until `hasMore` is false. `limit` defaults to 20, max 50 |
 | `delete_item` | Soft-delete a news item by `id` with a required `reason` (stored as `deleted_reason`). Hidden from queries; the same `guid` will not be fetched again |
-| `get_filter_prompt` | Get the AI content filter (`prompt`, `enabled`, `active`). `enabled` is the stored switch; `active` is true only when filtering will actually run (`enabled` and non-empty prompt) |
-| `update_filter_prompt` | Set `prompt` and/or `enabled` (both optional). Empty prompt or `enabled: false` skips LLM filtering. Applies to newly fetched items only |
+| `get_filter_config` | Get content filter settings (`prompt`, `keywords`, `enabled`, `active`). Keyword matches are rejected before AI filtering. |
+| `update_filter_config` | Set `prompt`, comma-separated `keywords`, and/or `enabled` (all optional). When enabled, keyword matches are rejected before LLM filtering. Applies to newly fetched items only. |
 | `get_current_time` | Return the server's current UTC time |
 | `send_telegram_message` | Post a title + URL to the configured Telegram channel (`title`, `url`; optional `tag`, HTML `content`). Optional `tag` is a single item (country, industry, company, etc.); when set, the bold headline is `【tag】title`. Optional `content` is HTML (same Telegram HTML rules as `send_telegram_digest`) between title and URL. Message is `<b>【tag】title</b>\n[content]\nurl`. Target is always `TELEGRAM_CHANNEL_ID`; bot must be a channel admin |
 | `send_telegram_digest` | Post a daily-report message (`title`, HTML `content`). Title is bold and escaped; `content` is agent-written HTML (`parse_mode=HTML`). Combined title + body must be ≤ 4096 characters |
@@ -392,8 +394,8 @@ Exported columns: published time, title, content, and original link.
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/api/filter` | Get the AI filter config (`{ prompt, enabled }`) |
-| `POST` | `/api/filter` | Update the AI filter (body: optional `{ prompt, enabled }`; omit a field to leave it unchanged) |
+| `GET` | `/api/filter` | Get filter settings (`{ prompt, keywords, enabled }`) |
+| `POST` | `/api/filter` | Update filter settings (body: optional `{ prompt, keywords, enabled }`; omit a field to leave it unchanged) |
 
 ### Translate — `/api/translate`
 
@@ -451,7 +453,7 @@ Favicons, links, unread counts, and starring over Fever are **not** implemented.
 3. Each feed is fetched over HTTP with the `NanoFlux/1.0` user agent (15 s timeout) and parsed as RSS/Atom. Concurrent fetches of the same feed id are ignored.
 4. Each entry gets a normalized GUID: MD5 hex of the article link (feeds that already provide an MD5 GUID are kept as-is). Per-feed known GUIDs are stored in the `last_guids` column; entries already seen by this feed or already present in the database (global GUID uniqueness, including soft-deleted rows) are skipped.
 5. At most **10** unseen candidates are enriched and inserted per feed per run. For each of those, Google News article links (`news.google.com/.../articles/...`) are resolved to the publisher URL (embedded token decode, or Google's batchexecute RPC) and the stored `link` is updated when resolution succeeds. Cover is taken from the RSS item when present (media thumbnail/content, image enclosure, iTunes image, or an image in the item HTML). If the RSS summary is shorter than ~80 word tokens (counted with `Intl.Segmenter` for Chinese and English — roughly ~200 Chinese characters or ~80 English words), or cover is still missing, the article page is fetched (desktop browser user agent, 15 s timeout, up to 3 concurrent requests), decoded with charset detection, and parsed with Firefox Readability (plus WeChat/CMS selector fallback) to fill in `content` and, if needed, `cover` from Open Graph / Twitter / `link rel=image_src` / first suitable `<img>`. Already-known entries skip scraping. Unprocessed backlog entries stay out of `last_guids` so the next catch-up run can pick them up.
-6. New items are assigned an integer `id` (UTC compact datetime + per-second sequence), deduplicated globally by `guid` (same article from different feeds is stored once), evaluated by the AI filter when it is active (`enabled` and non-empty prompt), then title-translated when `translate.enabled` is true. The source domain is derived from the article URL, then the item is inserted into SQLite with `is_read = 0` and `is_ingested = 0`. On pass (or when filtering is off, or fail-open), `is_deleted = 0` and `deleted_reason` is `null`. On AI reject, `is_deleted = 1` and `deleted_reason` stores the model’s reason when present; rejected items skip translation. Translation fail-open keeps the original title.
+6. New items are assigned an integer `id` (UTC compact datetime + per-second sequence), deduplicated globally by `guid` (same article from different feeds is stored once), then filtered before translation. When filtering is enabled, a title matching a configured keyword is soft-deleted immediately and skips LLM filtering; non-matches are evaluated by the AI filter when its prompt is non-empty. Title translation runs afterwards when `translate.enabled` is true. The source domain is derived from the article URL, then the item is inserted into SQLite with `is_read = 0` and `is_ingested = 0`. On pass (or when filtering is off, or on LLM fail-open), `is_deleted = 0` and `deleted_reason` is `null`. Rejected items have `is_deleted = 1`, skip translation, and keep the matching keyword or model reason in `deleted_reason`. Translation fail-open keeps the original title.
 7. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear. If a feed still has unprocessed new items after the 10-item cap, the next fetch is scheduled in **1 minute** (catch-up) while keeping the adaptive interval for later.
 8. Daily at 01:00 UTC, items older than 90 days are hard-deleted.
 

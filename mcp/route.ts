@@ -10,8 +10,8 @@ import { registerDeleteFeed } from "./tools/delete-feed";
 import { registerSearchFeeds } from "./tools/search-feeds";
 import { registerGetUningestedNews } from "./tools/get-uningested-news";
 import { registerDeleteItem } from "./tools/delete-item";
-import { registerGetFilterPrompt } from "./tools/get-filter-prompt";
-import { registerUpdateFilterPrompt } from "./tools/update-filter-prompt";
+import { registerGetFilterConfig } from "./tools/get-filter-config";
+import { registerUpdateFilterConfig } from "./tools/update-filter-config";
 import { registerSendTelegramMessage } from "./tools/send-telegram-message";
 import { registerSendTelegramDigest } from "./tools/send-telegram-digest";
 
@@ -25,8 +25,8 @@ function registerMcpTools(server: McpServer): void {
   registerSearchFeeds(server);
   registerGetUningestedNews(server);
   registerDeleteItem(server);
-  registerGetFilterPrompt(server);
-  registerUpdateFilterPrompt(server);
+  registerGetFilterConfig(server);
+  registerUpdateFilterConfig(server);
   registerSendTelegramMessage(server);
   registerSendTelegramDigest(server);
 }

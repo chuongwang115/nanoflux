@@ -64,9 +64,9 @@ try {
 await ensureGoogleConnectivity();
 await loadAppConfig();
 {
-  const { prompt, enabled } = getFilterConfig();
+  const { prompt, enabled, keywords } = getFilterConfig();
   console.log(
-    `[filter] config loaded enabled=${enabled} promptChars=${prompt.trim().length}`,
+    `[filter] config loaded enabled=${enabled} promptChars=${prompt.trim().length} keywordChars=${keywords.trim().length}`,
   );
 }
 {

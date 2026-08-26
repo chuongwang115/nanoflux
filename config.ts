@@ -9,6 +9,7 @@ export const DEFAULT_TRANSLATE_TARGET_LANG: TranslateTargetLang = "zh-Hans";
 export type FilterConfig = {
   prompt: string;
   enabled: boolean;
+  keywords: string;
 };
 
 export type TranslateConfig = {
@@ -45,7 +46,11 @@ export type AppConfig = {
   fever: FeverConfig;
 };
 
-const DEFAULT_FILTER: FilterConfig = { prompt: "", enabled: false };
+const DEFAULT_FILTER: FilterConfig = {
+  prompt: "",
+  enabled: false,
+  keywords: "",
+};
 const DEFAULT_TRANSLATE: TranslateConfig = {
   prompt: "",
   enabled: false,
@@ -89,7 +94,10 @@ export function parseFilterConfig(parsed: unknown): {
       if (entry && typeof entry === "object" && "prompt" in entry) {
         const prompt = typeof entry.prompt === "string" ? entry.prompt : "";
         if (prompt.trim()) {
-          return { config: { prompt, enabled: true }, needsPersist: true };
+          return {
+            config: { prompt, enabled: true, keywords: "" },
+            needsPersist: true,
+          };
         }
       }
     }
@@ -102,7 +110,11 @@ export function parseFilterConfig(parsed: unknown): {
         ? first.prompt
         : "";
     return {
-      config: { prompt, enabled: prompt.trim().length > 0 },
+      config: {
+        prompt,
+        enabled: prompt.trim().length > 0,
+        keywords: "",
+      },
       needsPersist: true,
     };
   }
@@ -115,14 +127,17 @@ export function parseFilterConfig(parsed: unknown): {
   const prompt = typeof record.prompt === "string" ? record.prompt : "";
   const hasEnabled = "enabled" in record;
   const enabled = hasEnabled ? Boolean(record.enabled) : prompt.trim().length > 0;
+  const keywords = typeof record.keywords === "string" ? record.keywords : "";
   const needsPersist =
     !hasEnabled ||
+    !("keywords" in record) ||
+    "keywordEnabled" in record ||
     "id" in record ||
     "name" in record ||
     "whitelist" in record ||
     "blacklist" in record ||
     "filters" in record;
-  return { config: { prompt, enabled }, needsPersist };
+  return { config: { prompt, enabled, keywords }, needsPersist };
 }
 
 export function parseTranslateConfig(parsed: unknown): TranslateConfig {
@@ -271,12 +286,16 @@ export function getFeverState(): FeverConfig {
 export async function updateFilterState(partial: {
   prompt?: string;
   enabled?: boolean;
+  keywords?: string;
 }): Promise<FilterConfig> {
   if (typeof partial.prompt === "string") {
     config.filter.prompt = partial.prompt;
   }
   if (typeof partial.enabled === "boolean") {
     config.filter.enabled = partial.enabled;
+  }
+  if (typeof partial.keywords === "string") {
+    config.filter.keywords = partial.keywords;
   }
   await persist();
   return getFilterState();

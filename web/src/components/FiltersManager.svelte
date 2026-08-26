@@ -9,13 +9,19 @@
 
   let prompt = $state("");
   let enabled = $state(false);
+  let keywords = $state("");
   let savedPrompt = $state("");
   let savedEnabled = $state(false);
+  let savedKeywords = $state("");
   let formError = $state("");
   let loading = $state(true);
   let saving = $state(false);
 
-  const isDirty = $derived(prompt.trim() !== savedPrompt || enabled !== savedEnabled);
+  const isDirty = $derived(
+    prompt.trim() !== savedPrompt ||
+      enabled !== savedEnabled ||
+      keywords.trim() !== savedKeywords,
+  );
   const saveDisabled = $derived(saving || loading || !isDirty);
 
   function toggleClass(active: boolean): string {
@@ -31,8 +37,10 @@
       const filter = await fetchFilter();
       prompt = filter.prompt;
       enabled = filter.enabled;
+      keywords = filter.keywords;
       savedPrompt = filter.prompt;
       savedEnabled = filter.enabled;
+      savedKeywords = filter.keywords;
     } catch (e) {
       formError = e instanceof Error ? e.message : t("filters.loadFailed");
     } finally {
@@ -49,11 +57,14 @@
       const updated = await updateFilter({
         prompt: prompt.trim(),
         enabled,
+        keywords: keywords.trim(),
       });
       prompt = updated.prompt;
       enabled = updated.enabled;
       savedPrompt = updated.prompt;
       savedEnabled = updated.enabled;
+      keywords = updated.keywords;
+      savedKeywords = updated.keywords;
     } catch (err) {
       formError = err instanceof Error ? err.message : t("filters.saveFailed");
     } finally {
@@ -103,6 +114,18 @@
           </button>
         </div>
       </div>
+
+      <label class="block space-y-3">
+        <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
+          {t("filters.keywords")}
+        </span>
+        <textarea
+          bind:value={keywords}
+          class="min-h-32 resize-y {inputClass}"
+          disabled={saving}
+          placeholder={t("filters.keywordsPlaceholder")}
+        ></textarea>
+      </label>
 
       <label class="block space-y-3">
         <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500">

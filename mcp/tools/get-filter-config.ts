@@ -1,12 +1,16 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { getFilterConfig, hasFilterPrompt } from "../../filter";
+import {
+  getFilterConfig,
+  hasFilterPrompt,
+  hasKeywordFilter,
+} from "../../filter";
 
-export function registerGetFilterPrompt(server: McpServer): void {
+export function registerGetFilterConfig(server: McpServer): void {
   server.registerTool(
-    "get_filter_prompt",
+    "get_filter_config",
     {
       description:
-        "Get the AI content filter prompt and whether filtering is enabled. Filtering runs only when enabled is true and prompt is non-empty; otherwise all items pass by default.",
+        "Get the AI and keyword content filter configuration. Keyword filtering rejects title matches before AI filtering.",
     },
     async () => {
       try {
@@ -17,7 +21,7 @@ export function registerGetFilterPrompt(server: McpServer): void {
               text: JSON.stringify(
                 {
                   ...getFilterConfig(),
-                  active: hasFilterPrompt(),
+                  active: hasFilterPrompt() || hasKeywordFilter(),
                 },
                 null,
                 2,
@@ -27,7 +31,7 @@ export function registerGetFilterPrompt(server: McpServer): void {
         };
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "Failed to get filter prompt";
+          error instanceof Error ? error.message : "Failed to get filter config";
         return {
           content: [
             { type: "text", text: JSON.stringify({ error: message }) },

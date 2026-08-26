@@ -26,9 +26,19 @@ export function hasFilterPrompt(): boolean {
   return enabled && prompt.trim().length > 0;
 }
 
+/** Whether title keyword filtering is active under the shared filter switch. */
+export function hasKeywordFilter(): boolean {
+  const { keywords, enabled } = getFilterState();
+  return (
+    enabled &&
+    keywords.split(/[,，]/).some((keyword) => keyword.trim().length > 0)
+  );
+}
+
 export async function updateFilterConfig(partial: {
   prompt?: string;
   enabled?: boolean;
+  keywords?: string;
 }): Promise<FilterConfig> {
   return updateFilterState(partial);
 }

@@ -318,6 +318,7 @@ export async function markItemRead(id: number) {
 export type FilterConfig = {
   prompt: string;
   enabled: boolean;
+  keywords: string;
 };
 
 type FilterApiResult = {
@@ -332,8 +333,13 @@ function normalizeFilterConfig(
 ): FilterConfig {
   const prompt =
     typeof data?.prompt === "string" ? data.prompt : (defaults?.prompt ?? "");
+  const keywords =
+    typeof data?.keywords === "string"
+      ? data.keywords
+      : (defaults?.keywords ?? "");
   return {
     prompt,
+    keywords,
     enabled:
       typeof data?.enabled === "boolean"
         ? data.enabled
@@ -352,7 +358,11 @@ export async function fetchFilter(): Promise<FilterConfig> {
   return normalizeFilterConfig(body.data);
 }
 
-export function updateFilter(payload: { prompt?: string; enabled?: boolean }) {
+export function updateFilter(payload: {
+  prompt?: string;
+  enabled?: boolean;
+  keywords?: string;
+}) {
   return request<FilterApiResult>("/api/filter", {
     method: "POST",
     body: JSON.stringify(payload),
