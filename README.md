@@ -1,271 +1,96 @@
 # NanoFlux
 
-**News Service for AI Agents**
+A local news subscription and delivery service for AI agents.
 
-NanoFlux is a local news ingestion and query service built for AI agents. It continuously fetches RSS/Atom (and related) sources, extracts article text and cover images, optionally filters relevance and translates titles with an LLM, and exposes the result over **MCP** and a small REST API so agents can subscribe to sources, pull uningested news, mark items as deleted, manage filter settings, and optionally push headlines or HTML daily reports to a Telegram channel.
-
-A **Fever API** (`/fever`) is also available so RSS readers such as Reeder can sync the same store (feeds, items, unread IDs, and mark-read). A minimal web UI is included for operators to inspect feeds, tweak the filter and title translation, configure Fever, and export data — not as a full-featured RSS reader.
-
-Built on [Bun](https://bun.sh), [Elysia](https://elysiajs.com), and [Svelte 5](https://svelte.dev).
+NanoFlux continuously fetches RSS / Atom feeds, Google News keyword feeds, and WeChat official accounts. It enriches articles with full text, cover images, and source information; can optionally filter items with keywords and an LLM; and can translate titles. Collected news is available to agents through **MCP**, and to people through a REST API, a Fever-compatible endpoint, and a lightweight web console.
 
 ![NanoFlux news list](screenshots/newslist.png)
 
-## Table of Contents
+## Use Cases
 
-- [Why NanoFlux](#why-nanoflux)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Quick Start](#quick-start)
-- [Configuration](#configuration)
-- [Background & Service Mode](#background--service-mode)
-- [MCP](#mcp)
-- [REST API](#rest-api)
-- [Fever API](#fever-api)
-- [How Feed Fetching Works](#how-feed-fetching-works)
-- [Project Structure](#project-structure)
-- [License](#license)
+- Build a continuously updated news source for agents instead of searching from scratch every time
+- Filter news by topic and translate titles into Chinese or English
+- Read the same news store with Fever clients such as Reeder
+- Push headlines or daily digests to a Telegram channel
 
-## Why NanoFlux
+`is_ingested` (whether an agent has consumed an item) and `is_read` (whether a person has read it) are independent. Reading an item in the UI or an RSS reader does not affect MCP consumption, and MCP consumption does not mark an item as read.
 
-Typical RSS readers optimize for human browsing. NanoFlux optimizes for **agent workflows**:
+## Highlights
 
-1. **Ingest** — adaptive polling of RSS/Atom, Google News keyword feeds, and WeChat official accounts
-2. **Normalize** — GUID dedupe, Google News link resolution, full-text extraction when the feed summary is thin
-3. **Filter** — optional source and title keyword blacklists plus an LLM prompt behind one on/off switch
-4. **Translate** — optional LLM title translation into English, Simplified Chinese, or Traditional Chinese (skips titles already in the target language)
-5. **Serve** — MCP so agents can consume **uningested** items (marking them `is_ingested`), mark items as deleted, manage feeds / filter settings, and push Telegram headlines or HTML digests; REST and the operator UI for the same store; Fever API so RSS readers can pull feeds and articles and mark them **read** (`is_read`)
-
-Read state (`is_read`) and agent consumption (`is_ingested`) are independent. Opening an article in the UI or Reeder does not mark it ingested for MCP, and `get_uningested_news` does not mark it read for Fever/UI.
-
-The server listens on all interfaces. MCP (`/mcp`) accepts only local clients and does not use `ADMIN_PASSWORD`. The operator UI and REST API require `ADMIN_PASSWORD`.
-
-## Features
-
-**For agents (primary)**
-
-- MCP at `/mcp` — feed CRUD, keyword / WeChat subscribe, uningested consumption (`get_uningested_news` → `is_ingested`), item deletion, filter configuration read/write, Telegram channel push (headline or daily digest), current time
-- REST API with the same data model (`{ code, message, data }` JSON)
-- Persistent SQLite store with integer IDs and cursor pagination so agents can page through large result sets
-
-**For RSS readers**
-
-- Fever API 3 at `/fever` for Reeder and other Fever-compatible clients (optional; enable on `/fever`). Feeds, items, unread IDs, and mark-read/unread; starring is not implemented
-
-**News pipeline**
-
-- Newly created feeds are fetched immediately (no wait for the next cron tick)
-- Adaptive polling (5–30 min per feed) based on publish frequency; each minute tick processes at most 3 due feeds, and each feed processes at most 10 new items per run (backlog requeues in ~1 min)
-- Cover images and a source domain are stored on each item. The source is derived from the article URL (for example, `www.example.com` becomes `example.com`). Covers use RSS media / enclosure / iTunes / item HTML first, then Open Graph / Twitter / `image_src` / first body image when the article page is fetched
-- Full-text extraction when an RSS summary is too short; Google News article links are resolved to the publisher URL first; HTML is decoded with charset detection (Content-Type, BOM, meta/`<?xml` encoding, with UTF-8 / GB18030 fallback)
-- When `filter.enabled` is true, source domains are checked first, then title keywords; either match rejects the item immediately without calling the LLM. Remaining items are LLM-filtered only when `prompt` is non-empty.
-- Optional title translation runs after the filter when `translate.enabled` is true; titles already in the target language are skipped; LLM failure keeps the original title (**fail-open**)
-- AI-rejected items have `status = "rejected"`, with `status_reason` set to the model’s reason when present; they stay in the database so the same `guid` is not ingested again
-- Operator/MCP deletes set `status = "deleted"`. Only `status = "passed"` items are shown in MCP, REST, UI, and export
-- Items older than 90 days are hard-deleted (including rejected and deleted rows)
-
-**Operator UI (secondary)**
-
-- Home list: **Unread** / **All**. Unread marks those items as read in bulk; both tabs show only passed items
-- `/feeds`: preview, CRUD, sort, **add by keyword** (Google News RSS for the last 3 days; language inferred from the keyword), **subscribe WeChat 公众号**, **OPML export**
-- `/settings`: **Preferences** (font size, UI language, theme), **Filter**, **Translate**, and **Fever** (enable switch, user/password, endpoint URL). Legacy `/filter`, `/filters`, `/translate`, and `/fever` URLs open the same settings page
-- `/export`: Excel by time range
-- Home list shows the article source domain and a 4:3 cover thumbnail when an item has a `cover` URL
-- PWA shell (installable; manifest at `/manifest.webmanifest`), trilingual UI (English / Simplified Chinese / Traditional Chinese), light/dark theme, adjustable font size
-- A login screen gates the UI; the sidebar shows **Sign out** after authentication
-
-## Tech Stack
-
-| Layer | Technology |
-| --- | --- |
-| Runtime | Bun |
-| Backend | Elysia, Drizzle ORM |
-| Database | SQLite (WAL) |
-| Agent bridge | MCP via elysia-mcp (`@modelcontextprotocol/sdk` types, Zod tool schemas) |
-| Operator UI | Svelte 5 (`bun-plugin-svelte`), Tailwind CSS 4 (`@tailwindcss/cli` in `build.ts`) |
-| HTTP | undici (`EnvHttpProxyAgent` for `HTTP_PROXY` / `HTTPS_PROXY`) |
-| Feed parsing | rss-parser |
-| Article extraction | @mozilla/readability (Firefox Reader Mode) + linkedom |
-| AI filter / title translation | LangChain (`@langchain/openai`) + OpenAI-compatible API |
+- RSS / Atom feed management, OPML export, Google News keyword feeds, and WeChat official-account feeds
+- Adaptive polling, GUID deduplication, Google News canonical-link resolution, full-text extraction, and cover-image extraction
+- Filtering by source domain, title keyword, and LLM prompt; optional title translation
+- MCP tools for feed management, unconsumed news, filter settings, and Telegram delivery
+- REST API and a password-protected web console
+- Fever API 3 compatibility for feeds, articles, unread items, and read state
+- SQLite persistence, Excel export, PWA support, light/dark themes, and English / Simplified Chinese / Traditional Chinese UI
 
 ## Quick Start
 
-Requires [Bun](https://bun.sh) 1.3.14. `PORT` is required; the example configuration uses `3000`.
+### Prerequisites
+
+- [Bun 1.3.14](https://bun.sh)
+- Access to Google (checked at startup and required for Google News feeds)
+
+### Install and Run
 
 ```bash
 bun install
 
-cp .env.example .env          # macOS / Linux
-# copy .env.example .env      # Windows
+# macOS / Linux
+cp .env.example .env
 
+# Windows PowerShell
+Copy-Item .env.example .env
+```
+
+Edit `.env` and set a strong password at minimum:
+
+```env
+PORT=3000
+ADMIN_PASSWORD=ChangeMe!123
+```
+
+```bash
 bun start
 ```
 
-- Agents: point your MCP client at `http://localhost:3000/mcp` (or your configured port)
-- Operators: open `http://localhost:3000` in a browser
+Once started:
 
-| Script | Description |
+- Console: `http://localhost:3000`
+- MCP: `http://localhost:3000/mcp`
+- Fever: `http://localhost:3000/fever` (enable it first in Settings)
+
+`ADMIN_PASSWORD` must be at least 8 characters and include letters, numbers, and symbols. It protects the console and REST API. MCP accepts local clients only and does not use this password.
+
+### Common Commands
+
+| Command | Purpose |
 | --- | --- |
-| `bun start` | Build frontend and start the server |
-| `bun run build:web` | Build frontend assets to `public/` |
-| `bun run dev` | Watch frontend and backend together |
-| `bun run db:generate` | Generate Drizzle migration files |
-| `bun run db:push` | Push schema changes to the database |
+| `bun start` | Build the frontend and start the service |
+| `bun run dev` | Watch and run the frontend and backend for development |
+| `bun run build:web` | Build frontend assets to `public/` only |
+| `bun run db:generate` | Generate Drizzle migrations |
+| `bun run db:push` | Push the database schema |
 | `bun run db:studio` | Open Drizzle Studio |
 
-`bun run dev` runs the frontend build and the backend together under `bun --watch`. Database migrations run automatically on startup.
+Database migrations run automatically when the service starts.
 
-`build.ts` compiles CSS with `@tailwindcss/cli`, then bundles the Svelte app with `Bun.build` and `bun-plugin-svelte`. Output lands in `public/` (`index.html`, `/assets/app.css`, JS, and `sw.js`).
+## How to Use It
 
-## Configuration
+### Web Console
 
-Create a `.env` file at the project root (see `.env.example`).
+Sign in with `ADMIN_PASSWORD` to:
 
-### Core
+- Add, preview, edit, or remove RSS feeds, and subscribe to Google News by keyword
+- Configure filtering, title translation, Fever credentials, and display preferences
+- Browse unread or all news, block a source, and export to Excel
 
-| Variable | Default | Description |
-| --- | --- | --- |
-| `PORT` | `3000` in `.env.example` | HTTP listen port (required; startup fails when omitted) |
-| `ADMIN_PASSWORD` | — | Operator password. Required at startup. Must be at least 8 characters and include letters, digits, and symbols. |
-| `DB_PATH` | `data.sqlite` | SQLite database file path |
+New feeds are fetched immediately; there is no need to wait for the next scheduler run.
 
-### AI filter and title translation (optional)
+### MCP
 
-The same OpenAI-compatible endpoint is used for the relevance filter and for title translation. With `filter.enabled` true, configured title keywords are rejected before any LLM call; remaining items use the LLM only when `filter.prompt` is non-empty. Translation runs when `translate.enabled` is true (the extra `translate.prompt` is optional).
-
-| Variable | Description |
-| --- | --- |
-| `LLM_BASE_URL` | API base URL (e.g. `https://api.openai.com`) |
-| `LLM_API_KEY` | Bearer token |
-| `LLM_MODEL_NAME` | Model ID (e.g. `gpt-4o-mini`) |
-
-If filtering is off, items pass through with `status = "passed"` and `status_reason = null`. Keyword matches are rejected without an LLM call. If LLM filtering is active but these variables are missing, or the API fails, the non-keyword-matched items pass through (**fail-open**: `status = "passed"`, `status_reason = null`). Title translation is also fail-open: missing config or API errors leave the original title.
-
-Changes apply to **newly fetched** items only; existing rows are not re-filtered or re-translated.
-
-### WeChat official accounts (optional)
-
-Subscribe to WeChat 公众号 via [WeChat RSS](https://wechatrss.waytomaster.com) (UI, REST, or MCP).
-
-| Variable | Description |
-| --- | --- |
-| `WECHATRSS_API_KEY` | WeChat RSS API key |
-| `WECHATRSS_API_SECRET` | WeChat RSS API secret |
-
-Without these variables, WeChat search/subscribe endpoints and MCP tools return a configuration error.
-
-### Telegram channel (optional)
-
-Create a bot with [@BotFather](https://t.me/BotFather), add it as an **admin** of the channel, then set:
-
-| Variable | Description |
-| --- | --- |
-| `TELEGRAM_BOT_TOKEN` | Bot token from BotFather |
-| `TELEGRAM_CHANNEL_ID` | Channel username (`@mychannel`) or numeric id (`-100...`) |
-
-Without these variables, both Telegram MCP tools return a configuration error. Usage is documented under [MCP](#mcp).
-
-### Proxy (optional)
-
-Outbound HTTP requests honor standard proxy environment variables via undici `EnvHttpProxyAgent`:
-
-| Variable | Description |
-| --- | --- |
-| `HTTP_PROXY` / `http_proxy` | Proxy for HTTP (also used for HTTPS if `HTTPS_PROXY` is unset) |
-| `HTTPS_PROXY` / `https_proxy` | Proxy for HTTPS requests |
-| `NO_PROXY` / `no_proxy` | Comma-separated hosts to bypass |
-
-```env
-HTTP_PROXY=http://127.0.0.1:9080
-HTTPS_PROXY=http://127.0.0.1:9080
-```
-
-On PowerShell, set session env vars with `$env:HTTPS_PROXY="http://127.0.0.1:9080"` (not `set VAR=...`). Prefer putting them in `.env` so Bun loads them automatically.
-
-### `config.json`
-
-Filter, title translation, and Fever credentials live in a single `config.json` at the project root (created or updated via the UI, REST, or MCP). Loaded on startup. The file is gitignored.
-
-| Section | Field | Description |
-| --- | --- | --- |
-| `filter` | `prompt` | Instructions for the AI relevance filter. Leave empty to skip LLM scoring even if `enabled` is true. |
-| `filter` | `keywords` | Comma-separated title keywords to reject. English and Chinese commas are both supported. Keyword matching is case-insensitive. |
-| `filter` | `sources` | Source domains to reject before title keywords and AI filtering. Stored as an array and matched case-insensitively. |
-| `filter` | `enabled` | Whether the filter is turned on. Set `false` to skip scoring without clearing `prompt`. |
-| `translate` | `prompt` | Instructions for title translation. |
-| `translate` | `enabled` | Whether new items get their titles translated. |
-| `translate` | `targetLang` | `en`, `zh-Hans`, or `zh-Hant`. |
-| `fever` | `enabled` | Whether the Fever endpoint authenticates clients. Defaults to false if missing. |
-| `fever` | `user` | Fever username (trimmed). Required when `enabled` is true. |
-| `fever` | `password` | Fever password. Required when `enabled` is true. Must be at least 8 characters and include letters, digits, and symbols. Leave the password field blank in the UI/REST update body to keep the stored value. |
-
-Filtering is **active** when `filter.enabled` is true and sources, keywords, or an AI prompt are configured. Source matches are evaluated first, followed by keyword matches, then AI filtering.
-
-The Fever `api_key` is `md5("<user>:<password>")` (lowercase hex), matching the original Fever protocol. Enabling Fever without both user and password is rejected. Setting or enabling a password that is not at least 8 characters with letters, digits, and symbols is also rejected.
-
-```json
-{
-  "filter": {
-    "prompt": "Keep only news directly related to asset management regulation, product launches, or institutional fund flows.",
-    "keywords": "sponsored, giveaway, celebrity gossip",
-    "enabled": true
-  },
-  "translate": {
-    "prompt": "Translate the news title accurately and naturally.",
-    "enabled": true,
-    "targetLang": "zh-Hans"
-  },
-  "fever": {
-    "enabled": true,
-    "user": "reeder",
-    "password": "your-password"
-  }
-}
-```
-
-The public REST/UI Fever payload is `{ enabled, user, hasPassword }` — the password is never returned.
-
-On first load, a missing `config.json` is built from legacy `filter.json` / `filters.json`, `translate.json`, and `fever.json`. A multi-filter array is migrated to `{ prompt, enabled }`; the first non-empty `prompt` is kept and `enabled` is set to true.
-
-## Background & Service Mode
-
-Keep NanoFlux running as a long-lived local service next to your agent host.
-
-### One-click start (macOS / Linux / Windows)
-
-| Platform | Start | Stop |
-| --- | --- | --- |
-| macOS / Linux | `./start.sh` | `./stop.sh` |
-| Windows | `start.bat` | `stop.bat` |
-
-These scripts install dependencies if needed and start NanoFlux in the background. They print the admin URL; they do not open a browser.
-
-### Auto-start on boot
-
-The install scripts build the frontend once (`bun run build:web`), then register a service that runs `bun run main.ts` (backend only; it does not rebuild on each boot).
-
-**macOS / Linux** — `./install-service.sh` registers a user service (LaunchAgent on macOS, systemd `--user` on Linux):
-
-```bash
-chmod +x start.sh stop.sh install-service.sh uninstall-service.sh
-./install-service.sh   # register
-./uninstall-service.sh # remove
-```
-
-On Linux the unit is `~/.config/systemd/user/nanoflux.service`. The installer also tries `loginctl enable-linger` so the service starts at boot without an active login session. Check status with `systemctl --user status nanoflux`.
-
-**Windows** — run `install-service.bat` as Administrator to register an auto-start service (uses [NSSM](https://nssm.cc/) as a wrapper). Run `uninstall-service.bat` to remove it.
-
-Service logs are written to the `logs/` directory.
-
-## MCP
-
-Primary interface: `http://localhost:<PORT>/mcp` (JSON response mode enabled; `PORT` from `.env`).
-
-Only localhost clients can reach this endpoint. It does not use `ADMIN_PASSWORD`.
-
-### Client configuration
-
-Add to your MCP client config (e.g. Cursor or Claude Desktop):
+Add NanoFlux to an MCP client such as Cursor or Claude Desktop:
 
 ```json
 {
@@ -277,226 +102,153 @@ Add to your MCP client config (e.g. Cursor or Claude Desktop):
 }
 ```
 
-### Typical agent loop
-
-1. Ensure sources exist (`add_feed`, `add_feed_by_keyword`, or `add_wechat_feed`)
-2. Optionally set relevance criteria with `update_filter_config` (prompt, keywords, and/or `enabled`)
-3. Call `get_uningested_news` on a schedule; page with `hasMore` until caught up
-4. Use returned `title`, `content`, `link`, and `published_at` in your agent workflow
-5. Optionally `delete_item` (with `reason`) to hide a stored article without allowing it to be fetched again
-6. Optionally push a headline + URL with `send_telegram_message`, or compose an HTML daily report and push it with `send_telegram_digest` (requires bot credentials)
-
-Typical WeChat flow: call `add_wechat_feed` with a `query` (it always searches first). If multiple accounts match, call again with the chosen `fakeid`.
-
-### Tools
-
-News query tools return stored items from the database. Each item includes integer `id`, `title`, `link`, `content`, `published_at`, and `feed_title`. Rejected and deleted items are excluded. `get_uningested_news` filters on `is_ingested = 0` and sets `is_ingested = 1` on returned rows; it does not change `is_read`. Feed and item IDs are integers (feeds autoincrement; item IDs are UTC `YYYYMMDDHHMMSS` plus a 2-digit per-second sequence, 16 digits, JSON-safe).
+A typical agent workflow is to create feeds with `add_feed`, `add_feed_by_keyword`, or `add_wechat_feed`; optionally set criteria with `update_filter_config`; then call `get_uningested_news` on a schedule. It returns passed, unconsumed items from the requested time window, ordered by `published_at` descending (newest first), then `id` descending when publication times match. Returned items are immediately marked as consumed. If it returns `hasMore: true`, keep paging with the same parameters until it returns `false`.
 
 | Tool | Description |
 | --- | --- |
-| `add_feed` | Add an RSS feed (metadata auto-fetched when omitted) |
-| `add_feed_by_keyword` | Create a Google News RSS feed from a keyword only (last 3 days; `hl` inferred from keyword) |
-| `add_wechat_feed` | Search by `query` first, then subscribe to one match (pass `fakeid` when multiple). Requires WeChat RSS credentials. |
-| `update_feed` | Update feed title, URL, or description |
-| `delete_feed` | Remove a feed (also unsubscribes WeChat RSS feeds remotely when configured) |
-| `search_feeds` | Search feeds by keyword in title |
-| `get_uningested_news` | Fetch uningested news from the last `count` days and mark returned articles as ingested (`is_ingested=1`). When `hasMore` is true, call again with the same `count` (and `limit`) until `hasMore` is false. `limit` defaults to 20, max 50 |
-| `delete_item` | Mark a news item as `deleted` by `id` with a required `reason` (stored as `status_reason`). Hidden from queries; the same `guid` will not be fetched again |
-| `get_filter_config` | Get content filter settings (`prompt`, `keywords`, `enabled`, `active`). Keyword matches are rejected before AI filtering. |
-| `update_filter_config` | Set `prompt`, comma-separated `keywords`, and/or `enabled` (all optional). When enabled, keyword matches are rejected before LLM filtering. Applies to newly fetched items only. |
-| `get_current_time` | Return the server's current UTC time |
-| `send_telegram_message` | Post a title + URL to the configured Telegram channel (`title`, `url`; optional `tag`, HTML `content`). Optional `tag` is a single item (country, industry, company, etc.); when set, the bold headline is `【tag】title`. Optional `content` is HTML (same Telegram HTML rules as `send_telegram_digest`) between title and URL. Message is `<b>【tag】title</b>\n[content]\nurl`. Target is always `TELEGRAM_CHANNEL_ID`; bot must be a channel admin |
-| `send_telegram_digest` | Post a daily-report message (`title`, HTML `content`). Title is bold and escaped; `content` is agent-written HTML (`parse_mode=HTML`). Combined title + body must be ≤ 4096 characters |
+| `add_feed` | Add an RSS feed; metadata is fetched automatically when omitted |
+| `add_feed_by_keyword` | Create a Google News feed for a keyword from the last three days |
+| `add_wechat_feed` | Search for and subscribe to a WeChat official account; pass `fakeid` when multiple matches exist |
+| `update_feed` / `delete_feed` / `search_feeds` | Manage or search feeds |
+| `get_uningested_news` | Get and mark passed, unconsumed news as consumed, newest first (`published_at DESC`, then `id DESC`); default 20 items, maximum 50 |
+| `delete_item` | Hide an item by ID so its GUID is not fetched again |
+| `get_filter_config` / `update_filter_config` | Read or update filter settings |
+| `get_current_time` | Get the server's current UTC time |
+| `send_telegram_message` | Send a headline, URL, and optional HTML content |
+| `send_telegram_digest` | Send an HTML daily digest |
 
-`send_telegram_digest` sends `parse_mode=HTML`. Telegram-native tags pass through; common layout tags are normalized; other tags are stripped (inner text kept). Do not dump raw articles.
+News items include `id`, `title`, `link`, `content`, `published_at`, and `feed_title`. Rejected and deleted items are not returned.
 
-| Agent HTML | In the channel |
-| --- | --- |
-| `b` / `strong`, `i` / `em`, `u`, `s`, `a href`, `code`, `pre`, `blockquote` | Rendered as Telegram HTML |
-| `br` | Line break |
-| `p`, `div` | Paragraph / line breaks |
-| `h1`–`h6` | Bold line |
-| `ul` / `ol` / `li` | Bullet lines (`• `) |
-| other tags (including `script` / `style`) | Removed; inner text kept |
+### Fever Clients
+
+Enable Fever under **Settings → Fever**, then configure your client with:
+
+- URL: `http://<host>:<port>/fever`
+- Username and password: the Fever credentials saved in Settings
+
+Fever read state maps to `is_read` and remains independent from MCP's `is_ingested`. Starring is not currently supported.
+
+## Configuration
+
+### `.env`
+
+Create `.env` from `.env.example`. These variables are read when the process starts.
+
+| Variable | Required | Description |
+| --- | --- | --- |
+| `PORT` | Yes | HTTP port; the example uses `3000` |
+| `ADMIN_PASSWORD` | Yes | Password for the console and REST API |
+| `DB_PATH` | No | SQLite path; defaults to `data.sqlite` |
+| `LLM_BASE_URL` | No | OpenAI-compatible API base URL |
+| `LLM_API_KEY` | No | LLM API key |
+| `LLM_MODEL_NAME` | No | Model name, such as `gpt-4o-mini` |
+| `WECHATRSS_API_KEY` / `WECHATRSS_API_SECRET` | No | Credentials for WeChat official-account feeds |
+| `TELEGRAM_BOT_TOKEN` | No | Telegram bot token |
+| `TELEGRAM_CHANNEL_ID` | No | Channel username (`@channel`) or numeric ID |
+
+Outbound HTTP requests support the standard `HTTP_PROXY`, `HTTPS_PROXY`, and `NO_PROXY` variables:
+
+```env
+HTTPS_PROXY=http://127.0.0.1:9080
+NO_PROXY=localhost,127.0.0.1
+```
+
+### `config.json`
+
+`config.json` is created and updated by the console, REST API, or MCP. It is ignored by Git and contains settings that can be changed at runtime:
+
+```json
+{
+  "filter": {
+    "enabled": true,
+    "prompt": "Keep only news directly related to asset-management regulation, product launches, or institutional fund flows.",
+    "keywords": "sponsored, giveaway, celebrity gossip",
+    "sources": ["example.com"]
+  },
+  "translate": {
+    "enabled": true,
+    "prompt": "Translate news titles accurately and naturally.",
+    "targetLang": "zh-Hans"
+  },
+  "fever": {
+    "enabled": true,
+    "user": "reeder",
+    "password": "ChangeMe!123"
+  }
+}
+```
+
+- When `filter.enabled` is on, source domains, title keywords, and then the LLM prompt are evaluated in that order. Domain and keyword matches do not call the LLM.
+- `translate.targetLang` supports `en`, `zh-Hans`, and `zh-Hant`.
+- If the LLM is not configured or a request fails, items that do not match a domain or keyword still pass through; translation failures preserve the original title.
+- Filtering and translation apply only to newly fetched news; existing items are not reprocessed.
+- Fever requires a username and a strong password when enabled. Passwords are never returned by public configuration endpoints.
+
+## Fetching and Data Rules
+
+- The scheduler checks due feeds every minute. A run handles at most three due feeds and ten new items per feed; remaining backlog is retried in about a minute.
+- Feed intervals adapt to publishing frequency (roughly 5–60 minutes).
+- When an RSS summary is too short, NanoFlux attempts to fetch and extract the full article. Images come from RSS media fields first, then article metadata or body images.
+- Only items with `status = "passed"` appear in MCP, REST, the console, and exports. LLM-rejected items remain as `rejected` to prevent re-ingestion; manually removed items are `deleted`.
+- Items older than 90 days are permanently removed.
 
 ## REST API
 
-REST is available for scripts and the operator UI. JSON endpoints return `{ code, message, data }` unless noted otherwise (e.g. OPML / Excel downloads). `code` is `0` on success. REST (except `/api/auth/*`) requires a session cookie from `POST /api/auth/login` or `Authorization: Bearer <ADMIN_PASSWORD>`. MCP is always localhost-only and is not gated by `ADMIN_PASSWORD`. The Fever protocol uses its own user/password.
+All REST endpoints except `/api/auth/*` require either a session cookie created by login or this request header:
 
-### Auth — `/api/auth`
+```http
+Authorization: Bearer <ADMIN_PASSWORD>
+```
 
-`GET /api/auth/status` reports `{ required: true, authenticated }`.
+JSON responses use `{ "code": 0, "message": "", "data": ... }`; download endpoints are the exception.
 
-| Method | Path | Description |
+| Group | Endpoint | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/auth/status` | `{ required, authenticated }` |
-| `POST` | `/api/auth/login` | Body `{ password }`. Sets an HttpOnly `nanoflux_session` cookie (7 days, `SameSite=Lax`; `Secure` when the request is HTTPS). Failed logins are rate-limited to 20 attempts per IP per 10 minutes (`429`). |
-| `POST` | `/api/auth/logout` | Clears the session cookie |
+| Auth | `GET /api/auth/status` | Get authentication status |
+| Auth | `POST /api/auth/login`, `POST /api/auth/logout` | Sign in and sign out |
+| Feeds | `GET /api/feeds`, `GET /api/feeds/:id` | List feeds and get feed details |
+| Feeds | `POST /api/feeds/create`, `POST /api/feeds/:id`, `POST /api/feeds/:id/delete` | Create, update, or delete a feed |
+| Feeds | `POST /api/feeds/meta`, `GET /api/feeds/export.opml` | Preview feed metadata and export OPML |
+| WeChat | `GET /api/feeds/wechat/accounts`, `POST /api/feeds/wechat/resolve` | Search for and subscribe to official accounts |
+| Items | `GET /api/items`, `GET /api/items/export.xlsx` | List news and export Excel |
+| Items | `POST /api/items/:id/read`, `POST /api/items/read-all` | Mark items as read |
+| Items | `POST /api/items/block-source` | Block a source and hide current visible news from it |
+| Settings | `GET` / `POST /api/filter` | Filter settings |
+| Settings | `GET` / `POST /api/translate` | Translation settings |
+| Settings | `GET` / `POST /api/fever` | Fever configuration, not the Fever protocol itself |
 
-Scripts can skip the cookie and send `Authorization: Bearer <ADMIN_PASSWORD>` on REST calls instead.
+List endpoints support `cursor` and `limit` (default 20, maximum 50). `GET /api/items` also accepts `is_read=0|1`, `since`, `until`, or `unit` plus `count` for time filtering. Excel export supports `since`, `until`, `tz_offset`, and `lang`.
 
-### Feeds — `/api/feeds`
+## Background Mode and Autostart
 
-| Method | Path | Description |
+| Platform | Start | Stop |
 | --- | --- | --- |
-| `GET` | `/api/feeds` | Paginated feed list (cursor, limit, keyword, sort) |
-| `GET` | `/api/feeds/export.opml` | Download all feeds as OPML 2.0 (`Content-Disposition: nanoflux.opml`) |
-| `GET` | `/api/feeds/wechat/accounts?query=` | Search WeChat official accounts |
-| `POST` | `/api/feeds/wechat/resolve` | Subscribe remotely and resolve RSS URL (`fakeid`, `nickname`, optional `alias` / `head_img`) |
-| `GET` | `/api/feeds/:id` | Get a feed by ID |
-| `POST` | `/api/feeds/meta` | Preview feed title and description |
-| `POST` | `/api/feeds/create` | Create a feed |
-| `POST` | `/api/feeds/:id` | Update a feed |
-| `POST` | `/api/feeds/:id/delete` | Delete a feed and its items (also unsubscribes WeChat RSS feeds remotely when configured) |
+| macOS / Linux | `./start.sh` | `./stop.sh` |
+| Windows | `start.bat` | `stop.bat` |
 
-Query parameters for `GET /api/feeds`:
+The scripts install dependencies when needed and run NanoFlux in the background. Logs are written to `logs/`.
 
-| Parameter | Description |
-| --- | --- |
-| `cursor` | Pagination cursor from a previous response |
-| `limit` | Page size (default 20, max 50) |
-| `keyword` | Search feeds by title |
-| `sort` | `updated_desc` (default), `published_desc`, or `published_asc` |
+To start with the operating system:
 
-### Items — `/api/items`
-
-Each item includes `content` (RSS summary or scraped full text), `source` (the article's source domain), optional `cover` (image URL), `status`, `status_reason`, `is_read`, and `is_ingested`. Rejected and deleted rows are omitted from list and export responses. REST mark-read endpoints update `is_read` only; they do not set `is_ingested`. Excel export still writes published time, title, content, and original link (no cover column).
-
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/api/items` | Paginated news list (newest first) |
-| `GET` | `/api/items/export.xlsx` | Download matching items as Excel (`Content-Disposition: nanoflux-export.xlsx`) |
-| `POST` | `/api/items/:id/read` | Mark one item as read |
-| `POST` | `/api/items/read-all` | Mark all passed items up to a timestamp as read |
-| `POST` | `/api/items/block-source` | Add a source to `filter.sources` and mark all visible news from that source as deleted |
-
-Query parameters for `GET /api/items`:
-
-| Parameter | Description |
-| --- | --- |
-| `cursor` | Pagination cursor from a previous response |
-| `limit` | Page size (default 20, max 50) |
-| `is_read` | `0` or `1` — filter by read state (the UI **Unread** tab uses `is_read=0`) |
-| `since`, `until` | Absolute ISO 8601 time bounds |
-| `unit`, `count` | Relative window (e.g. `unit=hour&count=2`). `unit`: `minute` / `min` / `分`, `hour` / `h` / `时`, `day` / `d` / `天` |
-
-Query parameters for `GET /api/items/export.xlsx`:
-
-| Parameter | Description |
-| --- | --- |
-| `since`, `until` | Absolute ISO 8601 time bounds (optional) |
-| `tz_offset` | Client timezone offset in minutes (for formatting published times in the sheet; default `0`) |
-| `lang` | Sheet header language: `zh` (default) or `en` |
-
-Exported columns: published time, title, content, and original link.
-
-`POST /api/items/read-all` accepts `{ until }` to bulk mark-read up to that timestamp.
-
-`POST /api/items/block-source` accepts `{ source }`. The operator UI exposes this action with a block icon beside each source; it immediately removes every currently listed item from that source. The source remains in the filter configuration for future fetched items (when filtering is enabled).
-
-### Filter — `/api/filter`
-
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/api/filter` | Get filter settings (`{ prompt, keywords, enabled }`) |
-| `POST` | `/api/filter` | Update filter settings (body: optional `{ prompt, keywords, enabled }`; omit a field to leave it unchanged) |
-
-### Translate — `/api/translate`
-
-Title translation config in `config.json`. Applies to newly fetched items only; the stored `title` is overwritten when translation succeeds.
-
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/api/translate` | Get `{ prompt, enabled, targetLang }` |
-| `POST` | `/api/translate` | Update (body: optional `{ prompt, enabled, targetLang }`; omit a field to leave it unchanged). `targetLang` is `en`, `zh-Hans`, or `zh-Hant` (`zh` is accepted as `zh-Hans`) |
-
-### Fever config — `/api/fever`
-
-Does not serve the Fever protocol itself (that is [`/fever`](#fever-api)). This route only reads and writes the `fever` section of `config.json`.
-
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/api/fever` | Public Fever config (`{ enabled, user, hasPassword }`) |
-| `POST` | `/api/fever` | Update Fever config (body: optional `{ enabled, user, password }`; omit a field to leave it unchanged). Empty `password` keeps the stored password. Enabling requires a user and a password (new or already stored). New and enabled passwords must be at least 8 characters and include letters, digits, and symbols. |
-
-## Fever API
-
-Fever-compatible readers (for example [Reeder](https://reederapp.com)) can sync NanoFlux as a Fever server.
-
-**Endpoint:** `http://localhost:<PORT>/fever/` (trailing slash optional). GET is used when the query looks like a Fever request (`api`, `feeds`, `groups`, `items`, `unread_item_ids`, `saved_item_ids`, or `mark`); otherwise GET `/fever` serves the operator UI. POST always goes to the API. `api_version` is `3`.
-
-Readers on another device can connect to this endpoint. Keep Fever disabled until credentials are set.
-
-### Client setup
-
-1. Open `/settings#fever` in the operator UI (or `POST /api/fever`) and set **User**, **Password**, then turn Fever **On**
-2. In the reader, add a Fever account:
-   - Server: `http://localhost:<PORT>/fever/` (or `http://<lan-host>:<PORT>/fever/` from another device)
-   - Email / username and password: the same values stored in `config.json` under `fever`
-3. The reader sends `api_key` as `md5("<user>:<password>")`. Auth failure returns `{ "api_version": 3, "auth": 0 }`
-
-### Supported request flags
-
-Authenticated responses include `auth: 1` and `last_refreshed_on_time` (unix seconds). Extra flags add fields:
-
-| Flag | Response |
-| --- | --- |
-| `groups` | One group `{ id: 1, title: "NanoFlux" }` plus `feeds_groups` |
-| `feeds` | All feeds (`id`, `favicon_id`, `title`, `url`, `site_url`, `is_spark`, `last_updated_on_time`) plus `feeds_groups`. `site_url` is the feed URL origin; every feed uses `favicon_id` `1` |
-| `items` | Up to **50** items. Optional `since_id` (newer than), `max_id` (older than), or `with_ids` (comma-separated, max 50). Each item: integer `id` / `feed_id`, `title`, `author` (the article source domain), `html`, `url`, `is_saved: 0`, `is_read` (`0` or `1` from the store), `created_on_time`. Only passed items are included. `html` is escaped article text as `<p>` blocks, with a cover `<img>` prepended when `cover` is set. Also returns `total_items` |
-| `unread_item_ids` | Comma-separated IDs of passed items with `is_read = 0`, oldest first. Empty string when none |
-| `saved_item_ids` | Always `""` (starring is not implemented) |
-| `mark` | Mutation (typically POST). Requires `as` and `id`. `mark=item&as=read\|unread&id=<item>` sets `is_read` on that passed item. `mark=feed&as=read&id=<feed>` and `mark=group&as=read&id=1` mark matching passed unread items as read when `published_at` is at or before `before` (unix seconds; omitted means now). Other `as` values (including saved/unsaved) are ignored. Applied before other flags so a combined `unread_item_ids` request sees the new state |
-
-Favicons, links, unread counts, and starring over Fever are **not** implemented.
-
-## How Feed Fetching Works
-
-1. On startup and every minute (UTC cron), the scheduler loads feeds whose `next_fetched_at` is due. Cron is registered before the startup fetch so a long first run cannot block later ticks; overlapping due-fetch runs are skipped.
-2. Each tick takes at most **3** due feeds. Creating a feed via REST or MCP also enqueues an immediate fetch when `next_fetched_at` is still unset.
-3. Each feed is fetched over HTTP with the `NanoFlux/1.0` user agent (15 s timeout) and parsed as RSS/Atom. Concurrent fetches of the same feed id are ignored.
-4. Each entry gets a normalized GUID: MD5 hex of the article link (feeds that already provide an MD5 GUID are kept as-is). Per-feed known GUIDs are stored in the `last_guids` column; entries already seen by this feed or already present in the database (global GUID uniqueness, including rejected and deleted rows) are skipped.
-5. At most **10** unseen candidates are enriched and inserted per feed per run. For each of those, Google News article links (`news.google.com/.../articles/...`) are resolved to the publisher URL (embedded token decode, or Google's batchexecute RPC) and the stored `link` is updated when resolution succeeds. Cover is taken from the RSS item when present (media thumbnail/content, image enclosure, iTunes image, or an image in the item HTML). If the RSS summary is shorter than ~80 word tokens (counted with `Intl.Segmenter` for Chinese and English — roughly ~200 Chinese characters or ~80 English words), or cover is still missing, the article page is fetched (desktop browser user agent, 15 s timeout, up to 3 concurrent requests), decoded with charset detection, and parsed with Firefox Readability (plus WeChat/CMS selector fallback) to fill in `content` and, if needed, `cover` from Open Graph / Twitter / `link rel=image_src` / first suitable `<img>`. Already-known entries skip scraping. Unprocessed backlog entries stay out of `last_guids` so the next catch-up run can pick them up.
-6. New items are assigned an integer `id` (UTC compact datetime + per-second sequence), deduplicated globally by `guid` (same article from different feeds is stored once), then filtered before translation. When filtering is enabled, a configured source domain is rejected first, then a title matching a configured keyword; either is marked `rejected` immediately and skips LLM filtering. Remaining items are evaluated by the AI filter when its prompt is non-empty. Title translation runs afterwards when `translate.enabled` is true. The source domain is derived from the article URL, then the item is inserted into SQLite with `is_read = 0` and `is_ingested = 0`. On pass (or when filtering is off, or on LLM fail-open), `status = "passed"` and `status_reason` is `null`. Rejected items have `status = "rejected"`, skip translation, and keep the matching source, keyword, or model reason in `status_reason`. Operator and source-block deletes set `status = "deleted"`. Translation fail-open keeps the original title.
-7. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear. If a feed still has unprocessed new items after the 10-item cap, the next fetch is scheduled in **1 minute** (catch-up) while keeping the adaptive interval for later.
-8. Daily at 01:00 UTC, items older than 90 days are hard-deleted.
-
-Agents then consume this store through MCP / REST; they do not scrape feeds themselves.
+- macOS / Linux: make the scripts executable and run `./install-service.sh`; remove the service with `./uninstall-service.sh`. Linux uses a systemd user service and macOS uses a LaunchAgent.
+- Windows: run `install-service.bat` as Administrator (it uses NSSM); remove it with `uninstall-service.bat`.
 
 ## Project Structure
 
+```text
+api/         REST routes and authentication
+db/          Drizzle schema and data access
+fever/       Fever protocol implementation
+mcp/         MCP route and tools
+services/    Fetching, parsing, filtering, translation, scheduling, and Telegram
+web/         Svelte 5 web console
+drizzle/     SQLite migrations
+public/      Built static assets
 ```
-├── web/              Operator UI (Svelte)
-├── public/           Built static assets (generated)
-├── api/              REST API routes (auth, feeds, items, filter, translate, fever)
-├── fever/            Fever protocol route (`route.ts`)
-├── mcp/              MCP server and tools (agent interface)
-├── services/
-│   ├── ai/           LangChain chat client (OpenAI-compatible)
-│   ├── feeds/        Feed fetching, cover extraction, adaptive polling intervals, and OPML export
-│   ├── export/       Excel (.xlsx) article export
-│   ├── content/      Full-text article extraction
-│   ├── filters/      AI relevance filter
-│   ├── translate/    AI title translation (detect + LangChain)
-│   ├── rss.ts        RSS/Atom HTTP fetch and parse
-│   ├── google-news.ts Google News RSS URL helpers and article-link resolution
-│   ├── wechat-rss/   WeChat official-account search & subscribe
-│   ├── telegram/     Telegram Bot API client (channel push)
-│   ├── http-fetcher.ts Shared HTTP client
-│   └── scheduler.ts  Cron-based fetch and cleanup jobs
-├── db/               Drizzle schema and data access
-├── utils/            Date, hash, HTML, text, and charset-decoding helpers
-├── shared/           Shared types and utilities (env, admin session, password strength, locale)
-├── drizzle/          SQL migrations
-├── config.json       Filter, translate, and Fever settings (gitignored)
-├── config.ts         Unified config load and persist
-├── filter.ts         Filter accessors
-├── translate.ts      Translate config accessors
-├── fever.ts          Fever config accessors
-├── main.ts           Application entry point
-├── dev.ts            Concurrent frontend/backend watch for `bun run dev`
-└── build.ts          Frontend build (Tailwind CLI + Bun/Svelte)
-```
+
+## Stack
+
+Bun, Elysia, Svelte 5, Tailwind CSS, SQLite / Drizzle ORM, MCP, rss-parser, Mozilla Readability, and OpenAI-compatible LLM APIs.
 
 ## License
 
