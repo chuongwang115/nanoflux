@@ -109,7 +109,8 @@ A typical agent workflow is to create feeds with `add_feed`, `add_feed_by_keywor
 | `add_feed` | Add an RSS feed; metadata is fetched automatically when omitted |
 | `add_feed_by_keyword` | Create a Google News feed for a keyword from the last three days |
 | `add_wechat_feed` | Search for and subscribe to a WeChat official account; pass `fakeid` when multiple matches exist |
-| `update_feed` / `delete_feed` / `search_feeds` | Manage or search feeds |
+| `get-feeds` | List feeds, optionally filter by title keyword, and page with `nextCursor`; ordered by `updated_at DESC`, then `id DESC` |
+| `update_feed` / `delete_feed` | Update or delete a feed |
 | `get_uningested_news` | Get and mark passed, unconsumed news as consumed, newest first (`published_at DESC`, then `id DESC`); default 20 items, maximum 50 |
 | `delete_item` | Hide an item by ID so its GUID is not fetched again |
 | `get_filter_config` / `update_filter_config` | Read or update filter settings |

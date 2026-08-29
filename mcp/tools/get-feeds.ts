@@ -2,15 +2,19 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { getFeeds } from "../../db/feeds";
 import { DEFAULT_LIMIT, MAX_LIMIT } from "../../db/schema";
+import { encodeCursor } from "../../db/utils";
 
-export function registerSearchFeeds(server: McpServer): void {
+export function registerGetFeeds(server: McpServer): void {
   server.registerTool(
-    "search_feeds",
+    "get-feeds",
     {
       description:
-        "Search feeds by keyword in title.",
+        "List feeds, optionally filtering by a keyword in the title. Use nextCursor from the response as cursor to load the next page.",
       inputSchema: {
-        keyword: z.string().describe("Search keyword"),
+        keyword: z
+          .string()
+          .optional()
+          .describe("Optional keyword to filter feed titles"),
         limit: z
           .number()
           .int()
@@ -18,9 +22,14 @@ export function registerSearchFeeds(server: McpServer): void {
           .max(MAX_LIMIT)
           .optional()
           .describe("Max feeds to return (default 20, max 50)"),
+        cursor: z
+          .string()
+          .min(1)
+          .optional()
+          .describe("Cursor returned as nextCursor by a previous call"),
       },
     },
-    async ({ limit, keyword }) => {
+    async ({ limit, keyword, cursor }) => {
 
       try {
 
@@ -29,10 +38,18 @@ export function registerSearchFeeds(server: McpServer): void {
           MAX_LIMIT,
         );
 
-        const selected = getFeeds({ limit: adjustedLimit, keyword });
+        const selected = getFeeds({
+          cursor,
+          limit: adjustedLimit,
+          keyword,
+        });
 
         const hasMore = selected.length > adjustedLimit;
         const returned = selected.slice(0, adjustedLimit);
+        const lastFeed = returned.at(-1);
+        const nextCursor = hasMore && lastFeed
+          ? encodeCursor(lastFeed.updated_at, lastFeed.id)
+          : null;
 
         return {
           content: [
@@ -46,7 +63,8 @@ export function registerSearchFeeds(server: McpServer): void {
                     url: feed.url,
                     description: feed.description ?? null
                   })) ?? [],
-                  hasMore: hasMore,
+                  hasMore,
+                  nextCursor,
                 },
                 null,
                 2,
@@ -56,7 +74,7 @@ export function registerSearchFeeds(server: McpServer): void {
         };
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "Failed to search feeds";
+          error instanceof Error ? error.message : "Failed to get feeds";
         return {
           content: [
             {
