@@ -9,6 +9,7 @@ import { registerUpdateFeed } from "./tools/update-feed";
 import { registerDeleteFeed } from "./tools/delete-feed";
 import { registerGetFeeds } from "./tools/get-feeds";
 import { registerGetUningestedNews } from "./tools/get-uningested-news";
+import { registerGetRejectedNews } from "./tools/get-rejected-news";
 import { registerDeleteItem } from "./tools/delete-item";
 import { registerGetFilterConfig } from "./tools/get-filter-config";
 import { registerUpdateFilterConfig } from "./tools/update-filter-config";
@@ -24,6 +25,7 @@ function registerMcpTools(server: McpServer): void {
   registerDeleteFeed(server);
   registerGetFeeds(server);
   registerGetUningestedNews(server);
+  registerGetRejectedNews(server);
   registerDeleteItem(server);
   registerGetFilterConfig(server);
   registerUpdateFilterConfig(server);

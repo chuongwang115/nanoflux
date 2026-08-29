@@ -47,6 +47,7 @@ export function getItems(options?: {
   count?: number;
   isRead?: number;
   isIngested?: number;
+  status?: "passed" | "rejected" | "deleted";
   cursor?: string;
   limit?: number;
 }): any[] {
@@ -96,7 +97,7 @@ export function getItems(options?: {
       options?.isIngested === 0 || options?.isIngested === 1
         ? eq(items.is_ingested, options.isIngested)
         : undefined;
-    const statusFilter = eq(items.status, "passed");
+    const statusFilter = eq(items.status, options?.status ?? "passed");
 
     const selected = db
       .select({
