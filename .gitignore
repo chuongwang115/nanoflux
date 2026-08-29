@@ -41,6 +41,7 @@ data.sqlite-wal
 
 # cursor
 .cursor
+.claude
 
 # app config (filter / translate / fever credentials)
 config.json
