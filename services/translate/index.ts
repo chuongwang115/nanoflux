@@ -4,10 +4,10 @@ import { isTitleInTargetLang } from "./detect";
 
 /**
  * Translate item titles when translation is enabled.
- * Soft-deleted items are skipped. LLM failure keeps the original title.
+ * Rejected and deleted items are skipped. LLM failure keeps the original title.
  */
 export async function translateItemTitles<
-  T extends { title: string; is_deleted?: 0 | 1 },
+  T extends { title: string; status?: "passed" | "rejected" | "deleted" },
 >(items: T[]): Promise<T[]> {
   if (items.length === 0) return [];
 
@@ -19,7 +19,7 @@ export async function translateItemTitles<
   }
 
   const { prompt, targetLang } = getTranslateConfig();
-  const active = items.filter((item) => item.is_deleted !== 1);
+  const active = items.filter((item) => item.status === undefined || item.status === "passed");
   const toTranslate = active.filter(
     (item) => !isTitleInTargetLang(item.title, targetLang),
   );
@@ -30,7 +30,7 @@ export async function translateItemTitles<
 
   const translated: T[] = [];
   for (const item of items) {
-    if (item.is_deleted === 1) {
+    if (item.status && item.status !== "passed") {
       translated.push(item);
       continue;
     }

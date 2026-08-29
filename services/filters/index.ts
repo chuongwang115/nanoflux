@@ -8,33 +8,33 @@ import {
 import { applyAiFilter } from "./ai";
 
 type ItemFilterResult = {
-  is_deleted: 0 | 1;
-  deleted_reason: string | null;
+  status: "passed" | "rejected";
+  status_reason: string | null;
 };
 
 /**
  * Apply the single AI filter.
- * Disabled or empty prompt → skip filtering (`is_deleted = 0`, `deleted_reason` null).
- * Enabled with a prompt → LLM verdict; reject soft-deletes the item and stores the reason.
+ * Disabled or empty prompt skips filtering (`status = passed`, `status_reason` null).
+ * Enabled with a prompt returns a rejection status and reason when appropriate.
  */
 async function applyItemFilter(
   title: string,
   content: string | null,
 ): Promise<ItemFilterResult> {
   if (!hasFilterPrompt()) {
-    return { is_deleted: 0, deleted_reason: null };
+    return { status: "passed", status_reason: null };
   }
   const prompt = getFilterPrompt().trim();
 
   const result = await applyAiFilter(title, content, prompt);
   if (!result.passed) {
     return {
-      is_deleted: 1,
-      deleted_reason: result.reason?.trim() || null,
+      status: "rejected",
+      status_reason: result.reason?.trim() || null,
     };
   }
 
-  return { is_deleted: 0, deleted_reason: null };
+  return { status: "passed", status_reason: null };
 }
 
 function matchingKeyword(title: string): string | null {
@@ -69,12 +69,12 @@ export async function filterItems<
   const aiActive = hasFilterPrompt();
   if (!sourceActive && !keywordActive && !aiActive) {
     console.log(
-      `[filter] inactive — skip AI for ${items.length} item(s) (deleted_reason stays null)`,
+      `[filter] inactive — skip AI for ${items.length} item(s) (status_reason stays null)`,
     );
     return items.map((item) => ({
       ...item,
-      is_deleted: 0 as const,
-      deleted_reason: null,
+      status: "passed" as const,
+      status_reason: null,
     }));
   }
 
@@ -93,8 +93,8 @@ export async function filterItems<
       sourceRejected += 1;
       filtered.push({
         ...item,
-        is_deleted: 1,
-        deleted_reason: `Source filter: ${source}`,
+        status: "rejected",
+        status_reason: `Source filter: ${source}`,
       });
       continue;
     }
@@ -104,13 +104,13 @@ export async function filterItems<
       keywordRejected += 1;
       filtered.push({
         ...item,
-        is_deleted: 1,
-        deleted_reason: `Keyword filter: ${keyword}`,
+        status: "rejected",
+        status_reason: `Keyword filter: ${keyword}`,
       });
       continue;
     }
     const verdict = await applyItemFilter(item.title, item.content);
-    if (verdict.is_deleted === 1) rejected += 1;
+    if (verdict.status === "rejected") rejected += 1;
     else passed += 1;
     filtered.push({ ...item, ...verdict });
   }

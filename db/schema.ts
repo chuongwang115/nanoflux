@@ -51,8 +51,10 @@ export const items = sqliteTable(
     created_at: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),
-    is_deleted: integer("is_deleted").notNull().default(0),
-    deleted_reason: text("deleted_reason"),
+    status: text("status", { enum: ["passed", "rejected", "deleted"] })
+      .notNull()
+      .default("passed"),
+    status_reason: text("status_reason"),
     is_ingested: integer("is_ingested").notNull().default(0),
     is_read: integer("is_read").notNull().default(0),
   },

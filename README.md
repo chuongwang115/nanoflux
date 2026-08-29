@@ -2,7 +2,7 @@
 
 **News Service for AI Agents**
 
-NanoFlux is a local news ingestion and query service built for AI agents. It continuously fetches RSS/Atom (and related) sources, extracts article text and cover images, optionally filters relevance and translates titles with an LLM, and exposes the result over **MCP** and a small REST API so agents can subscribe to sources, pull uningested news, soft-delete items, manage filter settings, and optionally push headlines or HTML daily reports to a Telegram channel.
+NanoFlux is a local news ingestion and query service built for AI agents. It continuously fetches RSS/Atom (and related) sources, extracts article text and cover images, optionally filters relevance and translates titles with an LLM, and exposes the result over **MCP** and a small REST API so agents can subscribe to sources, pull uningested news, mark items as deleted, manage filter settings, and optionally push headlines or HTML daily reports to a Telegram channel.
 
 A **Fever API** (`/fever`) is also available so RSS readers such as Reeder can sync the same store (feeds, items, unread IDs, and mark-read). A minimal web UI is included for operators to inspect feeds, tweak the filter and title translation, configure Fever, and export data — not as a full-featured RSS reader.
 
@@ -33,7 +33,7 @@ Typical RSS readers optimize for human browsing. NanoFlux optimizes for **agent 
 2. **Normalize** — GUID dedupe, Google News link resolution, full-text extraction when the feed summary is thin
 3. **Filter** — optional source and title keyword blacklists plus an LLM prompt behind one on/off switch
 4. **Translate** — optional LLM title translation into English, Simplified Chinese, or Traditional Chinese (skips titles already in the target language)
-5. **Serve** — MCP so agents can consume **uningested** items (marking them `is_ingested`), soft-delete items, manage feeds / filter settings, and push Telegram headlines or HTML digests; REST and the operator UI for the same store; Fever API so RSS readers can pull feeds and articles and mark them **read** (`is_read`)
+5. **Serve** — MCP so agents can consume **uningested** items (marking them `is_ingested`), mark items as deleted, manage feeds / filter settings, and push Telegram headlines or HTML digests; REST and the operator UI for the same store; Fever API so RSS readers can pull feeds and articles and mark them **read** (`is_read`)
 
 Read state (`is_read`) and agent consumption (`is_ingested`) are independent. Opening an article in the UI or Reeder does not mark it ingested for MCP, and `get_uningested_news` does not mark it read for Fever/UI.
 
@@ -43,7 +43,7 @@ The server listens on all interfaces. MCP (`/mcp`) accepts only local clients an
 
 **For agents (primary)**
 
-- MCP at `/mcp` — feed CRUD, keyword / WeChat subscribe, uningested consumption (`get_uningested_news` → `is_ingested`), item soft-delete, filter configuration read/write, Telegram channel push (headline or daily digest), current time
+- MCP at `/mcp` — feed CRUD, keyword / WeChat subscribe, uningested consumption (`get_uningested_news` → `is_ingested`), item deletion, filter configuration read/write, Telegram channel push (headline or daily digest), current time
 - REST API with the same data model (`{ code, message, data }` JSON)
 - Persistent SQLite store with integer IDs and cursor pagination so agents can page through large result sets
 
@@ -59,13 +59,13 @@ The server listens on all interfaces. MCP (`/mcp`) accepts only local clients an
 - Full-text extraction when an RSS summary is too short; Google News article links are resolved to the publisher URL first; HTML is decoded with charset detection (Content-Type, BOM, meta/`<?xml` encoding, with UTF-8 / GB18030 fallback)
 - When `filter.enabled` is true, source domains are checked first, then title keywords; either match rejects the item immediately without calling the LLM. Remaining items are LLM-filtered only when `prompt` is non-empty.
 - Optional title translation runs after the filter when `translate.enabled` is true; titles already in the target language are skipped; LLM failure keeps the original title (**fail-open**)
-- AI-rejected items are soft-deleted (`is_deleted = 1`) with `deleted_reason` set to the model’s reason when present; they stay in the database so the same `guid` is not ingested again
-- Soft-delete (`is_deleted`) also covers operator/MCP deletes. Hidden items are omitted from MCP, REST, UI, and export
-- Items older than 90 days are hard-deleted (including previously soft-deleted rows)
+- AI-rejected items have `status = "rejected"`, with `status_reason` set to the model’s reason when present; they stay in the database so the same `guid` is not ingested again
+- Operator/MCP deletes set `status = "deleted"`. Only `status = "passed"` items are shown in MCP, REST, UI, and export
+- Items older than 90 days are hard-deleted (including rejected and deleted rows)
 
 **Operator UI (secondary)**
 
-- Home list: **Unread** / **All**. Unread marks those items as read in bulk; both tabs omit soft-deleted (including AI-rejected) items
+- Home list: **Unread** / **All**. Unread marks those items as read in bulk; both tabs show only passed items
 - `/feeds`: preview, CRUD, sort, **add by keyword** (Google News RSS for the last 3 days; language inferred from the keyword), **subscribe WeChat 公众号**, **OPML export**
 - `/settings`: **Preferences** (font size, UI language, theme), **Filter**, **Translate**, and **Fever** (enable switch, user/password, endpoint URL). Legacy `/filter`, `/filters`, `/translate`, and `/fever` URLs open the same settings page
 - `/export`: Excel by time range
@@ -138,7 +138,7 @@ The same OpenAI-compatible endpoint is used for the relevance filter and for tit
 | `LLM_API_KEY` | Bearer token |
 | `LLM_MODEL_NAME` | Model ID (e.g. `gpt-4o-mini`) |
 
-If filtering is off, items pass through with `is_deleted = 0` and `deleted_reason = null`. Keyword matches are rejected without an LLM call. If LLM filtering is active but these variables are missing, or the API fails, the non-keyword-matched items pass through (**fail-open**: `is_deleted = 0`, `deleted_reason` null). Title translation is also fail-open: missing config or API errors leave the original title.
+If filtering is off, items pass through with `status = "passed"` and `status_reason = null`. Keyword matches are rejected without an LLM call. If LLM filtering is active but these variables are missing, or the API fails, the non-keyword-matched items pass through (**fail-open**: `status = "passed"`, `status_reason = null`). Title translation is also fail-open: missing config or API errors leave the original title.
 
 Changes apply to **newly fetched** items only; existing rows are not re-filtered or re-translated.
 
@@ -290,7 +290,7 @@ Typical WeChat flow: call `add_wechat_feed` with a `query` (it always searches f
 
 ### Tools
 
-News query tools return stored items from the database. Each item includes integer `id`, `title`, `link`, `content`, `published_at`, and `feed_title`. Soft-deleted items (including AI rejects) are excluded. `get_uningested_news` filters on `is_ingested = 0` and sets `is_ingested = 1` on returned rows; it does not change `is_read`. Feed and item IDs are integers (feeds autoincrement; item IDs are UTC `YYYYMMDDHHMMSS` plus a 2-digit per-second sequence, 16 digits, JSON-safe).
+News query tools return stored items from the database. Each item includes integer `id`, `title`, `link`, `content`, `published_at`, and `feed_title`. Rejected and deleted items are excluded. `get_uningested_news` filters on `is_ingested = 0` and sets `is_ingested = 1` on returned rows; it does not change `is_read`. Feed and item IDs are integers (feeds autoincrement; item IDs are UTC `YYYYMMDDHHMMSS` plus a 2-digit per-second sequence, 16 digits, JSON-safe).
 
 | Tool | Description |
 | --- | --- |
@@ -301,7 +301,7 @@ News query tools return stored items from the database. Each item includes integ
 | `delete_feed` | Remove a feed (also unsubscribes WeChat RSS feeds remotely when configured) |
 | `search_feeds` | Search feeds by keyword in title |
 | `get_uningested_news` | Fetch uningested news from the last `count` days and mark returned articles as ingested (`is_ingested=1`). When `hasMore` is true, call again with the same `count` (and `limit`) until `hasMore` is false. `limit` defaults to 20, max 50 |
-| `delete_item` | Soft-delete a news item by `id` with a required `reason` (stored as `deleted_reason`). Hidden from queries; the same `guid` will not be fetched again |
+| `delete_item` | Mark a news item as `deleted` by `id` with a required `reason` (stored as `status_reason`). Hidden from queries; the same `guid` will not be fetched again |
 | `get_filter_config` | Get content filter settings (`prompt`, `keywords`, `enabled`, `active`). Keyword matches are rejected before AI filtering. |
 | `update_filter_config` | Set `prompt`, comma-separated `keywords`, and/or `enabled` (all optional). When enabled, keyword matches are rejected before LLM filtering. Applies to newly fetched items only. |
 | `get_current_time` | Return the server's current UTC time |
@@ -360,15 +360,15 @@ Query parameters for `GET /api/feeds`:
 
 ### Items — `/api/items`
 
-Each item includes `content` (RSS summary or scraped full text), `source` (the article's source domain), optional `cover` (image URL), `is_read`, and `is_ingested`. Soft-deleted rows are omitted from list and export responses. REST mark-read endpoints update `is_read` only; they do not set `is_ingested`. Excel export still writes published time, title, content, and original link (no cover column).
+Each item includes `content` (RSS summary or scraped full text), `source` (the article's source domain), optional `cover` (image URL), `status`, `status_reason`, `is_read`, and `is_ingested`. Rejected and deleted rows are omitted from list and export responses. REST mark-read endpoints update `is_read` only; they do not set `is_ingested`. Excel export still writes published time, title, content, and original link (no cover column).
 
 | Method | Path | Description |
 | --- | --- | --- |
 | `GET` | `/api/items` | Paginated news list (newest first) |
 | `GET` | `/api/items/export.xlsx` | Download matching items as Excel (`Content-Disposition: nanoflux-export.xlsx`) |
 | `POST` | `/api/items/:id/read` | Mark one item as read |
-| `POST` | `/api/items/read-all` | Mark all items up to a timestamp as read (soft-deleted items are skipped) |
-| `POST` | `/api/items/block-source` | Add a source to `filter.sources` and soft-delete all visible news from that source |
+| `POST` | `/api/items/read-all` | Mark all passed items up to a timestamp as read |
+| `POST` | `/api/items/block-source` | Add a source to `filter.sources` and mark all visible news from that source as deleted |
 
 Query parameters for `GET /api/items`:
 
@@ -443,10 +443,10 @@ Authenticated responses include `auth: 1` and `last_refreshed_on_time` (unix sec
 | --- | --- |
 | `groups` | One group `{ id: 1, title: "NanoFlux" }` plus `feeds_groups` |
 | `feeds` | All feeds (`id`, `favicon_id`, `title`, `url`, `site_url`, `is_spark`, `last_updated_on_time`) plus `feeds_groups`. `site_url` is the feed URL origin; every feed uses `favicon_id` `1` |
-| `items` | Up to **50** items. Optional `since_id` (newer than), `max_id` (older than), or `with_ids` (comma-separated, max 50). Each item: integer `id` / `feed_id`, `title`, `author` (the article source domain), `html`, `url`, `is_saved: 0`, `is_read` (`0` or `1` from the store), `created_on_time`. Soft-deleted items are omitted. `html` is escaped article text as `<p>` blocks, with a cover `<img>` prepended when `cover` is set. Also returns `total_items` |
-| `unread_item_ids` | Comma-separated IDs of undeleted items with `is_read = 0`, oldest first. Empty string when none |
+| `items` | Up to **50** items. Optional `since_id` (newer than), `max_id` (older than), or `with_ids` (comma-separated, max 50). Each item: integer `id` / `feed_id`, `title`, `author` (the article source domain), `html`, `url`, `is_saved: 0`, `is_read` (`0` or `1` from the store), `created_on_time`. Only passed items are included. `html` is escaped article text as `<p>` blocks, with a cover `<img>` prepended when `cover` is set. Also returns `total_items` |
+| `unread_item_ids` | Comma-separated IDs of passed items with `is_read = 0`, oldest first. Empty string when none |
 | `saved_item_ids` | Always `""` (starring is not implemented) |
-| `mark` | Mutation (typically POST). Requires `as` and `id`. `mark=item&as=read\|unread&id=<item>` sets `is_read` on that undeleted item. `mark=feed&as=read&id=<feed>` and `mark=group&as=read&id=1` mark matching undeleted unread items as read when `published_at` is at or before `before` (unix seconds; omitted means now). Other `as` values (including saved/unsaved) are ignored. Applied before other flags so a combined `unread_item_ids` request sees the new state |
+| `mark` | Mutation (typically POST). Requires `as` and `id`. `mark=item&as=read\|unread&id=<item>` sets `is_read` on that passed item. `mark=feed&as=read&id=<feed>` and `mark=group&as=read&id=1` mark matching passed unread items as read when `published_at` is at or before `before` (unix seconds; omitted means now). Other `as` values (including saved/unsaved) are ignored. Applied before other flags so a combined `unread_item_ids` request sees the new state |
 
 Favicons, links, unread counts, and starring over Fever are **not** implemented.
 
@@ -455,9 +455,9 @@ Favicons, links, unread counts, and starring over Fever are **not** implemented.
 1. On startup and every minute (UTC cron), the scheduler loads feeds whose `next_fetched_at` is due. Cron is registered before the startup fetch so a long first run cannot block later ticks; overlapping due-fetch runs are skipped.
 2. Each tick takes at most **3** due feeds. Creating a feed via REST or MCP also enqueues an immediate fetch when `next_fetched_at` is still unset.
 3. Each feed is fetched over HTTP with the `NanoFlux/1.0` user agent (15 s timeout) and parsed as RSS/Atom. Concurrent fetches of the same feed id are ignored.
-4. Each entry gets a normalized GUID: MD5 hex of the article link (feeds that already provide an MD5 GUID are kept as-is). Per-feed known GUIDs are stored in the `last_guids` column; entries already seen by this feed or already present in the database (global GUID uniqueness, including soft-deleted rows) are skipped.
+4. Each entry gets a normalized GUID: MD5 hex of the article link (feeds that already provide an MD5 GUID are kept as-is). Per-feed known GUIDs are stored in the `last_guids` column; entries already seen by this feed or already present in the database (global GUID uniqueness, including rejected and deleted rows) are skipped.
 5. At most **10** unseen candidates are enriched and inserted per feed per run. For each of those, Google News article links (`news.google.com/.../articles/...`) are resolved to the publisher URL (embedded token decode, or Google's batchexecute RPC) and the stored `link` is updated when resolution succeeds. Cover is taken from the RSS item when present (media thumbnail/content, image enclosure, iTunes image, or an image in the item HTML). If the RSS summary is shorter than ~80 word tokens (counted with `Intl.Segmenter` for Chinese and English — roughly ~200 Chinese characters or ~80 English words), or cover is still missing, the article page is fetched (desktop browser user agent, 15 s timeout, up to 3 concurrent requests), decoded with charset detection, and parsed with Firefox Readability (plus WeChat/CMS selector fallback) to fill in `content` and, if needed, `cover` from Open Graph / Twitter / `link rel=image_src` / first suitable `<img>`. Already-known entries skip scraping. Unprocessed backlog entries stay out of `last_guids` so the next catch-up run can pick them up.
-6. New items are assigned an integer `id` (UTC compact datetime + per-second sequence), deduplicated globally by `guid` (same article from different feeds is stored once), then filtered before translation. When filtering is enabled, a configured source domain is rejected first, then a title matching a configured keyword; either is soft-deleted immediately and skips LLM filtering. Remaining items are evaluated by the AI filter when its prompt is non-empty. Title translation runs afterwards when `translate.enabled` is true. The source domain is derived from the article URL, then the item is inserted into SQLite with `is_read = 0` and `is_ingested = 0`. On pass (or when filtering is off, or on LLM fail-open), `is_deleted = 0` and `deleted_reason` is `null`. Rejected items have `is_deleted = 1`, skip translation, and keep the matching source, keyword, or model reason in `deleted_reason`. Translation fail-open keeps the original title.
+6. New items are assigned an integer `id` (UTC compact datetime + per-second sequence), deduplicated globally by `guid` (same article from different feeds is stored once), then filtered before translation. When filtering is enabled, a configured source domain is rejected first, then a title matching a configured keyword; either is marked `rejected` immediately and skips LLM filtering. Remaining items are evaluated by the AI filter when its prompt is non-empty. Title translation runs afterwards when `translate.enabled` is true. The source domain is derived from the article URL, then the item is inserted into SQLite with `is_read = 0` and `is_ingested = 0`. On pass (or when filtering is off, or on LLM fail-open), `status = "passed"` and `status_reason` is `null`. Rejected items have `status = "rejected"`, skip translation, and keep the matching source, keyword, or model reason in `status_reason`. Operator and source-block deletes set `status = "deleted"`. Translation fail-open keeps the original title.
 7. The next fetch interval is adapted: roughly one-third of the median publish gap, clamped to 5–30 minutes, with backoff on errors and tightening when new items appear. If a feed still has unprocessed new items after the 10-item cap, the next fetch is scheduled in **1 minute** (catch-up) while keeping the adaptive interval for later.
 8. Daily at 01:00 UTC, items older than 90 days are hard-deleted.
 

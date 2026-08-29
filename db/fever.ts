@@ -156,7 +156,7 @@ export function countFeverItems(): number {
   const row = db
     .select({ n: sql<number>`count(*)` })
     .from(items)
-    .where(eq(items.is_deleted, 0))
+    .where(eq(items.status, "passed"))
     .get();
   return Number(row?.n ?? 0);
 }
@@ -165,7 +165,7 @@ export function listFeverUnreadItemIds(): string {
   const rows = db
     .select({ id: items.id })
     .from(items)
-    .where(and(eq(items.is_deleted, 0), eq(items.is_read, 0)))
+    .where(and(eq(items.status, "passed"), eq(items.is_read, 0)))
     .orderBy(asc(items.id))
     .all();
   return rows.map((row) => String(row.id)).join(",");
@@ -189,12 +189,12 @@ export function markFeverReadState(options: {
     if (action === "read") {
       db.update(items)
         .set({ is_read: 1 })
-        .where(and(eq(items.id, options.id), eq(items.is_deleted, 0)))
+        .where(and(eq(items.id, options.id), eq(items.status, "passed")))
         .run();
     } else if (action === "unread") {
       db.update(items)
         .set({ is_read: 0 })
-        .where(and(eq(items.id, options.id), eq(items.is_deleted, 0)))
+        .where(and(eq(items.id, options.id), eq(items.status, "passed")))
         .run();
     }
     return;
@@ -214,7 +214,7 @@ export function markFeverReadState(options: {
           eq(items.feed_id, options.id),
           lte(items.published_at, until),
           eq(items.is_read, 0),
-          eq(items.is_deleted, 0),
+          eq(items.status, "passed"),
         ),
       )
       .run();
@@ -228,7 +228,7 @@ export function markFeverReadState(options: {
         and(
           lte(items.published_at, until),
           eq(items.is_read, 0),
-          eq(items.is_deleted, 0),
+          eq(items.status, "passed"),
         ),
       )
       .run();
@@ -241,13 +241,13 @@ export function listFeverItems(options: {
   withIds?: string;
 }): FeverItem[] {
   const withIds = parseIdList(options.withIds);
-  const deletedFilter = eq(items.is_deleted, 0);
+  const statusFilter = eq(items.status, "passed");
 
   if (withIds.length > 0) {
     const selected = db
       .select(itemColumns)
       .from(items)
-      .where(and(deletedFilter, inArray(items.id, withIds)))
+      .where(and(statusFilter, inArray(items.id, withIds)))
       .all();
     return selected.map(toFeverItem);
   }
@@ -256,7 +256,7 @@ export function listFeverItems(options: {
     const selected = db
       .select(itemColumns)
       .from(items)
-      .where(and(deletedFilter, lt(items.id, options.maxId)))
+      .where(and(statusFilter, lt(items.id, options.maxId)))
       .orderBy(desc(items.id))
       .limit(FEVER_ITEM_LIMIT)
       .all();
@@ -267,7 +267,7 @@ export function listFeverItems(options: {
     const selected = db
       .select(itemColumns)
       .from(items)
-      .where(and(deletedFilter, gt(items.id, options.sinceId)))
+      .where(and(statusFilter, gt(items.id, options.sinceId)))
       .orderBy(asc(items.id))
       .limit(FEVER_ITEM_LIMIT)
       .all();
@@ -277,7 +277,7 @@ export function listFeverItems(options: {
   const selected = db
     .select(itemColumns)
     .from(items)
-    .where(deletedFilter)
+    .where(statusFilter)
     .orderBy(desc(items.id))
     .limit(FEVER_ITEM_LIMIT)
     .all();

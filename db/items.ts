@@ -96,7 +96,7 @@ export function getItems(options?: {
       options?.isIngested === 0 || options?.isIngested === 1
         ? eq(items.is_ingested, options.isIngested)
         : undefined;
-    const deletedFilter = eq(items.is_deleted, 0);
+    const statusFilter = eq(items.status, "passed");
 
     const selected = db
       .select({
@@ -116,7 +116,7 @@ export function getItems(options?: {
       })
       .from(items)
       .innerJoin(feeds, eq(items.feed_id, feeds.id))
-      .where(and(timeFilter, cursorFilter, readFilter, ingestedFilter, deletedFilter))
+      .where(and(timeFilter, cursorFilter, readFilter, ingestedFilter, statusFilter))
       .orderBy(desc(items.published_at), desc(items.id))
       .limit(adjustedLimit + 1)
       .all();
@@ -138,7 +138,7 @@ export function getItemCover(id: number): string | null {
     const row = db
       .select({ cover: items.cover })
       .from(items)
-      .where(and(eq(items.id, id), eq(items.is_deleted, 0)))
+      .where(and(eq(items.id, id), eq(items.status, "passed")))
       .get();
     return row?.cover ?? null;
   } catch (error) {
@@ -158,7 +158,7 @@ export function getItemsForExport(options: {
     const untilFilter = options.until
       ? lte(items.published_at, options.until)
       : undefined;
-    const deletedFilter = eq(items.is_deleted, 0);
+    const statusFilter = eq(items.status, "passed");
 
     return db
       .select({
@@ -168,7 +168,7 @@ export function getItemsForExport(options: {
         link: items.link,
       })
       .from(items)
-      .where(and(sinceFilter, untilFilter, deletedFilter))
+      .where(and(sinceFilter, untilFilter, statusFilter))
       .orderBy(desc(items.published_at), desc(items.id))
       .all();
   } catch (error) {
@@ -198,8 +198,8 @@ export function addItems(
     content: string | null;
     cover: string | null;
     published_at: string;
-    is_deleted: 0 | 1;
-    deleted_reason: string | null;
+    status: "passed" | "rejected" | "deleted";
+    status_reason: string | null;
   }[],
 ): any[] {
 
@@ -220,7 +220,7 @@ export function addItems(
       if (existingGuids.has(newItem.guid)) continue;
 
       const id = newItemId();
-      const { is_deleted, deleted_reason } = newItem;
+      const { status, status_reason } = newItem;
 
       const inserted = db.insert(items)
         .values({
@@ -235,8 +235,8 @@ export function addItems(
           published_at: newItem.published_at,
           is_read: 0,
           is_ingested: 0,
-          is_deleted,
-          deleted_reason,
+          status,
+          status_reason,
         })
         .onConflictDoNothing({ target: items.guid })
         .returning()
@@ -271,7 +271,7 @@ export function markItemsRead(until: string): void {
       and(
         lte(items.published_at, until),
         eq(items.is_read, 0),
-        eq(items.is_deleted, 0),
+        eq(items.status, "passed"),
       ),
     )
     .run();
@@ -290,7 +290,7 @@ export function deleteItem(id: number, reason: string): boolean {
     }
 
     const existing = db
-      .select({ id: items.id, is_deleted: items.is_deleted })
+      .select({ id: items.id, status: items.status })
       .from(items)
       .where(eq(items.id, id))
       .get();
@@ -299,12 +299,12 @@ export function deleteItem(id: number, reason: string): boolean {
       throw new Error("Item does not exist");
     }
 
-    if (existing.is_deleted === 1) {
+    if (existing.status === "deleted") {
       throw new Error("Item is already deleted");
     }
 
     db.update(items)
-      .set({ is_deleted: 1, deleted_reason: deletedReason })
+      .set({ status: "deleted", status_reason: deletedReason })
       .where(eq(items.id, id))
       .run();
 
@@ -326,13 +326,13 @@ export function deleteItemsBySource(source: string): number {
     const result = db
       .update(items)
       .set({
-        is_deleted: 1,
-        deleted_reason: `Source filter: ${normalizedSource}`,
+        status: "deleted",
+        status_reason: `Source filter: ${normalizedSource}`,
       })
       .where(
         and(
           eq(items.source, normalizedSource),
-          eq(items.is_deleted, 0),
+          eq(items.status, "passed"),
         ),
       )
       .run();
@@ -350,7 +350,7 @@ export function markItemRead(id: number): void {
 
     db.update(items)
     .set({ is_read: 1 })
-    .where(and(eq(items.id, id), eq(items.is_read, 0), eq(items.is_deleted, 0)))
+    .where(and(eq(items.id, id), eq(items.is_read, 0), eq(items.status, "passed")))
     .run();
 
   } catch (error) {
@@ -365,7 +365,7 @@ export function markItemIngested(id: number): void {
 
     db.update(items)
     .set({ is_ingested: 1 })
-    .where(and(eq(items.id, id), eq(items.is_ingested, 0), eq(items.is_deleted, 0)))
+    .where(and(eq(items.id, id), eq(items.is_ingested, 0), eq(items.status, "passed")))
     .run();
 
   } catch (error) {
