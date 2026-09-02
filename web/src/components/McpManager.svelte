@@ -1,7 +1,12 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { Check, Copy } from "@lucide/svelte";
-  import { fetchMcp, generateMcpToken, updateMcp } from "../lib/api";
+  import {
+    fetchMcp,
+    fetchMcpEndpoint,
+    generateMcpToken,
+    updateMcp,
+  } from "../lib/api";
   import { t } from "../lib/locale.svelte";
 
   let remoteAccess = $state(false);
@@ -13,9 +18,14 @@
   let saving = $state(false);
   let copied = $state(false);
   let endpointCopied = $state(false);
+  let remoteEndpoint = $state("");
 
   const endpointUrl = $derived(
-    typeof window === "undefined" ? "/mcp" : `${window.location.origin}/mcp`,
+    typeof window === "undefined"
+      ? "/mcp"
+      : remoteAccess
+        ? remoteEndpoint || `${window.location.origin}/mcp`
+        : `http://127.0.0.1:${window.location.port || "3000"}/mcp`,
   );
   const isDirty = $derived(remoteAccess !== savedRemoteAccess);
   const saveDisabled = $derived(saving || loading || !isDirty);
@@ -31,6 +41,11 @@
     formError = "";
     try {
       const config = await fetchMcp();
+      try {
+        remoteEndpoint = await fetchMcpEndpoint();
+      } catch {
+        remoteEndpoint = "";
+      }
       remoteAccess = config.remoteAccess;
       hasAuthorization = config.hasAuthorization;
       savedRemoteAccess = config.remoteAccess;

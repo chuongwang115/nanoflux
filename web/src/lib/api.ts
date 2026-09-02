@@ -587,6 +587,17 @@ export async function generateMcpToken(): Promise<string> {
   return body.data.authorization;
 }
 
+export async function fetchMcpEndpoint(): Promise<string> {
+  const body = await request<{
+    code: number;
+    message: string;
+    data?: { endpoint?: string };
+  }>("/api/mcp/endpoint");
+  assertApiOk(body);
+  if (!body.data?.endpoint) throw new Error("Failed to resolve MCP endpoint");
+  return body.data.endpoint;
+}
+
 export type AuthStatus = {
   required: boolean;
   authenticated: boolean;

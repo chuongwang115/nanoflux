@@ -7831,6 +7831,13 @@ async function generateMcpToken() {
     throw new Error("Failed to generate MCP token");
   return body.data.authorization;
 }
+async function fetchMcpEndpoint() {
+  const body = await request("/api/mcp/endpoint");
+  assertApiOk(body);
+  if (!body.data?.endpoint)
+    throw new Error("Failed to resolve MCP endpoint");
+  return body.data.endpoint;
+}
 function normalizeAuthStatus(data) {
   return {
     required: Boolean(data?.required),
@@ -11080,7 +11087,8 @@ function McpManager($$anchor, $$props) {
   let saving = state(false);
   let copied = state(false);
   let endpointCopied = state(false);
-  const endpointUrl = user_derived(() => typeof window === "undefined" ? "/mcp" : `${window.location.origin}/mcp`);
+  let remoteEndpoint = state("");
+  const endpointUrl = user_derived(() => typeof window === "undefined" ? "/mcp" : get2(remoteAccess) ? get2(remoteEndpoint) || `${window.location.origin}/mcp` : `http://127.0.0.1:${window.location.port || "3000"}/mcp`);
   const isDirty = user_derived(() => get2(remoteAccess) !== get2(savedRemoteAccess));
   const saveDisabled = user_derived(() => get2(saving) || get2(loading) || !get2(isDirty));
   function toggleClass(active) {
@@ -11091,6 +11099,11 @@ function McpManager($$anchor, $$props) {
     set(formError, "");
     try {
       const config = await fetchMcp();
+      try {
+        set(remoteEndpoint, await fetchMcpEndpoint(), true);
+      } catch {
+        set(remoteEndpoint, "");
+      }
       set(remoteAccess, config.remoteAccess, true);
       set(hasAuthorization, config.hasAuthorization, true);
       set(savedRemoteAccess, config.remoteAccess, true);

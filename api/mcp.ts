@@ -1,9 +1,42 @@
 import { Elysia, t } from "elysia";
+import { networkInterfaces } from "node:os";
 import {
   generateMcpAuthorization,
   getMcpState,
   updateMcpState,
 } from "../config";
+
+function isLoopbackHost(hostname: string): boolean {
+  const normalized = hostname.toLowerCase();
+  return (
+    normalized === "localhost" ||
+    normalized === "127.0.0.1" ||
+    normalized === "::1" ||
+    normalized === "[::1]"
+  );
+}
+
+function getNetworkIp(): string {
+  const addresses = Object.values(networkInterfaces())
+    .flatMap((entries) => entries ?? [])
+    .filter((entry) => entry.family === "IPv4" && !entry.internal)
+    .map((entry) => entry.address);
+  const privateAddress = addresses.find((address) =>
+    /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(address),
+  );
+  const address = privateAddress ?? addresses[0];
+  if (!address) throw new Error("No non-loopback IPv4 address found");
+  return address;
+}
+
+async function resolveMcpEndpoint(request: Request): Promise<string> {
+  const url = new URL(request.url);
+  if (!isLoopbackHost(url.hostname)) return `${url.origin}/mcp`;
+
+  const networkIp = getNetworkIp();
+  const port = url.port ? `:${url.port}` : "";
+  return `http://${networkIp}${port}/mcp`;
+}
 
 function publicMcpConfig() {
   const config = getMcpState();
@@ -18,6 +51,22 @@ function publicMcpConfig() {
 
 export const routes = new Elysia({ prefix: "/api/mcp" })
   .get("/", () => ({ code: 0, message: "ok", data: publicMcpConfig() }))
+  .get("/endpoint", async ({ request, set }) => {
+    try {
+      return {
+        code: 0,
+        message: "ok",
+        data: { endpoint: await resolveMcpEndpoint(request) },
+      };
+    } catch (error) {
+      set.status = 502;
+      return {
+        code: 502,
+        message:
+          error instanceof Error ? error.message : "Failed to resolve network IP",
+      };
+    }
+  })
   .post("/generate-token", () => ({
     code: 0,
     message: "ok",
