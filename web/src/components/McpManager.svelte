@@ -18,6 +18,7 @@
   let saving = $state(false);
   let copied = $state(false);
   let endpointCopied = $state(false);
+  let configCopied = $state(false);
   let remoteEndpoint = $state("");
 
   const endpointUrl = $derived(
@@ -29,6 +30,22 @@
   );
   const isDirty = $derived(remoteAccess !== savedRemoteAccess);
   const saveDisabled = $derived(saving || loading || !isDirty);
+  const mcpJsonConfig = $derived(
+    JSON.stringify(
+      {
+        mcpServers: {
+          nanoflux: {
+            url: endpointUrl,
+            ...(remoteAccess && authorization
+              ? { headers: { Authorization: `Bearer ${authorization}` } }
+              : {}),
+          },
+        },
+      },
+      null,
+      2,
+    ),
+  );
 
   function toggleClass(active: boolean): string {
     return active
@@ -105,6 +122,12 @@
     window.setTimeout(() => (endpointCopied = false), 1500);
   }
 
+  async function copyJsonConfig() {
+    await navigator.clipboard.writeText(mcpJsonConfig);
+    configCopied = true;
+    window.setTimeout(() => (configCopied = false), 1500);
+  }
+
   onMount(() => void loadMcp());
 </script>
 
@@ -159,6 +182,21 @@
           </button>
         </div>
         {#if endpointCopied}<span class="block text-xs text-neutral-500 dark:text-neutral-400">{t("mcp.copied")}</span>{/if}
+      </div>
+
+      <div class="space-y-2">
+        <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500">{t("mcp.jsonConfig")}</span>
+        <div class="flex items-start gap-2 rounded bg-neutral-100 p-3 dark:bg-neutral-800">
+          <pre class="min-w-0 flex-1 overflow-x-auto text-sm text-neutral-800 dark:text-neutral-100"><code>{mcpJsonConfig}</code></pre>
+          <button type="button" class="shrink-0 text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100" aria-label={t("mcp.copyJsonConfig")} title={t("mcp.copyJsonConfig")} onclick={() => void copyJsonConfig()}>
+            {#if configCopied}
+              <Check size={17} />
+            {:else}
+              <Copy size={17} />
+            {/if}
+          </button>
+        </div>
+        {#if configCopied}<span class="block text-xs text-neutral-500 dark:text-neutral-400">{t("mcp.copied")}</span>{/if}
       </div>
 
       <button type="button" disabled={saveDisabled} class="text-sm text-neutral-900 underline-offset-4 hover:underline disabled:opacity-50 dark:text-neutral-100" onclick={() => void handleSave()}>{saving ? t("mcp.saving") : t("mcp.save")}</button>

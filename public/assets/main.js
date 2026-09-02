@@ -7019,6 +7019,8 @@ var messages = {
     "mcp.authorizationSave": "Token 已生成，点击“保存”后才会生效。",
     "mcp.copy": "复制 Authorization",
     "mcp.copyEndpoint": "复制 MCP 地址",
+    "mcp.jsonConfig": "JSON 配置",
+    "mcp.copyJsonConfig": "复制 JSON 配置",
     "mcp.copied": "已复制",
     "mcp.authorizationRequired": "开启外机访问前必须设置 Authorization Token",
     "mcp.authorizationWeak": "Token 至少 8 位，且需同时包含字母、数字和符号",
@@ -7189,6 +7191,8 @@ var messages = {
     "mcp.authorizationSave": "Token 已產生，點擊「儲存」後才會生效。",
     "mcp.copy": "複製 Authorization",
     "mcp.copyEndpoint": "複製 MCP 位址",
+    "mcp.jsonConfig": "JSON 設定",
+    "mcp.copyJsonConfig": "複製 JSON 設定",
     "mcp.copied": "已複製",
     "mcp.authorizationRequired": "開啟外機存取前必須設定 Authorization Token",
     "mcp.authorizationWeak": "Token 至少 8 位，且需同時包含字母、數字和符號",
@@ -7359,6 +7363,8 @@ var messages = {
     "mcp.authorizationSave": "The token has been generated. Save settings to make it active.",
     "mcp.copy": "Copy Authorization",
     "mcp.copyEndpoint": "Copy MCP URL",
+    "mcp.jsonConfig": "JSON configuration",
+    "mcp.copyJsonConfig": "Copy JSON configuration",
     "mcp.copied": "Copied",
     "mcp.authorizationRequired": "Set an Authorization token before enabling remote access",
     "mcp.authorizationWeak": "Token must be at least 8 characters and include letters, digits, and symbols",
@@ -11043,6 +11049,9 @@ var root_72 = from_html(`
               <!>
             `, 1);
 var root_82 = from_html(`
+              <!>
+            `, 1);
+var root_92 = from_html(`
     <div class="space-y-8">
       <div class="space-y-3">
         <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
@@ -11065,11 +11074,22 @@ var root_82 = from_html(`
         <!>
       </div>
 
+      <div class="space-y-2">
+        <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
+        <div class="flex items-start gap-2 rounded bg-neutral-100 p-3 dark:bg-neutral-800">
+          <pre class="min-w-0 flex-1 overflow-x-auto text-sm text-neutral-800 dark:text-neutral-100"><code> </code></pre>
+          <button type="button" class="shrink-0 text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100">
+            <!>
+          </button>
+        </div>
+        <!>
+      </div>
+
       <button type="button" class="text-sm text-neutral-900 underline-offset-4 hover:underline disabled:opacity-50 dark:text-neutral-100"> </button>
     </div>
   `, 1);
-var root_92 = from_html(`<p class="mt-3 text-sm text-red-500"> </p>`);
-var root_102 = from_html(`
+var root_102 = from_html(`<p class="mt-3 text-sm text-red-500"> </p>`);
+var root_116 = from_html(`
 
 <section class="mb-10">
   <p class="mb-6 text-sm text-neutral-400 dark:text-neutral-500"> </p>
@@ -11087,10 +11107,19 @@ function McpManager($$anchor, $$props) {
   let saving = state(false);
   let copied = state(false);
   let endpointCopied = state(false);
+  let configCopied = state(false);
   let remoteEndpoint = state("");
   const endpointUrl = user_derived(() => typeof window === "undefined" ? "/mcp" : get2(remoteAccess) ? get2(remoteEndpoint) || `${window.location.origin}/mcp` : `http://127.0.0.1:${window.location.port || "3000"}/mcp`);
   const isDirty = user_derived(() => get2(remoteAccess) !== get2(savedRemoteAccess));
   const saveDisabled = user_derived(() => get2(saving) || get2(loading) || !get2(isDirty));
+  const mcpJsonConfig = user_derived(() => JSON.stringify({
+    mcpServers: {
+      nanoflux: {
+        url: get2(endpointUrl),
+        ...get2(remoteAccess) && get2(authorization) ? { headers: { Authorization: `Bearer ${get2(authorization)}` } } : {}
+      }
+    }
+  }, null, 2));
   function toggleClass(active) {
     return active ? "text-neutral-900 underline underline-offset-4 decoration-neutral-900 dark:text-neutral-100 dark:decoration-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300";
   }
@@ -11161,9 +11190,14 @@ function McpManager($$anchor, $$props) {
     set(endpointCopied, true);
     window.setTimeout(() => set(endpointCopied, false), 1500);
   }
+  async function copyJsonConfig() {
+    await navigator.clipboard.writeText(get2(mcpJsonConfig));
+    set(configCopied, true);
+    window.setTimeout(() => set(configCopied, false), 1500);
+  }
   onMount(() => void loadMcp());
   next();
-  var fragment = root_102();
+  var fragment = root_116();
   var section = sibling(first_child(fragment));
   var p = sibling(child(section));
   var text2 = child(p, true);
@@ -11179,8 +11213,8 @@ function McpManager($$anchor, $$props) {
       template_effect(($0) => set_text(text_1, $0), [() => t("items.loading")]);
       append($$anchor2, fragment_1);
     };
-    var alternate_3 = ($$anchor2) => {
-      var fragment_2 = root_82();
+    var alternate_4 = ($$anchor2) => {
+      var fragment_2 = root_92();
       var div = sibling(first_child(fragment_2));
       var div_1 = sibling(child(div));
       var span = sibling(child(div_1));
@@ -11359,13 +11393,67 @@ function McpManager($$anchor, $$props) {
       }
       next();
       reset(div_5);
-      var button_4 = sibling(div_5, 2);
-      var text_13 = child(button_4, true);
+      var div_7 = sibling(div_5, 2);
+      var span_7 = sibling(child(div_7));
+      var text_13 = child(span_7, true);
+      reset(span_7);
+      var div_8 = sibling(span_7, 2);
+      var pre = sibling(child(div_8));
+      var code_2 = child(pre);
+      var text_14 = child(code_2, true);
+      reset(code_2);
+      reset(pre);
+      var button_4 = sibling(pre, 2);
+      var node_12 = sibling(child(button_4));
+      {
+        var consequent_8 = ($$anchor3) => {
+          var fragment_11 = root_82();
+          var node_13 = sibling(first_child(fragment_11));
+          check_default(node_13, { size: 17 });
+          next();
+          append($$anchor3, fragment_11);
+        };
+        var alternate_3 = ($$anchor3) => {
+          var fragment_12 = root_82();
+          var node_14 = sibling(first_child(fragment_12));
+          copy_default(node_14, { size: 17 });
+          next();
+          append($$anchor3, fragment_12);
+        };
+        if_block(node_12, ($$render) => {
+          if (get2(configCopied))
+            $$render(consequent_8);
+          else
+            $$render(alternate_3, -1);
+        });
+      }
+      next();
       reset(button_4);
+      next();
+      reset(div_8);
+      var node_15 = sibling(div_8, 2);
+      {
+        var consequent_9 = ($$anchor3) => {
+          var span_8 = root_26();
+          var text_15 = child(span_8, true);
+          reset(span_8);
+          template_effect(($0) => set_text(text_15, $0), [() => t("mcp.copied")]);
+          append($$anchor3, span_8);
+        };
+        if_block(node_15, ($$render) => {
+          if (get2(configCopied))
+            $$render(consequent_9);
+        });
+      }
+      next();
+      reset(div_7);
+      var button_5 = sibling(div_7, 2);
+      var text_16 = child(button_5, true);
+      reset(button_5);
       next();
       reset(div);
       next();
-      template_effect(($0, $1, $2, $3, $4, $5, $6, $7, $8, $9) => {
+      template_effect(($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) => {
         set_text(text_2, $0);
         set_attribute2(div_2, "aria-label", $1);
         set_class(button, 1, `transition-colors ${$2 ?? ""}`);
@@ -11380,8 +11468,12 @@ function McpManager($$anchor, $$props) {
         set_text(text_11, get2(endpointUrl));
         set_attribute2(button_3, "aria-label", $7);
         set_attribute2(button_3, "title", $8);
-        button_4.disabled = get2(saveDisabled);
         set_text(text_13, $9);
+        set_text(text_14, get2(mcpJsonConfig));
+        set_attribute2(button_4, "aria-label", $10);
+        set_attribute2(button_4, "title", $11);
+        button_5.disabled = get2(saveDisabled);
+        set_text(text_16, $12);
       }, [
         () => t("mcp.remoteAccess"),
         () => t("mcp.remoteAccess"),
@@ -11392,33 +11484,37 @@ function McpManager($$anchor, $$props) {
         () => t("mcp.endpoint"),
         () => t("mcp.copyEndpoint"),
         () => t("mcp.copyEndpoint"),
+        () => t("mcp.jsonConfig"),
+        () => t("mcp.copyJsonConfig"),
+        () => t("mcp.copyJsonConfig"),
         () => get2(saving) ? t("mcp.saving") : t("mcp.save")
       ]);
       delegated("click", button, () => set(remoteAccess, false));
       delegated("click", button_1, () => void enableRemoteAccess());
       delegated("click", button_3, () => void copyEndpoint());
-      delegated("click", button_4, () => void handleSave());
+      delegated("click", button_4, () => void copyJsonConfig());
+      delegated("click", button_5, () => void handleSave());
       append($$anchor2, fragment_2);
     };
     if_block(node, ($$render) => {
       if (get2(loading))
         $$render(consequent);
       else
-        $$render(alternate_3, -1);
+        $$render(alternate_4, -1);
     });
   }
-  var node_12 = sibling(node, 2);
+  var node_16 = sibling(node, 2);
   {
-    var consequent_8 = ($$anchor2) => {
-      var p_2 = root_92();
-      var text_14 = child(p_2, true);
+    var consequent_10 = ($$anchor2) => {
+      var p_2 = root_102();
+      var text_17 = child(p_2, true);
       reset(p_2);
-      template_effect(() => set_text(text_14, get2(formError)));
+      template_effect(() => set_text(text_17, get2(formError)));
       append($$anchor2, p_2);
     };
-    if_block(node_12, ($$render) => {
+    if_block(node_16, ($$render) => {
       if (get2(formError))
-        $$render(consequent_8);
+        $$render(consequent_10);
     });
   }
   next();
@@ -11435,7 +11531,7 @@ delegate(["click"]);
 var root27 = from_html(`
         <button type="button" role="tab"> </button>
       `, 1);
-var root_116 = from_html(`
+var root_117 = from_html(`
         <!>
       `, 1);
 var root_27 = from_html(`
@@ -11519,35 +11615,35 @@ function SettingsManager($$anchor, $$props) {
   var node_1 = sibling(child(div_2));
   {
     var consequent = ($$anchor2) => {
-      var fragment_2 = root_116();
+      var fragment_2 = root_117();
       var node_2 = sibling(first_child(fragment_2));
       PreferencesManager_default(node_2, {});
       next();
       append($$anchor2, fragment_2);
     };
     var consequent_1 = ($$anchor2) => {
-      var fragment_3 = root_116();
+      var fragment_3 = root_117();
       var node_3 = sibling(first_child(fragment_3));
       FiltersManager_default(node_3, {});
       next();
       append($$anchor2, fragment_3);
     };
     var consequent_2 = ($$anchor2) => {
-      var fragment_4 = root_116();
+      var fragment_4 = root_117();
       var node_4 = sibling(first_child(fragment_4));
       TranslateManager_default(node_4, {});
       next();
       append($$anchor2, fragment_4);
     };
     var consequent_3 = ($$anchor2) => {
-      var fragment_5 = root_116();
+      var fragment_5 = root_117();
       var node_5 = sibling(first_child(fragment_5));
       FeverManager_default(node_5, {});
       next();
       append($$anchor2, fragment_5);
     };
     var alternate = ($$anchor2) => {
-      var fragment_6 = root_116();
+      var fragment_6 = root_117();
       var node_6 = sibling(first_child(fragment_6));
       McpManager_default(node_6, {});
       next();
@@ -11584,7 +11680,7 @@ delegate(["click"]);
 var root28 = from_html(`
       <p class="text-sm text-red-500"> </p>
     `, 1);
-var root_117 = from_html(`
+var root_119 = from_html(`
 
 <section class="space-y-8">
   <p class="text-sm text-neutral-400 dark:text-neutral-500"> </p>
@@ -11647,7 +11743,7 @@ function ExportPage($$anchor, $$props) {
     }
   }
   next();
-  var fragment = root_117();
+  var fragment = root_119();
   var section = sibling(first_child(fragment));
   var p = sibling(child(section));
   var text2 = child(p);
@@ -11734,7 +11830,7 @@ delegate(["click"]);
 var root29 = from_html(`
     <!>
   `, 1);
-var root_118 = from_html(`
+var root_120 = from_html(`
 
 <button type="button">
   <!>
@@ -11745,7 +11841,7 @@ function ItemFilterToggle($$anchor, $$props) {
   const label = user_derived(() => $$props.filter === "unread" ? t("items.switchToAll") : t("items.switchToUnread"));
   const title = user_derived(() => $$props.filter === "unread" ? t("items.filterUnread") : t("items.filterAll"));
   next();
-  var fragment = root_118();
+  var fragment = root_120();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   {
@@ -11821,7 +11917,7 @@ delegate(["click"]);
 var root31 = from_html(`
   <p class="py-6 text-sm text-red-500"> </p>
 `, 1);
-var root_119 = from_html(`
+var root_121 = from_html(`
   <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
 var root_28 = from_html(`
@@ -12044,7 +12140,7 @@ function ItemList($$anchor, $$props) {
       append($$anchor2, fragment_1);
     };
     var consequent_1 = ($$anchor2) => {
-      var fragment_2 = root_119();
+      var fragment_2 = root_121();
       var p_1 = sibling(first_child(fragment_2));
       var text_1 = child(p_1, true);
       reset(p_1);
@@ -12261,7 +12357,7 @@ delegate(["click"]);
 var root33 = from_html(`
     <!>
   `, 1);
-var root_120 = from_html(`
+var root_123 = from_html(`
 
 <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
   <!>
@@ -12271,7 +12367,7 @@ function ThemeToggle($$anchor, $$props) {
   const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
   init();
   next();
-  var fragment = root_120();
+  var fragment = root_123();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   {
@@ -12319,7 +12415,7 @@ delegate(["click"]);
 var root34 = from_html(`
       <p class="mt-3 text-sm text-red-500"> </p>
     `, 1);
-var root_121 = from_html(`
+var root_125 = from_html(`
 
 <main class="flex min-h-screen items-center justify-center px-5">
   <form class="w-full max-w-sm">
@@ -12366,7 +12462,7 @@ function LoginGate($$anchor, $$props) {
     }
   }
   next();
-  var fragment = root_121();
+  var fragment = root_125();
   var main = sibling(first_child(fragment));
   var form = sibling(child(main));
   var div = sibling(child(form));
@@ -12443,7 +12539,7 @@ var LoginGate_default = LoginGate;
 var root35 = from_html(`
   <main class="flex min-h-screen items-center justify-center px-5 text-sm text-neutral-400"> </main>
 `, 1);
-var root_123 = from_html(`
+var root_126 = from_html(`
   <!>
 `, 1);
 var root_29 = from_html(`
@@ -12492,7 +12588,7 @@ function App($$anchor, $$props) {
       append($$anchor2, fragment_1);
     };
     var consequent_1 = ($$anchor2) => {
-      var fragment_2 = root_123();
+      var fragment_2 = root_126();
       var node_1 = sibling(first_child(fragment_2));
       LoginGate_default(node_1, {});
       next();
