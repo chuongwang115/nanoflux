@@ -3,7 +3,7 @@ import { get, writable } from "svelte/store";
 /** Logical routes (not URL pathnames). */
 export type AppRoute = "/" | "/feeds" | "/settings" | "/export";
 
-export type SettingsTab = "preferences" | "filter" | "translate" | "fever";
+export type SettingsTab = "preferences" | "filter" | "translate" | "fever" | "mcp";
 
 const scrollByRoute = new Map<string, number>();
 
@@ -17,6 +17,7 @@ const SUBPAGE_PATH_SUFFIXES = [
   "/translate/",
   "/export/",
   "/fever/",
+  "/mcp-settings/",
 ];
 
 function isSubPagePath(path: string): boolean {
@@ -31,7 +32,8 @@ function pathnameToRoute(pathname: string): AppRoute {
     pathname.endsWith("/filter") ||
     pathname.endsWith("/filters") ||
     pathname.endsWith("/translate") ||
-    pathname.endsWith("/fever")
+    pathname.endsWith("/fever") ||
+    pathname.endsWith("/mcp-settings")
   ) {
     return "/settings";
   }
@@ -75,11 +77,13 @@ export function settingsTabFromLocation(): SettingsTab {
   const path = window.location.pathname;
   if (path.endsWith("/translate")) return "translate";
   if (path.endsWith("/fever")) return "fever";
+  if (path.endsWith("/mcp-settings")) return "mcp";
   const hash = window.location.hash.replace(/^#/, "");
   if (
     hash === "preferences" ||
     hash === "translate" ||
     hash === "fever" ||
+    hash === "mcp" ||
     hash === "filter"
   ) {
     return hash;
@@ -94,7 +98,8 @@ export function setSettingsTab(tab: SettingsTab) {
     url.pathname.endsWith("/filter") ||
     url.pathname.endsWith("/filters") ||
     url.pathname.endsWith("/translate") ||
-    url.pathname.endsWith("/fever")
+    url.pathname.endsWith("/fever") ||
+    url.pathname.endsWith("/mcp-settings")
   ) {
     const settings = new URL(settingsHref(), window.location.href);
     url.pathname = settings.pathname;

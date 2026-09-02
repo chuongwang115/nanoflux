@@ -61,7 +61,7 @@ Once started:
 - MCP: `http://localhost:3000/mcp`
 - Fever: `http://localhost:3000/fever` (enable it first in Settings)
 
-`ADMIN_PASSWORD` must be at least 8 characters and include letters, numbers, and symbols. It protects the console and REST API. MCP accepts local clients only and does not use this password.
+`ADMIN_PASSWORD` must be at least 8 characters and include letters, numbers, and symbols. It protects the console and REST API. MCP accepts local clients only by default and does not use this password.
 
 ### Common Commands
 
@@ -102,6 +102,14 @@ Add NanoFlux to an MCP client such as Cursor or Claude Desktop:
 }
 ```
 
+To use MCP from another machine, open **Settings > MCP** and select **Allow remote access**. NanoFlux generates and displays a high-entropy Authorization token without changing the active configuration. Review or copy it, then click **Save** to enable remote access and make that token active. Remote clients must send:
+
+```http
+Authorization: Bearer <your MCP token>
+```
+
+The token is separate from `ADMIN_PASSWORD`; local MCP clients do not need it while remote access is disabled.
+
 A typical agent workflow is to create feeds with `add_feed`, `add_feed_by_keyword`, or `add_wechat_feed`; optionally set criteria with `update_filter_config`; then call `get_uningested_news` on a schedule. It returns passed, unconsumed items from the requested time window, ordered by `published_at` descending (newest first), then `id` descending when publication times match. Returned items are immediately marked as consumed. If it returns `hasMore: true`, keep paging with the same parameters until it returns `false`.
 
 | Tool | Description |
@@ -109,7 +117,7 @@ A typical agent workflow is to create feeds with `add_feed`, `add_feed_by_keywor
 | `add_feed` | Add an RSS feed; metadata is fetched automatically when omitted |
 | `add_feed_by_keyword` | Create a Google News feed for a keyword from the last three days |
 | `add_wechat_feed` | Search for and subscribe to a WeChat official account; pass `fakeid` when multiple matches exist |
-| `get-feeds` | List feeds, optionally filter by title keyword, and page with `nextCursor`; ordered by `updated_at DESC`, then `id DESC` |
+| `get_feeds` | List feeds, optionally filter by title keyword, and page with `nextCursor`; ordered by `updated_at DESC`, then `id DESC` |
 | `update_feed` / `delete_feed` | Update or delete a feed |
 | `get_uningested_news` | Get and mark passed, unconsumed news as consumed, newest first (`published_at DESC`, then `id DESC`); default 20 items, maximum 50 |
 | `delete_item` | Hide an item by ID so its GUID is not fetched again |
@@ -175,6 +183,10 @@ NO_PROXY=localhost,127.0.0.1
     "enabled": true,
     "user": "reeder",
     "password": "ChangeMe!123"
+  },
+  "mcp": {
+    "remoteAccess": false,
+    "authorization": ""
   }
 }
 ```
@@ -184,6 +196,7 @@ NO_PROXY=localhost,127.0.0.1
 - If the LLM is not configured or a request fails, items that do not match a domain or keyword still pass through; translation failures preserve the original title.
 - Filtering and translation apply only to newly fetched news; existing items are not reprocessed.
 - Fever requires a username and a strong password when enabled. Passwords are never returned by public configuration endpoints.
+- MCP remote access is disabled by default. Selecting remote access generates a bearer token; it only becomes active after saving. The current token is available to authenticated administrators through the MCP settings endpoint.
 
 ## Fetching and Data Rules
 

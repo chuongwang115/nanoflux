@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { Elysia } from "elysia";
 import { requireAdminPassword, resolvePort } from "./shared/env";
-import { withLocalhostOnly } from "./shared/localhost-only";
+import { withMcpAccess } from "./shared/mcp-access";
 import { createAuthRoutes, withAdminAuth } from "./api/auth";
 import { buildWebManifest } from "./shared/manifest";
 import { DEFAULT_LOCALE, parseLocale, type Locale } from "./shared/locale";
@@ -11,6 +11,7 @@ import { routes as feedsRoutes } from "./api/feeds";
 import { routes as filterRoutes } from "./api/filter";
 import { routes as translateRoutes } from "./api/translate";
 import { routes as feverRoutes } from "./api/fever";
+import { routes as mcpConfigRoutes } from "./api/mcp";
 import {
   handleFeverRequest,
   isFeverApiQuery,
@@ -89,11 +90,12 @@ const restRoutes = new Elysia()
   .use(feedsRoutes)
   .use(filterRoutes)
   .use(translateRoutes)
-  .use(feverRoutes);
+  .use(feverRoutes)
+  .use(mcpConfigRoutes);
 
 const protectedBackendRoutes = new Elysia()
   .use(withAdminAuth(restRoutes, adminAuth))
-  .use(withLocalhostOnly(mcpRoutes));
+  .use(withMcpAccess(mcpRoutes));
 
 async function feverGet(ctx: {
   request: Request;
@@ -138,6 +140,7 @@ const publicRoutes = new Elysia()
   .get("/export", indexHtml)
   .get("/fever", feverGet)
   .get("/fever/", feverGet)
+  .get("/mcp-settings", indexHtml)
   .post("/fever", feverPost)
   .post("/fever/", feverPost)
   .get("/manifest.webmanifest", ({ query, set }) => {
@@ -173,7 +176,7 @@ if (!app.server) {
 }
 
 console.log(
-  `Listening on http://${BIND_HOST}:${app.server.port}/ (operator UI/REST require ADMIN_PASSWORD; MCP: localhost only)`,
+  `Listening on http://${BIND_HOST}:${app.server.port}/ (operator UI/REST require ADMIN_PASSWORD; MCP: local-only unless remote access is enabled in Settings)`,
 );
 
 // Start cron only after we own the listen port, so a failed bind cannot leave

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { Check, Copy } from "@lucide/svelte";
   import { fetchFever, updateFever } from "../lib/api";
   import { t } from "../lib/locale.svelte";
   import { isStrongPassword } from "../../../shared/password-strength";
@@ -16,6 +17,7 @@
   let formError = $state("");
   let loading = $state(true);
   let saving = $state(false);
+  let endpointCopied = $state(false);
 
   const endpointUrl = $derived(
     typeof window === "undefined" ? "/fever/" : `${window.location.origin}/fever/`,
@@ -93,6 +95,12 @@
     }
   }
 
+  async function copyEndpoint() {
+    await navigator.clipboard.writeText(endpointUrl);
+    endpointCopied = true;
+    window.setTimeout(() => (endpointCopied = false), 1500);
+  }
+
   onMount(() => {
     void loadFever();
   });
@@ -167,7 +175,17 @@
         <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
           {t("fever.endpoint")}
         </span>
-        <p class="break-all text-sm text-neutral-600 dark:text-neutral-300">{endpointUrl}</p>
+        <div class="flex items-center gap-2 rounded bg-neutral-100 p-3 dark:bg-neutral-800">
+          <code class="min-w-0 flex-1 break-all text-sm text-neutral-800 dark:text-neutral-100">{endpointUrl}</code>
+          <button type="button" class="shrink-0 text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100" aria-label={t("fever.copyEndpoint")} title={t("fever.copyEndpoint")} onclick={() => void copyEndpoint()}>
+            {#if endpointCopied}
+              <Check size={17} />
+            {:else}
+              <Copy size={17} />
+            {/if}
+          </button>
+        </div>
+        {#if endpointCopied}<span class="block text-xs text-neutral-500 dark:text-neutral-400">{t("fever.copied")}</span>{/if}
       </div>
 
       <button

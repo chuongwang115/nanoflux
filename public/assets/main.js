@@ -6680,7 +6680,8 @@ var SUBPAGE_PATH_SUFFIXES = [
   "/filters/",
   "/translate/",
   "/export/",
-  "/fever/"
+  "/fever/",
+  "/mcp-settings/"
 ];
 function isSubPagePath(path) {
   return SUBPAGE_PATH_SUFFIXES.some((suffix) => path.endsWith(suffix));
@@ -6690,7 +6691,7 @@ function pathnameToRoute(pathname) {
     return "/feeds";
   if (pathname.endsWith("/export"))
     return "/export";
-  if (pathname.endsWith("/settings") || pathname.endsWith("/filter") || pathname.endsWith("/filters") || pathname.endsWith("/translate") || pathname.endsWith("/fever")) {
+  if (pathname.endsWith("/settings") || pathname.endsWith("/filter") || pathname.endsWith("/filters") || pathname.endsWith("/translate") || pathname.endsWith("/fever") || pathname.endsWith("/mcp-settings")) {
     return "/settings";
   }
   return "/";
@@ -6728,8 +6729,10 @@ function settingsTabFromLocation() {
     return "translate";
   if (path.endsWith("/fever"))
     return "fever";
+  if (path.endsWith("/mcp-settings"))
+    return "mcp";
   const hash2 = window.location.hash.replace(/^#/, "");
-  if (hash2 === "preferences" || hash2 === "translate" || hash2 === "fever" || hash2 === "filter") {
+  if (hash2 === "preferences" || hash2 === "translate" || hash2 === "fever" || hash2 === "mcp" || hash2 === "filter") {
     return hash2;
   }
   return "preferences";
@@ -6737,7 +6740,7 @@ function settingsTabFromLocation() {
 function setSettingsTab(tab) {
   const url = new URL(window.location.href);
   url.hash = tab;
-  if (url.pathname.endsWith("/filter") || url.pathname.endsWith("/filters") || url.pathname.endsWith("/translate") || url.pathname.endsWith("/fever")) {
+  if (url.pathname.endsWith("/filter") || url.pathname.endsWith("/filters") || url.pathname.endsWith("/translate") || url.pathname.endsWith("/fever") || url.pathname.endsWith("/mcp-settings")) {
     const settings = new URL(settingsHref(), window.location.href);
     url.pathname = settings.pathname;
   }
@@ -6898,6 +6901,7 @@ var messages = {
     "items.filter": "Filter",
     "items.translate": "Translate",
     "items.fever": "Fever",
+    "items.mcp": "MCP",
     "items.export": "导出",
     "items.noItems": "暂无资讯",
     "items.loading": "加载中…",
@@ -6995,6 +6999,8 @@ var messages = {
     "fever.password": "Password",
     "fever.passwordKeep": "留空则保留原密码",
     "fever.endpoint": "API 地址",
+    "fever.copyEndpoint": "复制 API 地址",
+    "fever.copied": "已复制",
     "fever.save": "保存",
     "fever.saving": "保存中…",
     "fever.loadFailed": "加载失败",
@@ -7002,6 +7008,25 @@ var messages = {
     "fever.userRequired": "开启 Fever API 时需要填写 User",
     "fever.passwordRequired": "开启 Fever API 时需要设置 Password",
     "fever.passwordWeak": "密码至少 8 位，且需同时包含字母、数字和符号",
+    "mcp.hint": "默认仅允许本机 MCP 客户端连接。开启外机访问后，所有 MCP 请求都必须带 Authorization Bearer Token。",
+    "mcp.remoteAccess": "访问范围",
+    "mcp.localOnly": "仅本机访问",
+    "mcp.remoteEnabled": "允许外机访问",
+    "mcp.authorization": "Authorization Token",
+    "mcp.authorizationKeep": "留空则保留当前 Token",
+    "mcp.authorizationHint": "客户端请求头：Authorization: Bearer <Token>",
+    "mcp.authorizationConfigured": "Token 尚未生成。开启外机访问后会生成，请保存设置使其生效。",
+    "mcp.authorizationSave": "Token 已生成，点击“保存”后才会生效。",
+    "mcp.copy": "复制 Authorization",
+    "mcp.copyEndpoint": "复制 MCP 地址",
+    "mcp.copied": "已复制",
+    "mcp.authorizationRequired": "开启外机访问前必须设置 Authorization Token",
+    "mcp.authorizationWeak": "Token 至少 8 位，且需同时包含字母、数字和符号",
+    "mcp.endpoint": "MCP 地址",
+    "mcp.save": "保存",
+    "mcp.saving": "保存中…",
+    "mcp.loadFailed": "加载失败",
+    "mcp.saveFailed": "保存失败",
     "auth.hint": "此服务已对公网开放，请输入管理员密码后继续。",
     "auth.password": "管理员密码",
     "auth.submit": "进入",
@@ -7046,6 +7071,7 @@ var messages = {
     "items.filter": "Filter",
     "items.translate": "Translate",
     "items.fever": "Fever",
+    "items.mcp": "MCP",
     "items.export": "匯出",
     "items.noItems": "暫無資訊",
     "items.loading": "載入中…",
@@ -7143,6 +7169,8 @@ var messages = {
     "fever.password": "Password",
     "fever.passwordKeep": "留空則保留原密碼",
     "fever.endpoint": "API 位址",
+    "fever.copyEndpoint": "複製 API 位址",
+    "fever.copied": "已複製",
     "fever.save": "儲存",
     "fever.saving": "儲存中…",
     "fever.loadFailed": "載入失敗",
@@ -7150,6 +7178,25 @@ var messages = {
     "fever.userRequired": "開啟 Fever API 時需要填寫 User",
     "fever.passwordRequired": "開啟 Fever API 時需要設定 Password",
     "fever.passwordWeak": "密碼至少 8 位，且需同時包含字母、數字和符號",
+    "mcp.hint": "預設僅允許本機 MCP 用戶端連線。開啟外機存取後，所有 MCP 請求都必須帶 Authorization Bearer Token。",
+    "mcp.remoteAccess": "存取範圍",
+    "mcp.localOnly": "僅本機存取",
+    "mcp.remoteEnabled": "允許外機存取",
+    "mcp.authorization": "Authorization Token",
+    "mcp.authorizationKeep": "留空則保留目前 Token",
+    "mcp.authorizationHint": "用戶端請求標頭：Authorization: Bearer <Token>",
+    "mcp.authorizationConfigured": "Token 尚未產生。開啟外機存取後會產生，請儲存設定使其生效。",
+    "mcp.authorizationSave": "Token 已產生，點擊「儲存」後才會生效。",
+    "mcp.copy": "複製 Authorization",
+    "mcp.copyEndpoint": "複製 MCP 位址",
+    "mcp.copied": "已複製",
+    "mcp.authorizationRequired": "開啟外機存取前必須設定 Authorization Token",
+    "mcp.authorizationWeak": "Token 至少 8 位，且需同時包含字母、數字和符號",
+    "mcp.endpoint": "MCP 位址",
+    "mcp.save": "儲存",
+    "mcp.saving": "儲存中…",
+    "mcp.loadFailed": "載入失敗",
+    "mcp.saveFailed": "儲存失敗",
     "auth.hint": "此服務已對公網開放，請輸入管理員密碼後繼續。",
     "auth.password": "管理員密碼",
     "auth.submit": "進入",
@@ -7195,6 +7242,7 @@ var messages = {
     "items.translate": "Translate",
     "items.export": "Export",
     "items.fever": "Fever",
+    "items.mcp": "MCP",
     "items.noItems": "No news yet",
     "items.loading": "Loading…",
     "items.noMore": "No more news",
@@ -7291,6 +7339,8 @@ var messages = {
     "fever.password": "Password",
     "fever.passwordKeep": "Leave blank to keep the current password",
     "fever.endpoint": "API URL",
+    "fever.copyEndpoint": "Copy API URL",
+    "fever.copied": "Copied",
     "fever.save": "Save",
     "fever.saving": "Saving…",
     "fever.loadFailed": "Failed to load",
@@ -7298,6 +7348,25 @@ var messages = {
     "fever.userRequired": "User is required when Fever API is on",
     "fever.passwordRequired": "Password is required when Fever API is on",
     "fever.passwordWeak": "Password must be at least 8 characters and include letters, digits, and symbols",
+    "mcp.hint": "MCP accepts local clients only by default. Enabling remote access requires an Authorization Bearer token for every MCP request.",
+    "mcp.remoteAccess": "Access scope",
+    "mcp.localOnly": "Local only",
+    "mcp.remoteEnabled": "Allow remote access",
+    "mcp.authorization": "Authorization token",
+    "mcp.authorizationKeep": "Leave blank to keep the current token",
+    "mcp.authorizationHint": "Client header: Authorization: Bearer <Token>",
+    "mcp.authorizationConfigured": "No token has been generated yet. Enable remote access to generate one, then save settings to apply it.",
+    "mcp.authorizationSave": "The token has been generated. Save settings to make it active.",
+    "mcp.copy": "Copy Authorization",
+    "mcp.copyEndpoint": "Copy MCP URL",
+    "mcp.copied": "Copied",
+    "mcp.authorizationRequired": "Set an Authorization token before enabling remote access",
+    "mcp.authorizationWeak": "Token must be at least 8 characters and include letters, digits, and symbols",
+    "mcp.endpoint": "MCP URL",
+    "mcp.save": "Save",
+    "mcp.saving": "Saving…",
+    "mcp.loadFailed": "Failed to load",
+    "mcp.saveFailed": "Failed to save",
     "auth.hint": "This instance is publicly reachable. Enter the admin password to continue.",
     "auth.password": "Admin password",
     "auth.submit": "Continue",
@@ -7734,6 +7803,33 @@ function updateFever(payload) {
       hasPassword: Boolean(payload.password) || undefined
     });
   });
+}
+function normalizeMcpConfig(data) {
+  return {
+    remoteAccess: Boolean(data?.remoteAccess),
+    hasAuthorization: Boolean(data?.hasAuthorization),
+    authorization: typeof data?.authorization === "string" ? data.authorization : undefined
+  };
+}
+async function fetchMcp() {
+  const body = await request("/api/mcp");
+  assertApiOk(body);
+  return normalizeMcpConfig(body.data);
+}
+async function updateMcp(payload) {
+  const body = await request("/api/mcp", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+  assertApiOk(body);
+  return normalizeMcpConfig(body.data);
+}
+async function generateMcpToken() {
+  const body = await request("/api/mcp/generate-token", { method: "POST" });
+  assertApiOk(body);
+  if (!body.data?.authorization)
+    throw new Error("Failed to generate MCP token");
+  return body.data.authorization;
 }
 function normalizeAuthStatus(data) {
   return {
@@ -10195,6 +10291,370 @@ if (undefined) {}
 var TranslateManager_default = TranslateManager;
 delegate(["click"]);
 
+// node_modules/@lucide/svelte/dist/icons/ban.svelte
+var rest_excludes11 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root17 = from_html(`<!--
+@lucide/svelte v1.34.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIgLz4KICA8cGF0aCBkPSJNNC45MjkgNC45MjkgMTkuMDcgMTkuMDcxIiAvPgo8L3N2Zz4K) - https://lucide.dev/icons/ban
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Ban($$anchor, $$props) {
+  let props = rest_props($$props, rest_excludes11);
+  const iconNode = [
+    ["circle", { cx: "12", cy: "12", r: "10" }],
+    ["path", { d: "M4.929 4.929 19.07 19.071" }]
+  ];
+  var fragment = root17();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "ban" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var ban_default = Ban;
+
+// node_modules/@lucide/svelte/dist/icons/check.svelte
+var rest_excludes12 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root18 = from_html(`<!--
+@lucide/svelte v1.34.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMjAgNiA5IDE3bC01LTUiIC8+Cjwvc3ZnPgo=) - https://lucide.dev/icons/check
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Check($$anchor, $$props) {
+  let props = rest_props($$props, rest_excludes12);
+  const iconNode = [["path", { d: "M20 6 9 17l-5-5" }]];
+  var fragment = root18();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "check" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var check_default = Check;
+// node_modules/@lucide/svelte/dist/icons/check-check.svelte
+var rest_excludes13 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root19 = from_html(`<!--
+@lucide/svelte v1.34.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMTggNiA3IDE3bC01LTUiIC8+CiAgPHBhdGggZD0ibTIyIDEwLTcuNSA3LjVMMTMgMTYiIC8+Cjwvc3ZnPgo=) - https://lucide.dev/icons/check-check
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Check_check($$anchor, $$props) {
+  let props = rest_props($$props, rest_excludes13);
+  const iconNode = [
+    ["path", { d: "M18 6 7 17l-5-5" }],
+    ["path", { d: "m22 10-7.5 7.5L13 16" }]
+  ];
+  var fragment = root19();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "check-check" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var check_check_default = Check_check;
+
+// node_modules/@lucide/svelte/dist/icons/copy.svelte
+var rest_excludes14 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root20 = from_html(`<!--
+@lucide/svelte v1.34.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cmVjdCB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHg9IjgiIHk9IjgiIHJ4PSIyIiByeT0iMiIgLz4KICA8cGF0aCBkPSJNNCAxNmMtMS4xIDAtMi0uOS0yLTJWNGMwLTEuMS45LTIgMi0yaDEwYzEuMSAwIDIgLjkgMiAyIiAvPgo8L3N2Zz4K) - https://lucide.dev/icons/copy
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Copy($$anchor, $$props) {
+  let props = rest_props($$props, rest_excludes14);
+  const iconNode = [
+    [
+      "rect",
+      {
+        width: "14",
+        height: "14",
+        x: "8",
+        y: "8",
+        rx: "2",
+        ry: "2"
+      }
+    ],
+    [
+      "path",
+      {
+        d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"
+      }
+    ]
+  ];
+  var fragment = root20();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "copy" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var copy_default = Copy;
+// node_modules/@lucide/svelte/dist/icons/eye-closed.svelte
+var rest_excludes15 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root21 = from_html(`<!--
+@lucide/svelte v1.34.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJtMTUgMTgtLjcyMi0zLjI1IiAvPgogIDxwYXRoIGQ9Ik0yIDhhMTAuNjQ1IDEwLjY0NSAwIDAgMCAyMCAwIiAvPgogIDxwYXRoIGQ9Im0yMCAxNS0xLjcyNi0yLjA1IiAvPgogIDxwYXRoIGQ9Im00IDE1IDEuNzI2LTIuMDUiIC8+CiAgPHBhdGggZD0ibTkgMTggLjcyMi0zLjI1IiAvPgo8L3N2Zz4K) - https://lucide.dev/icons/eye-closed
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Eye_closed($$anchor, $$props) {
+  let props = rest_props($$props, rest_excludes15);
+  const iconNode = [
+    ["path", { d: "m15 18-.722-3.25" }],
+    ["path", { d: "M2 8a10.645 10.645 0 0 0 20 0" }],
+    ["path", { d: "m20 15-1.726-2.05" }],
+    ["path", { d: "m4 15 1.726-2.05" }],
+    ["path", { d: "m9 18 .722-3.25" }]
+  ];
+  var fragment = root21();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "eye-closed" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var eye_closed_default = Eye_closed;
+
+// node_modules/@lucide/svelte/dist/icons/eye.svelte
+var rest_excludes16 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root22 = from_html(`<!--
+@lucide/svelte v1.34.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMi4wNjIgMTIuMzQ4YTEgMSAwIDAgMSAwLS42OTYgMTAuNzUgMTAuNzUgMCAwIDEgMTkuODc2IDAgMSAxIDAgMCAxIDAgLjY5NiAxMC43NSAxMC43NSAwIDAgMS0xOS44NzYgMCIgLz4KICA8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIzIiAvPgo8L3N2Zz4K) - https://lucide.dev/icons/eye
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Eye($$anchor, $$props) {
+  let props = rest_props($$props, rest_excludes16);
+  const iconNode = [
+    [
+      "path",
+      {
+        d: "M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"
+      }
+    ],
+    ["circle", { cx: "12", cy: "12", r: "3" }]
+  ];
+  var fragment = root22();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "eye" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var eye_default = Eye;
+
+// node_modules/@lucide/svelte/dist/icons/moon.svelte
+var rest_excludes17 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root23 = from_html(`<!--
+@lucide/svelte v1.34.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMjAuOTg1IDEyLjQ4NmE5IDkgMCAxIDEtOS40NzMtOS40NzJjLjQwNS0uMDIyLjYxNy40Ni40MDIuODAzYTYgNiAwIDAgMCA4LjI2OCA4LjI2OGMuMzQ0LS4yMTUuODI1LS4wMDQuODAzLjQwMSIgLz4KPC9zdmc+Cg==) - https://lucide.dev/icons/moon
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Moon($$anchor, $$props) {
+  let props = rest_props($$props, rest_excludes17);
+  const iconNode = [
+    [
+      "path",
+      {
+        d: "M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"
+      }
+    ]
+  ];
+  var fragment = root23();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "moon" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var moon_default = Moon;
+
+// node_modules/@lucide/svelte/dist/icons/sun.svelte
+var rest_excludes18 = new Set(["$$slots", "$$events", "$$legacy"]);
+var root24 = from_html(`<!--
+@lucide/svelte v1.34.0 - ISC
+
+This source code is licensed under the ISC license.
+See the LICENSE file in the root directory of this source tree.
+-->
+
+
+
+
+<!--
+@component
+
+Lucide SVG icon component, renders SVG Element with children.
+
+@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI0IiAvPgogIDxwYXRoIGQ9Ik0xMiAydjIiIC8+CiAgPHBhdGggZD0iTTEyIDIwdjIiIC8+CiAgPHBhdGggZD0ibTQuOTMgNC45MyAxLjQxIDEuNDEiIC8+CiAgPHBhdGggZD0ibTE3LjY2IDE3LjY2IDEuNDEgMS40MSIgLz4KICA8cGF0aCBkPSJNMiAxMmgyIiAvPgogIDxwYXRoIGQ9Ik0yMCAxMmgyIiAvPgogIDxwYXRoIGQ9Im02LjM0IDE3LjY2LTEuNDEgMS40MSIgLz4KICA8cGF0aCBkPSJtMTkuMDcgNC45My0xLjQxIDEuNDEiIC8+Cjwvc3ZnPgo=) - https://lucide.dev/icons/sun
+@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
+-->
+
+<!>`, 1);
+function Sun($$anchor, $$props) {
+  let props = rest_props($$props, rest_excludes18);
+  const iconNode = [
+    ["circle", { cx: "12", cy: "12", r: "4" }],
+    ["path", { d: "M12 2v2" }],
+    ["path", { d: "M12 20v2" }],
+    ["path", { d: "m4.93 4.93 1.41 1.41" }],
+    ["path", { d: "m17.66 17.66 1.41 1.41" }],
+    ["path", { d: "M2 12h2" }],
+    ["path", { d: "M20 12h2" }],
+    ["path", { d: "m6.34 17.66-1.41 1.41" }],
+    ["path", { d: "m19.07 4.93-1.41 1.41" }]
+  ];
+  var fragment = root24();
+  var node = first_child(fragment);
+  var node_1 = sibling(node, 2);
+  var node_2 = sibling(node_1, 2);
+  Icon_default(node_2, spread_props({ name: "sun" }, () => props, {
+    get iconNode() {
+      return iconNode;
+    }
+  }));
+  append($$anchor, fragment);
+}
+if (undefined) {}
+var sun_default = Sun;
 // shared/password-strength.ts
 function isStrongPassword(password) {
   if (password.length < 8)
@@ -10206,10 +10666,14 @@ function isStrongPassword(password) {
 }
 
 // web/src/components/FeverManager.svelte
-var root17 = from_html(`
+var root25 = from_html(`
     <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
   `, 1);
 var root_114 = from_html(`
+              <!>
+            `, 1);
+var root_25 = from_html(`<span class="block text-xs text-neutral-500 dark:text-neutral-400"> </span>`);
+var root_34 = from_html(`
     <div class="space-y-8">
       <div class="space-y-3">
         <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
@@ -10231,16 +10695,22 @@ var root_114 = from_html(`
 
       <div class="space-y-2">
         <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
-        <p class="break-all text-sm text-neutral-600 dark:text-neutral-300"> </p>
+        <div class="flex items-center gap-2 rounded bg-neutral-100 p-3 dark:bg-neutral-800">
+          <code class="min-w-0 flex-1 break-all text-sm text-neutral-800 dark:text-neutral-100"> </code>
+          <button type="button" class="shrink-0 text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100">
+            <!>
+          </button>
+        </div>
+        <!>
       </div>
 
       <button type="button" class="text-sm text-neutral-900 underline-offset-4 hover:underline disabled:opacity-50 dark:text-neutral-100"> </button>
     </div>
   `, 1);
-var root_25 = from_html(`
+var root_44 = from_html(`
     <p class="mt-3 text-sm text-red-500"> </p>
   `, 1);
-var root_34 = from_html(`
+var root_52 = from_html(`
 
 <section class="mb-10">
   <p class="mb-6 text-sm text-neutral-400 dark:text-neutral-500"> </p>
@@ -10259,6 +10729,7 @@ function FeverManager($$anchor, $$props) {
   let formError = state("");
   let loading = state(true);
   let saving = state(false);
+  let endpointCopied = state(false);
   const endpointUrl = user_derived(() => typeof window === "undefined" ? "/fever/" : `${window.location.origin}/fever/`);
   const isDirty = user_derived(() => get2(enabled) !== get2(savedEnabled) || get2(user).trim() !== get2(savedUser) || get2(password).length > 0);
   const saveDisabled = user_derived(() => get2(saving) || get2(loading) || !get2(isDirty));
@@ -10318,11 +10789,16 @@ function FeverManager($$anchor, $$props) {
       set(saving, false);
     }
   }
+  async function copyEndpoint() {
+    await navigator.clipboard.writeText(get2(endpointUrl));
+    set(endpointCopied, true);
+    window.setTimeout(() => set(endpointCopied, false), 1500);
+  }
   onMount(() => {
     loadFever();
   });
   next();
-  var fragment = root_34();
+  var fragment = root_52();
   var section = sibling(first_child(fragment));
   var p = sibling(child(section));
   var text2 = child(p);
@@ -10330,7 +10806,7 @@ function FeverManager($$anchor, $$props) {
   var node = sibling(p, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root17();
+      var fragment_1 = root25();
       var p_1 = sibling(first_child(fragment_1));
       var text_1 = child(p_1, true);
       reset(p_1);
@@ -10338,8 +10814,8 @@ function FeverManager($$anchor, $$props) {
       template_effect(($0) => set_text(text_1, $0), [() => t("items.loading")]);
       append($$anchor2, fragment_1);
     };
-    var alternate = ($$anchor2) => {
-      var fragment_2 = root_114();
+    var alternate_1 = ($$anchor2) => {
+      var fragment_2 = root_34();
       var div = sibling(first_child(fragment_2));
       var div_1 = sibling(child(div));
       var span = sibling(child(div_1));
@@ -10378,18 +10854,61 @@ function FeverManager($$anchor, $$props) {
       var span_3 = sibling(child(div_3));
       var text_7 = child(span_3);
       reset(span_3);
-      var p_2 = sibling(span_3, 2);
-      var text_8 = child(p_2, true);
-      reset(p_2);
+      var div_4 = sibling(span_3, 2);
+      var code = sibling(child(div_4));
+      var text_8 = child(code, true);
+      reset(code);
+      var button_2 = sibling(code, 2);
+      var node_1 = sibling(child(button_2));
+      {
+        var consequent_1 = ($$anchor3) => {
+          var fragment_3 = root_114();
+          var node_2 = sibling(first_child(fragment_3));
+          check_default(node_2, { size: 17 });
+          next();
+          append($$anchor3, fragment_3);
+        };
+        var alternate = ($$anchor3) => {
+          var fragment_4 = root_114();
+          var node_3 = sibling(first_child(fragment_4));
+          copy_default(node_3, { size: 17 });
+          next();
+          append($$anchor3, fragment_4);
+        };
+        if_block(node_1, ($$render) => {
+          if (get2(endpointCopied))
+            $$render(consequent_1);
+          else
+            $$render(alternate, -1);
+        });
+      }
+      next();
+      reset(button_2);
+      next();
+      reset(div_4);
+      var node_4 = sibling(div_4, 2);
+      {
+        var consequent_2 = ($$anchor3) => {
+          var span_4 = root_25();
+          var text_9 = child(span_4, true);
+          reset(span_4);
+          template_effect(($0) => set_text(text_9, $0), [() => t("fever.copied")]);
+          append($$anchor3, span_4);
+        };
+        if_block(node_4, ($$render) => {
+          if (get2(endpointCopied))
+            $$render(consequent_2);
+        });
+      }
       next();
       reset(div_3);
-      var button_2 = sibling(div_3, 2);
-      var text_9 = child(button_2);
-      reset(button_2);
+      var button_3 = sibling(div_3, 2);
+      var text_10 = child(button_3);
+      reset(button_3);
       next();
       reset(div);
       next();
-      template_effect(($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10) => {
+      template_effect(($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) => {
         set_text(text_2, `
           ${$0 ?? ""}
         `);
@@ -10419,9 +10938,11 @@ function FeverManager($$anchor, $$props) {
           ${$9 ?? ""}
         `);
         set_text(text_8, get2(endpointUrl));
-        button_2.disabled = get2(saveDisabled);
-        set_text(text_9, `
-        ${$10 ?? ""}
+        set_attribute2(button_2, "aria-label", $10);
+        set_attribute2(button_2, "title", $11);
+        button_3.disabled = get2(saveDisabled);
+        set_text(text_10, `
+        ${$12 ?? ""}
       `);
       }, [
         () => t("fever.enabled"),
@@ -10434,36 +10955,39 @@ function FeverManager($$anchor, $$props) {
         () => t("fever.password"),
         () => get2(hasPassword) ? t("fever.passwordKeep") : "",
         () => t("fever.endpoint"),
+        () => t("fever.copyEndpoint"),
+        () => t("fever.copyEndpoint"),
         () => get2(saving) ? t("fever.saving") : t("fever.save")
       ]);
       delegated("click", button, () => set(enabled, true));
       delegated("click", button_1, () => set(enabled, false));
       bind_value(input, () => get2(user), ($$value) => set(user, $$value));
       bind_value(input_1, () => get2(password), ($$value) => set(password, $$value));
-      delegated("click", button_2, () => void handleSave());
+      delegated("click", button_2, () => void copyEndpoint());
+      delegated("click", button_3, () => void handleSave());
       append($$anchor2, fragment_2);
     };
     if_block(node, ($$render) => {
       if (get2(loading))
         $$render(consequent);
       else
-        $$render(alternate, -1);
+        $$render(alternate_1, -1);
     });
   }
-  var node_1 = sibling(node, 2);
+  var node_5 = sibling(node, 2);
   {
-    var consequent_1 = ($$anchor2) => {
-      var fragment_3 = root_25();
-      var p_3 = sibling(first_child(fragment_3));
-      var text_10 = child(p_3, true);
-      reset(p_3);
+    var consequent_3 = ($$anchor2) => {
+      var fragment_5 = root_44();
+      var p_2 = sibling(first_child(fragment_5));
+      var text_11 = child(p_2, true);
+      reset(p_2);
       next();
-      template_effect(() => set_text(text_10, get2(formError)));
-      append($$anchor2, fragment_3);
+      template_effect(() => set_text(text_11, get2(formError)));
+      append($$anchor2, fragment_5);
     };
-    if_block(node_1, ($$render) => {
+    if_block(node_5, ($$render) => {
       if (get2(formError))
-        $$render(consequent_1);
+        $$render(consequent_3);
     });
   }
   next();
@@ -10478,14 +11002,430 @@ if (undefined) {}
 var FeverManager_default = FeverManager;
 delegate(["click"]);
 
+// web/src/components/McpManager.svelte
+var root26 = from_html(`
+    <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
+  `, 1);
+var root_115 = from_html(`
+                  <!>
+                `, 1);
+var root_26 = from_html(`<span class="block text-xs text-neutral-500 dark:text-neutral-400"> </span>`);
+var root_35 = from_html(`
+              <span class="block text-xs text-amber-600 dark:text-amber-400"> </span>
+            `, 1);
+var root_45 = from_html(`
+            <div class="flex items-center gap-2 rounded bg-neutral-100 p-3 dark:bg-neutral-800">
+              <code class="min-w-0 flex-1 break-all text-sm text-neutral-800 dark:text-neutral-100"> </code>
+              <button type="button" class="shrink-0 text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100">
+                <!>
+              </button>
+            </div>
+            <!>
+            <!>
+          `, 1);
+var root_53 = from_html(`
+            <span class="block text-xs text-neutral-400 dark:text-neutral-500"> </span>
+          `, 1);
+var root_62 = from_html(`
+        <div class="space-y-3">
+          <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
+          <!>
+        </div>
+      `, 1);
+var root_72 = from_html(`
+              <!>
+            `, 1);
+var root_82 = from_html(`
+    <div class="space-y-8">
+      <div class="space-y-3">
+        <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm" role="group">
+          <button type="button"> </button>
+          <button type="button"> </button>
+        </div>
+      </div>
+
+      <!>
+
+      <div class="space-y-2">
+        <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
+        <div class="flex items-center gap-2 rounded bg-neutral-100 p-3 dark:bg-neutral-800">
+          <code class="min-w-0 flex-1 break-all text-sm text-neutral-800 dark:text-neutral-100"> </code>
+          <button type="button" class="shrink-0 text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100">
+            <!>
+          </button>
+        </div>
+        <!>
+      </div>
+
+      <button type="button" class="text-sm text-neutral-900 underline-offset-4 hover:underline disabled:opacity-50 dark:text-neutral-100"> </button>
+    </div>
+  `, 1);
+var root_92 = from_html(`<p class="mt-3 text-sm text-red-500"> </p>`);
+var root_102 = from_html(`
+
+<section class="mb-10">
+  <p class="mb-6 text-sm text-neutral-400 dark:text-neutral-500"> </p>
+  <!>
+  <!>
+</section>`, 1);
+function McpManager($$anchor, $$props) {
+  push($$props, true);
+  let remoteAccess = state(false);
+  let authorization = state(undefined);
+  let hasAuthorization = state(false);
+  let savedRemoteAccess = state(false);
+  let formError = state("");
+  let loading = state(true);
+  let saving = state(false);
+  let copied = state(false);
+  let endpointCopied = state(false);
+  const endpointUrl = user_derived(() => typeof window === "undefined" ? "/mcp" : `${window.location.origin}/mcp`);
+  const isDirty = user_derived(() => get2(remoteAccess) !== get2(savedRemoteAccess));
+  const saveDisabled = user_derived(() => get2(saving) || get2(loading) || !get2(isDirty));
+  function toggleClass(active) {
+    return active ? "text-neutral-900 underline underline-offset-4 decoration-neutral-900 dark:text-neutral-100 dark:decoration-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300";
+  }
+  async function loadMcp() {
+    set(loading, true);
+    set(formError, "");
+    try {
+      const config = await fetchMcp();
+      set(remoteAccess, config.remoteAccess, true);
+      set(hasAuthorization, config.hasAuthorization, true);
+      set(savedRemoteAccess, config.remoteAccess, true);
+      set(authorization, config.authorization, true);
+    } catch (error) {
+      set(formError, error instanceof Error ? error.message : t("mcp.loadFailed"), true);
+    } finally {
+      set(loading, false);
+    }
+  }
+  async function handleSave() {
+    if (get2(saveDisabled))
+      return;
+    set(formError, "");
+    set(saving, true);
+    try {
+      const updated = await updateMcp({
+        remoteAccess: get2(remoteAccess),
+        ...get2(remoteAccess) && get2(authorization) ? { authorization: get2(authorization) } : {}
+      });
+      set(remoteAccess, updated.remoteAccess, true);
+      set(hasAuthorization, updated.hasAuthorization, true);
+      set(savedRemoteAccess, updated.remoteAccess, true);
+      set(authorization, updated.authorization, true);
+    } catch (error) {
+      set(formError, error instanceof Error ? error.message : t("mcp.saveFailed"), true);
+    } finally {
+      set(saving, false);
+    }
+  }
+  async function enableRemoteAccess() {
+    if (get2(remoteAccess) || get2(saving))
+      return;
+    set(remoteAccess, true);
+    set(formError, "");
+    set(saving, true);
+    try {
+      set(authorization, await generateMcpToken(), true);
+    } catch (error) {
+      set(remoteAccess, get2(savedRemoteAccess), true);
+      set(formError, error instanceof Error ? error.message : t("mcp.saveFailed"), true);
+    } finally {
+      set(saving, false);
+    }
+  }
+  async function copyAuthorization() {
+    if (!get2(authorization))
+      return;
+    await navigator.clipboard.writeText(`Authorization: Bearer ${get2(authorization)}`);
+    set(copied, true);
+    window.setTimeout(() => set(copied, false), 1500);
+  }
+  async function copyEndpoint() {
+    await navigator.clipboard.writeText(get2(endpointUrl));
+    set(endpointCopied, true);
+    window.setTimeout(() => set(endpointCopied, false), 1500);
+  }
+  onMount(() => void loadMcp());
+  next();
+  var fragment = root_102();
+  var section = sibling(first_child(fragment));
+  var p = sibling(child(section));
+  var text2 = child(p, true);
+  reset(p);
+  var node = sibling(p, 2);
+  {
+    var consequent = ($$anchor2) => {
+      var fragment_1 = root26();
+      var p_1 = sibling(first_child(fragment_1));
+      var text_1 = child(p_1, true);
+      reset(p_1);
+      next();
+      template_effect(($0) => set_text(text_1, $0), [() => t("items.loading")]);
+      append($$anchor2, fragment_1);
+    };
+    var alternate_3 = ($$anchor2) => {
+      var fragment_2 = root_82();
+      var div = sibling(first_child(fragment_2));
+      var div_1 = sibling(child(div));
+      var span = sibling(child(div_1));
+      var text_2 = child(span, true);
+      reset(span);
+      var div_2 = sibling(span, 2);
+      var button = sibling(child(div_2));
+      var text_3 = child(button, true);
+      reset(button);
+      var button_1 = sibling(button, 2);
+      var text_4 = child(button_1, true);
+      reset(button_1);
+      next();
+      reset(div_2);
+      next();
+      reset(div_1);
+      var node_1 = sibling(div_1, 2);
+      {
+        var consequent_5 = ($$anchor3) => {
+          var fragment_3 = root_62();
+          var div_3 = sibling(first_child(fragment_3));
+          var span_1 = sibling(child(div_3));
+          var text_5 = child(span_1, true);
+          reset(span_1);
+          var node_2 = sibling(span_1, 2);
+          {
+            var consequent_4 = ($$anchor4) => {
+              var fragment_4 = root_45();
+              var div_4 = sibling(first_child(fragment_4));
+              var code = sibling(child(div_4));
+              var text_6 = child(code);
+              reset(code);
+              var button_2 = sibling(code, 2);
+              var node_3 = sibling(child(button_2));
+              {
+                var consequent_1 = ($$anchor5) => {
+                  var fragment_5 = root_115();
+                  var node_4 = sibling(first_child(fragment_5));
+                  check_default(node_4, { size: 17 });
+                  next();
+                  append($$anchor5, fragment_5);
+                };
+                var alternate = ($$anchor5) => {
+                  var fragment_6 = root_115();
+                  var node_5 = sibling(first_child(fragment_6));
+                  copy_default(node_5, { size: 17 });
+                  next();
+                  append($$anchor5, fragment_6);
+                };
+                if_block(node_3, ($$render) => {
+                  if (get2(copied))
+                    $$render(consequent_1);
+                  else
+                    $$render(alternate, -1);
+                });
+              }
+              next();
+              reset(button_2);
+              next();
+              reset(div_4);
+              var node_6 = sibling(div_4, 2);
+              {
+                var consequent_2 = ($$anchor5) => {
+                  var span_2 = root_26();
+                  var text_7 = child(span_2, true);
+                  reset(span_2);
+                  template_effect(($0) => set_text(text_7, $0), [() => t("mcp.copied")]);
+                  append($$anchor5, span_2);
+                };
+                if_block(node_6, ($$render) => {
+                  if (get2(copied))
+                    $$render(consequent_2);
+                });
+              }
+              var node_7 = sibling(node_6, 2);
+              {
+                var consequent_3 = ($$anchor5) => {
+                  var fragment_7 = root_35();
+                  var span_3 = sibling(first_child(fragment_7));
+                  var text_8 = child(span_3, true);
+                  reset(span_3);
+                  next();
+                  template_effect(($0) => set_text(text_8, $0), [() => t("mcp.authorizationSave")]);
+                  append($$anchor5, fragment_7);
+                };
+                if_block(node_7, ($$render) => {
+                  if (get2(isDirty))
+                    $$render(consequent_3);
+                });
+              }
+              next();
+              template_effect(($0, $1) => {
+                set_text(text_6, `Authorization: Bearer ${get2(authorization) ?? ""}`);
+                set_attribute2(button_2, "aria-label", $0);
+                set_attribute2(button_2, "title", $1);
+              }, [() => t("mcp.copy"), () => t("mcp.copy")]);
+              delegated("click", button_2, () => void copyAuthorization());
+              append($$anchor4, fragment_4);
+            };
+            var alternate_1 = ($$anchor4) => {
+              var fragment_8 = root_53();
+              var span_4 = sibling(first_child(fragment_8));
+              var text_9 = child(span_4, true);
+              reset(span_4);
+              next();
+              template_effect(($0) => set_text(text_9, $0), [() => t("mcp.authorizationConfigured")]);
+              append($$anchor4, fragment_8);
+            };
+            if_block(node_2, ($$render) => {
+              if (get2(authorization))
+                $$render(consequent_4);
+              else
+                $$render(alternate_1, -1);
+            });
+          }
+          next();
+          reset(div_3);
+          next();
+          template_effect(($0) => set_text(text_5, $0), [() => t("mcp.authorization")]);
+          append($$anchor3, fragment_3);
+        };
+        if_block(node_1, ($$render) => {
+          if (get2(remoteAccess))
+            $$render(consequent_5);
+        });
+      }
+      var div_5 = sibling(node_1, 2);
+      var span_5 = sibling(child(div_5));
+      var text_10 = child(span_5, true);
+      reset(span_5);
+      var div_6 = sibling(span_5, 2);
+      var code_1 = sibling(child(div_6));
+      var text_11 = child(code_1, true);
+      reset(code_1);
+      var button_3 = sibling(code_1, 2);
+      var node_8 = sibling(child(button_3));
+      {
+        var consequent_6 = ($$anchor3) => {
+          var fragment_9 = root_72();
+          var node_9 = sibling(first_child(fragment_9));
+          check_default(node_9, { size: 17 });
+          next();
+          append($$anchor3, fragment_9);
+        };
+        var alternate_2 = ($$anchor3) => {
+          var fragment_10 = root_72();
+          var node_10 = sibling(first_child(fragment_10));
+          copy_default(node_10, { size: 17 });
+          next();
+          append($$anchor3, fragment_10);
+        };
+        if_block(node_8, ($$render) => {
+          if (get2(endpointCopied))
+            $$render(consequent_6);
+          else
+            $$render(alternate_2, -1);
+        });
+      }
+      next();
+      reset(button_3);
+      next();
+      reset(div_6);
+      var node_11 = sibling(div_6, 2);
+      {
+        var consequent_7 = ($$anchor3) => {
+          var span_6 = root_26();
+          var text_12 = child(span_6, true);
+          reset(span_6);
+          template_effect(($0) => set_text(text_12, $0), [() => t("mcp.copied")]);
+          append($$anchor3, span_6);
+        };
+        if_block(node_11, ($$render) => {
+          if (get2(endpointCopied))
+            $$render(consequent_7);
+        });
+      }
+      next();
+      reset(div_5);
+      var button_4 = sibling(div_5, 2);
+      var text_13 = child(button_4, true);
+      reset(button_4);
+      next();
+      reset(div);
+      next();
+      template_effect(($0, $1, $2, $3, $4, $5, $6, $7, $8, $9) => {
+        set_text(text_2, $0);
+        set_attribute2(div_2, "aria-label", $1);
+        set_class(button, 1, `transition-colors ${$2 ?? ""}`);
+        set_attribute2(button, "aria-pressed", !get2(remoteAccess));
+        button.disabled = get2(saving);
+        set_text(text_3, $3);
+        set_class(button_1, 1, `transition-colors ${$4 ?? ""}`);
+        set_attribute2(button_1, "aria-pressed", get2(remoteAccess));
+        button_1.disabled = get2(saving);
+        set_text(text_4, $5);
+        set_text(text_10, $6);
+        set_text(text_11, get2(endpointUrl));
+        set_attribute2(button_3, "aria-label", $7);
+        set_attribute2(button_3, "title", $8);
+        button_4.disabled = get2(saveDisabled);
+        set_text(text_13, $9);
+      }, [
+        () => t("mcp.remoteAccess"),
+        () => t("mcp.remoteAccess"),
+        () => toggleClass(!get2(remoteAccess)),
+        () => t("mcp.localOnly"),
+        () => toggleClass(get2(remoteAccess)),
+        () => t("mcp.remoteEnabled"),
+        () => t("mcp.endpoint"),
+        () => t("mcp.copyEndpoint"),
+        () => t("mcp.copyEndpoint"),
+        () => get2(saving) ? t("mcp.saving") : t("mcp.save")
+      ]);
+      delegated("click", button, () => set(remoteAccess, false));
+      delegated("click", button_1, () => void enableRemoteAccess());
+      delegated("click", button_3, () => void copyEndpoint());
+      delegated("click", button_4, () => void handleSave());
+      append($$anchor2, fragment_2);
+    };
+    if_block(node, ($$render) => {
+      if (get2(loading))
+        $$render(consequent);
+      else
+        $$render(alternate_3, -1);
+    });
+  }
+  var node_12 = sibling(node, 2);
+  {
+    var consequent_8 = ($$anchor2) => {
+      var p_2 = root_92();
+      var text_14 = child(p_2, true);
+      reset(p_2);
+      template_effect(() => set_text(text_14, get2(formError)));
+      append($$anchor2, p_2);
+    };
+    if_block(node_12, ($$render) => {
+      if (get2(formError))
+        $$render(consequent_8);
+    });
+  }
+  next();
+  reset(section);
+  template_effect(($0) => set_text(text2, $0), [() => t("mcp.hint")]);
+  append($$anchor, fragment);
+  pop();
+}
+if (undefined) {}
+var McpManager_default = McpManager;
+delegate(["click"]);
+
 // web/src/components/SettingsManager.svelte
-var root18 = from_html(`
+var root27 = from_html(`
         <button type="button" role="tab"> </button>
       `, 1);
-var root_115 = from_html(`
+var root_116 = from_html(`
         <!>
       `, 1);
-var root_26 = from_html(`
+var root_27 = from_html(`
 
 <div class="flex min-w-0 flex-1 flex-col md:flex-row">
   <aside class="px-5 py-4 md:sticky md:top-4 md:m-4 md:flex md:h-[calc(100vh-2rem)] md:w-40 md:shrink-0 md:flex-col md:px-5 md:py-8">
@@ -10507,7 +11447,8 @@ function SettingsManager($$anchor, $$props) {
     { id: "preferences", key: "items.preferences" },
     { id: "filter", key: "items.filter" },
     { id: "translate", key: "items.translate" },
-    { id: "fever", key: "items.fever" }
+    { id: "fever", key: "items.fever" },
+    { id: "mcp", key: "items.mcp" }
   ];
   function tabClass(active) {
     return `shrink-0 px-2 py-1.5 text-sm transition-colors md:w-full md:text-left ${active ? "text-neutral-900 dark:text-neutral-100" : "text-neutral-400 hover:text-neutral-900 dark:text-neutral-500 dark:hover:text-neutral-100"}`;
@@ -10531,14 +11472,14 @@ function SettingsManager($$anchor, $$props) {
     };
   });
   next();
-  var fragment = root_26();
+  var fragment = root_27();
   var div = sibling(first_child(fragment));
   var aside = sibling(child(div));
   var nav = sibling(child(aside));
   var node = sibling(child(nav));
   each(node, 17, () => tabs, (item) => item.id, ($$anchor2, item) => {
     next();
-    var fragment_1 = root18();
+    var fragment_1 = root27();
     var button = sibling(first_child(fragment_1));
     var text2 = child(button);
     reset(button);
@@ -10565,32 +11506,39 @@ function SettingsManager($$anchor, $$props) {
   var node_1 = sibling(child(div_2));
   {
     var consequent = ($$anchor2) => {
-      var fragment_2 = root_115();
+      var fragment_2 = root_116();
       var node_2 = sibling(first_child(fragment_2));
       PreferencesManager_default(node_2, {});
       next();
       append($$anchor2, fragment_2);
     };
     var consequent_1 = ($$anchor2) => {
-      var fragment_3 = root_115();
+      var fragment_3 = root_116();
       var node_3 = sibling(first_child(fragment_3));
       FiltersManager_default(node_3, {});
       next();
       append($$anchor2, fragment_3);
     };
     var consequent_2 = ($$anchor2) => {
-      var fragment_4 = root_115();
+      var fragment_4 = root_116();
       var node_4 = sibling(first_child(fragment_4));
       TranslateManager_default(node_4, {});
       next();
       append($$anchor2, fragment_4);
     };
-    var alternate = ($$anchor2) => {
-      var fragment_5 = root_115();
+    var consequent_3 = ($$anchor2) => {
+      var fragment_5 = root_116();
       var node_5 = sibling(first_child(fragment_5));
       FeverManager_default(node_5, {});
       next();
       append($$anchor2, fragment_5);
+    };
+    var alternate = ($$anchor2) => {
+      var fragment_6 = root_116();
+      var node_6 = sibling(first_child(fragment_6));
+      McpManager_default(node_6, {});
+      next();
+      append($$anchor2, fragment_6);
     };
     if_block(node_1, ($$render) => {
       if (get2(tab) === "preferences")
@@ -10599,6 +11547,8 @@ function SettingsManager($$anchor, $$props) {
         $$render(consequent_1, 1);
       else if (get2(tab) === "translate")
         $$render(consequent_2, 2);
+      else if (get2(tab) === "fever")
+        $$render(consequent_3, 3);
       else
         $$render(alternate, -1);
     });
@@ -10618,10 +11568,10 @@ var SettingsManager_default = SettingsManager;
 delegate(["click"]);
 
 // web/src/components/ExportPage.svelte
-var root19 = from_html(`
+var root28 = from_html(`
       <p class="text-sm text-red-500"> </p>
     `, 1);
-var root_116 = from_html(`
+var root_117 = from_html(`
 
 <section class="space-y-8">
   <p class="text-sm text-neutral-400 dark:text-neutral-500"> </p>
@@ -10684,7 +11634,7 @@ function ExportPage($$anchor, $$props) {
     }
   }
   next();
-  var fragment = root_116();
+  var fragment = root_117();
   var section = sibling(first_child(fragment));
   var p = sibling(child(section));
   var text2 = child(p);
@@ -10720,7 +11670,7 @@ function ExportPage($$anchor, $$props) {
   var node_2 = sibling(button, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root19();
+      var fragment_1 = root28();
       var p_1 = sibling(first_child(fragment_1));
       var text_4 = child(p_1, true);
       reset(p_1);
@@ -10767,142 +11717,11 @@ if (undefined) {}
 var ExportPage_default = ExportPage;
 delegate(["click"]);
 
-// node_modules/@lucide/svelte/dist/icons/ban.svelte
-var rest_excludes11 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root20 = from_html(`<!--
-@lucide/svelte v1.34.0 - ISC
-
-This source code is licensed under the ISC license.
-See the LICENSE file in the root directory of this source tree.
--->
-
-
-
-
-<!--
-@component
-
-Lucide SVG icon component, renders SVG Element with children.
-
-@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIgLz4KICA8cGF0aCBkPSJNNC45MjkgNC45MjkgMTkuMDcgMTkuMDcxIiAvPgo8L3N2Zz4K) - https://lucide.dev/icons/ban
-@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
--->
-
-<!>`, 1);
-function Ban($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes11);
-  const iconNode = [
-    ["circle", { cx: "12", cy: "12", r: "10" }],
-    ["path", { d: "M4.929 4.929 19.07 19.071" }]
-  ];
-  var fragment = root20();
-  var node = first_child(fragment);
-  var node_1 = sibling(node, 2);
-  var node_2 = sibling(node_1, 2);
-  Icon_default(node_2, spread_props({ name: "ban" }, () => props, {
-    get iconNode() {
-      return iconNode;
-    }
-  }));
-  append($$anchor, fragment);
-}
-if (undefined) {}
-var ban_default = Ban;
-// node_modules/@lucide/svelte/dist/icons/eye.svelte
-var rest_excludes12 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root21 = from_html(`<!--
-@lucide/svelte v1.34.0 - ISC
-
-This source code is licensed under the ISC license.
-See the LICENSE file in the root directory of this source tree.
--->
-
-
-
-
-<!--
-@component
-
-Lucide SVG icon component, renders SVG Element with children.
-
-@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMi4wNjIgMTIuMzQ4YTEgMSAwIDAgMSAwLS42OTYgMTAuNzUgMTAuNzUgMCAwIDEgMTkuODc2IDAgMSAxIDAgMCAxIDAgLjY5NiAxMC43NSAxMC43NSAwIDAgMS0xOS44NzYgMCIgLz4KICA8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIzIiAvPgo8L3N2Zz4K) - https://lucide.dev/icons/eye
-@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
--->
-
-<!>`, 1);
-function Eye($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes12);
-  const iconNode = [
-    [
-      "path",
-      {
-        d: "M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"
-      }
-    ],
-    ["circle", { cx: "12", cy: "12", r: "3" }]
-  ];
-  var fragment = root21();
-  var node = first_child(fragment);
-  var node_1 = sibling(node, 2);
-  var node_2 = sibling(node_1, 2);
-  Icon_default(node_2, spread_props({ name: "eye" }, () => props, {
-    get iconNode() {
-      return iconNode;
-    }
-  }));
-  append($$anchor, fragment);
-}
-if (undefined) {}
-var eye_default = Eye;
-// node_modules/@lucide/svelte/dist/icons/eye-closed.svelte
-var rest_excludes13 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root22 = from_html(`<!--
-@lucide/svelte v1.34.0 - ISC
-
-This source code is licensed under the ISC license.
-See the LICENSE file in the root directory of this source tree.
--->
-
-
-
-
-<!--
-@component
-
-Lucide SVG icon component, renders SVG Element with children.
-
-@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJtMTUgMTgtLjcyMi0zLjI1IiAvPgogIDxwYXRoIGQ9Ik0yIDhhMTAuNjQ1IDEwLjY0NSAwIDAgMCAyMCAwIiAvPgogIDxwYXRoIGQ9Im0yMCAxNS0xLjcyNi0yLjA1IiAvPgogIDxwYXRoIGQ9Im00IDE1IDEuNzI2LTIuMDUiIC8+CiAgPHBhdGggZD0ibTkgMTggLjcyMi0zLjI1IiAvPgo8L3N2Zz4K) - https://lucide.dev/icons/eye-closed
-@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
--->
-
-<!>`, 1);
-function Eye_closed($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes13);
-  const iconNode = [
-    ["path", { d: "m15 18-.722-3.25" }],
-    ["path", { d: "M2 8a10.645 10.645 0 0 0 20 0" }],
-    ["path", { d: "m20 15-1.726-2.05" }],
-    ["path", { d: "m4 15 1.726-2.05" }],
-    ["path", { d: "m9 18 .722-3.25" }]
-  ];
-  var fragment = root22();
-  var node = first_child(fragment);
-  var node_1 = sibling(node, 2);
-  var node_2 = sibling(node_1, 2);
-  Icon_default(node_2, spread_props({ name: "eye-closed" }, () => props, {
-    get iconNode() {
-      return iconNode;
-    }
-  }));
-  append($$anchor, fragment);
-}
-if (undefined) {}
-var eye_closed_default = Eye_closed;
 // web/src/components/buttons/ItemFilterToggle.svelte
-var root23 = from_html(`
+var root29 = from_html(`
     <!>
   `, 1);
-var root_117 = from_html(`
+var root_118 = from_html(`
 
 <button type="button">
   <!>
@@ -10913,19 +11732,19 @@ function ItemFilterToggle($$anchor, $$props) {
   const label = user_derived(() => $$props.filter === "unread" ? t("items.switchToAll") : t("items.switchToUnread"));
   const title = user_derived(() => $$props.filter === "unread" ? t("items.filterUnread") : t("items.filterAll"));
   next();
-  var fragment = root_117();
+  var fragment = root_118();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root23();
+      var fragment_1 = root29();
       var node_1 = sibling(first_child(fragment_1));
       eye_default(node_1, spread_props(() => iconProps));
       next();
       append($$anchor2, fragment_1);
     };
     var alternate = ($$anchor2) => {
-      var fragment_2 = root23();
+      var fragment_2 = root29();
       var node_2 = sibling(first_child(fragment_2));
       eye_closed_default(node_2, spread_props(() => iconProps));
       next();
@@ -10956,49 +11775,8 @@ if (undefined) {}
 var ItemFilterToggle_default = ItemFilterToggle;
 delegate(["click"]);
 
-// node_modules/@lucide/svelte/dist/icons/check-check.svelte
-var rest_excludes14 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root24 = from_html(`<!--
-@lucide/svelte v1.34.0 - ISC
-
-This source code is licensed under the ISC license.
-See the LICENSE file in the root directory of this source tree.
--->
-
-
-
-
-<!--
-@component
-
-Lucide SVG icon component, renders SVG Element with children.
-
-@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMTggNiA3IDE3bC01LTUiIC8+CiAgPHBhdGggZD0ibTIyIDEwLTcuNSA3LjVMMTMgMTYiIC8+Cjwvc3ZnPgo=) - https://lucide.dev/icons/check-check
-@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
--->
-
-<!>`, 1);
-function Check_check($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes14);
-  const iconNode = [
-    ["path", { d: "M18 6 7 17l-5-5" }],
-    ["path", { d: "m22 10-7.5 7.5L13 16" }]
-  ];
-  var fragment = root24();
-  var node = first_child(fragment);
-  var node_1 = sibling(node, 2);
-  var node_2 = sibling(node_1, 2);
-  Icon_default(node_2, spread_props({ name: "check-check" }, () => props, {
-    get iconNode() {
-      return iconNode;
-    }
-  }));
-  append($$anchor, fragment);
-}
-if (undefined) {}
-var check_check_default = Check_check;
 // web/src/components/buttons/MarkAllReadButton.svelte
-var root25 = from_html(`
+var root30 = from_html(`
 
 <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
   <!>
@@ -11008,7 +11786,7 @@ function MarkAllReadButton($$anchor, $$props) {
   const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
   const label = user_derived(() => t("items.markAllRead"));
   next();
-  var fragment = root25();
+  var fragment = root30();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   check_check_default(node, spread_props(() => iconProps));
@@ -11027,16 +11805,16 @@ var MarkAllReadButton_default = MarkAllReadButton;
 delegate(["click"]);
 
 // web/src/components/ItemList.svelte
-var root26 = from_html(`
+var root31 = from_html(`
   <p class="py-6 text-sm text-red-500"> </p>
 `, 1);
-var root_118 = from_html(`
+var root_119 = from_html(`
   <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root_27 = from_html(`
+var root_28 = from_html(`
               <p class="mt-2 line-clamp-2 text-sm text-neutral-400 dark:text-neutral-500"> </p>
             `, 1);
-var root_35 = from_html(`
+var root_36 = from_html(`
               <p class="group mt-2 flex h-4 items-center gap-1 text-xs leading-4 text-neutral-400 dark:text-neutral-500">
                 <span> </span>
                 <button type="button" class="inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded p-0 text-neutral-400 opacity-0 transition-[color,background-color,opacity] group-hover:opacity-100 focus-visible:opacity-100 hover:bg-red-50 hover:text-red-600 disabled:cursor-wait disabled:opacity-50 dark:hover:bg-red-950/40 dark:hover:text-red-400">
@@ -11044,12 +11822,12 @@ var root_35 = from_html(`
                 </button>
               </p>
             `, 1);
-var root_44 = from_html(`
+var root_46 = from_html(`
             <a target="_blank" rel="noopener noreferrer" class="block aspect-[4/3] w-50 shrink-0 overflow-hidden rounded-md" tabindex="-1" aria-hidden="true">
               <img alt="" class="h-full w-full bg-neutral-100 object-cover dark:bg-neutral-800" loading="lazy" referrerpolicy="no-referrer"/>
             </a>
           `, 1);
-var root_52 = from_html(`
+var root_54 = from_html(`
       <li class="py-5">
         <article class="flex items-start gap-4">
           <div class="min-w-0 flex-1">
@@ -11066,15 +11844,15 @@ var root_52 = from_html(`
         </article>
       </li>
     `, 1);
-var root_62 = from_html(`
+var root_63 = from_html(`
   <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
     <!>
   </ul>
 `, 1);
-var root_72 = from_html(`
+var root_73 = from_html(`
   <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root_82 = from_html(`
+var root_83 = from_html(`
 
 <div class="mb-6 flex items-center justify-end gap-0.5">
   <!>
@@ -11228,7 +12006,7 @@ function ItemList($$anchor, $$props) {
   });
   var $$exports = { markAllRead };
   next();
-  var fragment = root_82();
+  var fragment = root_83();
   var div = sibling(first_child(fragment));
   var node = sibling(child(div));
   ItemFilterToggle_default(node, {
@@ -11244,7 +12022,7 @@ function ItemList($$anchor, $$props) {
   var node_2 = sibling(div, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root26();
+      var fragment_1 = root31();
       var p = sibling(first_child(fragment_1));
       var text2 = child(p, true);
       reset(p);
@@ -11253,7 +12031,7 @@ function ItemList($$anchor, $$props) {
       append($$anchor2, fragment_1);
     };
     var consequent_1 = ($$anchor2) => {
-      var fragment_2 = root_118();
+      var fragment_2 = root_119();
       var p_1 = sibling(first_child(fragment_2));
       var text_1 = child(p_1, true);
       reset(p_1);
@@ -11262,12 +12040,12 @@ function ItemList($$anchor, $$props) {
       append($$anchor2, fragment_2);
     };
     var alternate = ($$anchor2) => {
-      var fragment_3 = root_62();
+      var fragment_3 = root_63();
       var ul = sibling(first_child(fragment_3));
       var node_3 = sibling(child(ul));
       each(node_3, 17, () => get2(items), (item) => item.id, ($$anchor3, item) => {
         next();
-        var fragment_4 = root_52();
+        var fragment_4 = root_54();
         var li = sibling(first_child(fragment_4));
         var article = sibling(child(li));
         var div_1 = sibling(child(article));
@@ -11286,7 +12064,7 @@ function ItemList($$anchor, $$props) {
         var node_4 = sibling(a_1, 2);
         {
           var consequent_2 = ($$anchor4) => {
-            var fragment_5 = root_27();
+            var fragment_5 = root_28();
             var p_2 = sibling(first_child(fragment_5));
             var text_5 = child(p_2);
             reset(p_2);
@@ -11304,7 +12082,7 @@ function ItemList($$anchor, $$props) {
         var node_5 = sibling(node_4, 2);
         {
           var consequent_3 = ($$anchor4) => {
-            var fragment_6 = root_35();
+            var fragment_6 = root_36();
             var p_3 = sibling(first_child(fragment_6));
             var span_1 = sibling(child(p_3));
             var text_6 = child(span_1, true);
@@ -11340,7 +12118,7 @@ function ItemList($$anchor, $$props) {
         var node_7 = sibling(div_1, 2);
         {
           var consequent_4 = ($$anchor4) => {
-            var fragment_7 = root_44();
+            var fragment_7 = root_46();
             var a_2 = sibling(first_child(fragment_7));
             var img = sibling(child(a_2));
             next();
@@ -11398,7 +12176,7 @@ function ItemList($$anchor, $$props) {
   var node_8 = sibling(node_2, 2);
   {
     var consequent_5 = ($$anchor2) => {
-      var fragment_8 = root_72();
+      var fragment_8 = root_73();
       var p_4 = sibling(first_child(fragment_8));
       var text_7 = child(p_4);
       reset(p_4);
@@ -11409,7 +12187,7 @@ function ItemList($$anchor, $$props) {
       append($$anchor2, fragment_8);
     };
     var consequent_6 = ($$anchor2) => {
-      var fragment_9 = root_72();
+      var fragment_9 = root_73();
       var p_5 = sibling(first_child(fragment_9));
       var text_8 = child(p_5);
       reset(p_5);
@@ -11436,7 +12214,7 @@ var ItemList_default = ItemList;
 delegate(["click"]);
 
 // web/src/components/buttons/LanguageToggle.svelte
-var root27 = from_html(`
+var root32 = from_html(`
 
 <button type="button" class="inline-flex min-w-[2rem] cursor-pointer items-center justify-center rounded-md p-1.5 text-xs font-medium text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"> </button>`, 1);
 function LanguageToggle($$anchor, $$props) {
@@ -11445,7 +12223,7 @@ function LanguageToggle($$anchor, $$props) {
   const label = user_derived(() => get2(next2) === "en" ? "EN" : get2(next2) === "zh-Hans" ? "简" : "繁");
   const aria = user_derived(() => get2(next2) === "en" ? t("lang.switchToEn") : get2(next2) === "zh-Hans" ? t("lang.switchToZhHans") : t("lang.switchToZhHant"));
   next();
-  var fragment = root27();
+  var fragment = root32();
   var button = sibling(first_child(fragment));
   var text2 = child(button);
   reset(button);
@@ -11466,104 +12244,11 @@ if (undefined) {}
 var LanguageToggle_default = LanguageToggle;
 delegate(["click"]);
 
-// node_modules/@lucide/svelte/dist/icons/moon.svelte
-var rest_excludes15 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root28 = from_html(`<!--
-@lucide/svelte v1.34.0 - ISC
-
-This source code is licensed under the ISC license.
-See the LICENSE file in the root directory of this source tree.
--->
-
-
-
-
-<!--
-@component
-
-Lucide SVG icon component, renders SVG Element with children.
-
-@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8cGF0aCBkPSJNMjAuOTg1IDEyLjQ4NmE5IDkgMCAxIDEtOS40NzMtOS40NzJjLjQwNS0uMDIyLjYxNy40Ni40MDIuODAzYTYgNiAwIDAgMCA4LjI2OCA4LjI2OGMuMzQ0LS4yMTUuODI1LS4wMDQuODAzLjQwMSIgLz4KPC9zdmc+Cg==) - https://lucide.dev/icons/moon
-@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
--->
-
-<!>`, 1);
-function Moon($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes15);
-  const iconNode = [
-    [
-      "path",
-      {
-        d: "M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"
-      }
-    ]
-  ];
-  var fragment = root28();
-  var node = first_child(fragment);
-  var node_1 = sibling(node, 2);
-  var node_2 = sibling(node_1, 2);
-  Icon_default(node_2, spread_props({ name: "moon" }, () => props, {
-    get iconNode() {
-      return iconNode;
-    }
-  }));
-  append($$anchor, fragment);
-}
-if (undefined) {}
-var moon_default = Moon;
-// node_modules/@lucide/svelte/dist/icons/sun.svelte
-var rest_excludes16 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root29 = from_html(`<!--
-@lucide/svelte v1.34.0 - ISC
-
-This source code is licensed under the ISC license.
-See the LICENSE file in the root directory of this source tree.
--->
-
-
-
-
-<!--
-@component
-
-Lucide SVG icon component, renders SVG Element with children.
-
-@preview ![img](data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIgogIHdpZHRoPSIyNCIKICBoZWlnaHQ9IjI0IgogIHZpZXdCb3g9IjAgMCAyNCAyNCIKICBmaWxsPSJub25lIgogIHN0cm9rZT0iIzAwMCIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICNmZmY7IGJvcmRlci1yYWRpdXM6IDJweCIKICBzdHJva2Utd2lkdGg9IjIiCiAgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIgogIHN0cm9rZS1saW5lam9pbj0icm91bmQiCj4KICA8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI0IiAvPgogIDxwYXRoIGQ9Ik0xMiAydjIiIC8+CiAgPHBhdGggZD0iTTEyIDIwdjIiIC8+CiAgPHBhdGggZD0ibTQuOTMgNC45MyAxLjQxIDEuNDEiIC8+CiAgPHBhdGggZD0ibTE3LjY2IDE3LjY2IDEuNDEgMS40MSIgLz4KICA8cGF0aCBkPSJNMiAxMmgyIiAvPgogIDxwYXRoIGQ9Ik0yMCAxMmgyIiAvPgogIDxwYXRoIGQ9Im02LjM0IDE3LjY2LTEuNDEgMS40MSIgLz4KICA8cGF0aCBkPSJtMTkuMDcgNC45My0xLjQxIDEuNDEiIC8+Cjwvc3ZnPgo=) - https://lucide.dev/icons/sun
-@see https://lucide.dev/guide/packages/lucide-svelte - Documentation
--->
-
-<!>`, 1);
-function Sun($$anchor, $$props) {
-  let props = rest_props($$props, rest_excludes16);
-  const iconNode = [
-    ["circle", { cx: "12", cy: "12", r: "4" }],
-    ["path", { d: "M12 2v2" }],
-    ["path", { d: "M12 20v2" }],
-    ["path", { d: "m4.93 4.93 1.41 1.41" }],
-    ["path", { d: "m17.66 17.66 1.41 1.41" }],
-    ["path", { d: "M2 12h2" }],
-    ["path", { d: "M20 12h2" }],
-    ["path", { d: "m6.34 17.66-1.41 1.41" }],
-    ["path", { d: "m19.07 4.93-1.41 1.41" }]
-  ];
-  var fragment = root29();
-  var node = first_child(fragment);
-  var node_1 = sibling(node, 2);
-  var node_2 = sibling(node_1, 2);
-  Icon_default(node_2, spread_props({ name: "sun" }, () => props, {
-    get iconNode() {
-      return iconNode;
-    }
-  }));
-  append($$anchor, fragment);
-}
-if (undefined) {}
-var sun_default = Sun;
 // web/src/components/buttons/ThemeToggle.svelte
-var root30 = from_html(`
+var root33 = from_html(`
     <!>
   `, 1);
-var root_119 = from_html(`
+var root_120 = from_html(`
 
 <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
   <!>
@@ -11573,19 +12258,19 @@ function ThemeToggle($$anchor, $$props) {
   const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
   init();
   next();
-  var fragment = root_119();
+  var fragment = root_120();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root30();
+      var fragment_1 = root33();
       var node_1 = sibling(first_child(fragment_1));
       sun_default(node_1, spread_props(() => iconProps));
       next();
       append($$anchor2, fragment_1);
     };
     var alternate = ($$anchor2) => {
-      var fragment_2 = root30();
+      var fragment_2 = root33();
       var node_2 = sibling(first_child(fragment_2));
       moon_default(node_2, spread_props(() => iconProps));
       next();
@@ -11618,10 +12303,10 @@ var ThemeToggle_default = ThemeToggle;
 delegate(["click"]);
 
 // web/src/components/LoginGate.svelte
-var root31 = from_html(`
+var root34 = from_html(`
       <p class="mt-3 text-sm text-red-500"> </p>
     `, 1);
-var root_120 = from_html(`
+var root_121 = from_html(`
 
 <main class="flex min-h-screen items-center justify-center px-5">
   <form class="w-full max-w-sm">
@@ -11668,7 +12353,7 @@ function LoginGate($$anchor, $$props) {
     }
   }
   next();
-  var fragment = root_120();
+  var fragment = root_121();
   var main = sibling(first_child(fragment));
   var form = sibling(child(main));
   var div = sibling(child(form));
@@ -11696,7 +12381,7 @@ function LoginGate($$anchor, $$props) {
   var node_2 = sibling(label, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root31();
+      var fragment_1 = root34();
       var p_1 = sibling(first_child(fragment_1));
       var text_2 = child(p_1, true);
       reset(p_1);
@@ -11742,32 +12427,32 @@ if (undefined) {}
 var LoginGate_default = LoginGate;
 
 // web/src/App.svelte
-var root32 = from_html(`
+var root35 = from_html(`
   <main class="flex min-h-screen items-center justify-center px-5 text-sm text-neutral-400"> </main>
 `, 1);
-var root_121 = from_html(`
+var root_123 = from_html(`
   <!>
 `, 1);
-var root_28 = from_html(`
+var root_29 = from_html(`
       <!>
     `, 1);
-var root_36 = from_html(`
+var root_37 = from_html(`
             <!>
           `, 1);
-var root_45 = from_html(`
+var root_47 = from_html(`
       <div class="min-w-0 flex-1">
         <div class="mx-auto max-w-page px-5 py-10 md:py-16">
           <!>
         </div>
       </div>
     `, 1);
-var root_53 = from_html(`
+var root_55 = from_html(`
   <main class="w-full font-sans md:flex">
     <!>
     <!>
   </main>
 `, 1);
-var root_63 = from_html(`
+var root_64 = from_html(`
 
 <!>`, 1);
 function App($$anchor, $$props) {
@@ -11779,11 +12464,11 @@ function App($$anchor, $$props) {
   });
   const locked = user_derived(() => authState.required && !authState.authenticated);
   next();
-  var fragment = root_63();
+  var fragment = root_64();
   var node = sibling(first_child(fragment));
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root32();
+      var fragment_1 = root35();
       var main = sibling(first_child(fragment_1));
       var text2 = child(main);
       reset(main);
@@ -11794,48 +12479,48 @@ function App($$anchor, $$props) {
       append($$anchor2, fragment_1);
     };
     var consequent_1 = ($$anchor2) => {
-      var fragment_2 = root_121();
+      var fragment_2 = root_123();
       var node_1 = sibling(first_child(fragment_2));
       LoginGate_default(node_1, {});
       next();
       append($$anchor2, fragment_2);
     };
     var alternate_2 = ($$anchor2) => {
-      var fragment_3 = root_53();
+      var fragment_3 = root_55();
       var main_1 = sibling(first_child(fragment_3));
       var node_2 = sibling(child(main_1));
       Header_default(node_2, {});
       var node_3 = sibling(node_2, 2);
       {
         var consequent_2 = ($$anchor3) => {
-          var fragment_4 = root_28();
+          var fragment_4 = root_29();
           var node_4 = sibling(first_child(fragment_4));
           SettingsManager_default(node_4, {});
           next();
           append($$anchor3, fragment_4);
         };
         var alternate_1 = ($$anchor3) => {
-          var fragment_5 = root_45();
+          var fragment_5 = root_47();
           var div = sibling(first_child(fragment_5));
           var div_1 = sibling(child(div));
           var node_5 = sibling(child(div_1));
           {
             var consequent_3 = ($$anchor4) => {
-              var fragment_6 = root_36();
+              var fragment_6 = root_37();
               var node_6 = sibling(first_child(fragment_6));
               FeedsManager_default(node_6, {});
               next();
               append($$anchor4, fragment_6);
             };
             var consequent_4 = ($$anchor4) => {
-              var fragment_7 = root_36();
+              var fragment_7 = root_37();
               var node_7 = sibling(first_child(fragment_7));
               ExportPage_default(node_7, {});
               next();
               append($$anchor4, fragment_7);
             };
             var alternate = ($$anchor4) => {
-              var fragment_8 = root_36();
+              var fragment_8 = root_37();
               var node_8 = sibling(first_child(fragment_8));
               ItemList_default(node_8, {});
               next();

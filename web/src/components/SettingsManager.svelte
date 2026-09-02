@@ -4,6 +4,7 @@
   import FiltersManager from "./FiltersManager.svelte";
   import TranslateManager from "./TranslateManager.svelte";
   import FeverManager from "./FeverManager.svelte";
+  import McpManager from "./McpManager.svelte";
   import {
     type SettingsTab,
     settingsTabFromLocation,
@@ -18,6 +19,7 @@
     { id: "filter" as const, key: "items.filter" as const },
     { id: "translate" as const, key: "items.translate" as const },
     { id: "fever" as const, key: "items.fever" as const },
+    { id: "mcp" as const, key: "items.mcp" as const },
   ];
 
   function tabClass(active: boolean): string {
@@ -79,8 +81,10 @@
         <FiltersManager />
       {:else if tab === "translate"}
         <TranslateManager />
-      {:else}
+      {:else if tab === "fever"}
         <FeverManager />
+      {:else}
+        <McpManager />
       {/if}
     </div>
   </div>

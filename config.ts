@@ -1,4 +1,5 @@
 import { readFile, writeFile } from "fs/promises";
+import { randomBytes } from "node:crypto";
 import { resolve } from "path";
 import { passwordStrengthError } from "./shared/password-strength";
 
@@ -25,6 +26,13 @@ export type FeverConfig = {
   password: string;
 };
 
+export type McpConfig = {
+  /** Allow clients other than localhost to reach the MCP endpoint. */
+  remoteAccess: boolean;
+  /** Bearer token required only while remote access is enabled. */
+  authorization: string;
+};
+
 export function parseTranslateTargetLang(
   value: unknown,
 ): TranslateTargetLang | null {
@@ -45,6 +53,7 @@ export type AppConfig = {
   filter: FilterConfig;
   translate: TranslateConfig;
   fever: FeverConfig;
+  mcp: McpConfig;
 };
 
 const DEFAULT_FILTER: FilterConfig = {
@@ -63,12 +72,17 @@ const DEFAULT_FEVER: FeverConfig = {
   user: "",
   password: "",
 };
+const DEFAULT_MCP: McpConfig = {
+  remoteAccess: false,
+  authorization: "",
+};
 
 let loaded = false;
 let config: AppConfig = {
   filter: { ...DEFAULT_FILTER },
   translate: { ...DEFAULT_TRANSLATE },
   fever: { ...DEFAULT_FEVER },
+  mcp: { ...DEFAULT_MCP },
 };
 let writeLock: Promise<void> = Promise.resolve();
 
@@ -77,6 +91,7 @@ function cloneConfig(value: AppConfig): AppConfig {
     filter: { ...value.filter },
     translate: { ...value.translate },
     fever: { ...value.fever },
+    mcp: { ...value.mcp },
   };
 }
 
@@ -182,6 +197,16 @@ export function parseFeverConfig(parsed: unknown): FeverConfig {
   };
 }
 
+export function parseMcpConfig(parsed: unknown): McpConfig {
+  const record = asRecord(parsed);
+  if (!record) throw new Error("mcp config must be an object");
+  return {
+    remoteAccess: Boolean(record.remoteAccess),
+    authorization:
+      typeof record.authorization === "string" ? record.authorization : "",
+  };
+}
+
 async function readJsonFile(path: string): Promise<unknown | null> {
   try {
     return JSON.parse(await readFile(path, "utf-8"));
@@ -216,6 +241,7 @@ async function loadLegacySections(): Promise<{
     filter: { ...DEFAULT_FILTER },
     translate: { ...DEFAULT_TRANSLATE },
     fever: { ...DEFAULT_FEVER },
+    mcp: { ...DEFAULT_MCP },
   });
 
   const filterRaw =
@@ -264,6 +290,9 @@ export async function loadAppConfig(): Promise<void> {
       if (record.fever !== undefined) {
         config.fever = parseFeverConfig(record.fever);
       }
+      if (record.mcp !== undefined) {
+        config.mcp = parseMcpConfig(record.mcp);
+      }
       loaded = true;
       if (needsPersist) {
         await persist();
@@ -283,6 +312,7 @@ export async function loadAppConfig(): Promise<void> {
       filter: { ...DEFAULT_FILTER },
       translate: { ...DEFAULT_TRANSLATE },
       fever: { ...DEFAULT_FEVER },
+      mcp: { ...DEFAULT_MCP },
     };
     loaded = true;
   }
@@ -298,6 +328,15 @@ export function getTranslateState(): TranslateConfig {
 
 export function getFeverState(): FeverConfig {
   return { ...config.fever };
+}
+
+export function getMcpState(): McpConfig {
+  return { ...config.mcp };
+}
+
+/** Create a high-entropy bearer token without changing the saved config. */
+export function generateMcpAuthorization(): string {
+  return `mcp_${randomBytes(32).toString("base64url")}`;
 }
 
 export async function updateFilterState(partial: {
@@ -380,4 +419,28 @@ export async function updateFeverState(partial: {
   config.fever.enabled = nextEnabled;
   await persist();
   return getFeverState();
+}
+
+export async function updateMcpState(partial: {
+  remoteAccess?: boolean;
+  authorization?: string;
+}): Promise<McpConfig> {
+  const nextRemoteAccess =
+    typeof partial.remoteAccess === "boolean"
+      ? partial.remoteAccess
+      : config.mcp.remoteAccess;
+
+  const nextAuthorization =
+    typeof partial.authorization === "string"
+      ? partial.authorization.trim()
+      : config.mcp.authorization;
+
+  if (nextRemoteAccess && !nextAuthorization) {
+    throw new Error("Generate an MCP authorization token before enabling remote access");
+  }
+
+  config.mcp.remoteAccess = nextRemoteAccess;
+  config.mcp.authorization = nextAuthorization;
+  await persist();
+  return getMcpState();
 }

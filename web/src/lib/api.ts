@@ -538,6 +538,55 @@ export function updateFever(payload: {
   });
 }
 
+export type McpConfig = {
+  remoteAccess: boolean;
+  hasAuthorization: boolean;
+  authorization?: string;
+};
+
+type McpApiResult = {
+  code: number;
+  message: string;
+  data?: Partial<McpConfig>;
+};
+
+function normalizeMcpConfig(data: Partial<McpConfig> | undefined): McpConfig {
+  return {
+    remoteAccess: Boolean(data?.remoteAccess),
+    hasAuthorization: Boolean(data?.hasAuthorization),
+    authorization: typeof data?.authorization === "string" ? data.authorization : undefined,
+  };
+}
+
+export async function fetchMcp(): Promise<McpConfig> {
+  const body = await request<McpApiResult>("/api/mcp");
+  assertApiOk(body);
+  return normalizeMcpConfig(body.data);
+}
+
+export async function updateMcp(payload: {
+  remoteAccess?: boolean;
+  authorization?: string;
+}): Promise<McpConfig> {
+  const body = await request<McpApiResult>("/api/mcp", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  assertApiOk(body);
+  return normalizeMcpConfig(body.data);
+}
+
+export async function generateMcpToken(): Promise<string> {
+  const body = await request<{
+    code: number;
+    message: string;
+    data?: { authorization?: string };
+  }>("/api/mcp/generate-token", { method: "POST" });
+  assertApiOk(body);
+  if (!body.data?.authorization) throw new Error("Failed to generate MCP token");
+  return body.data.authorization;
+}
+
 export type AuthStatus = {
   required: boolean;
   authenticated: boolean;
