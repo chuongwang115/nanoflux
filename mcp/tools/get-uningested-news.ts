@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { getItems, markItemIngested } from "../../db/items";
+import { takeUningestedItems } from "../../db/items";
 import { DEFAULT_LIMIT, MAX_LIMIT } from "../../db/schema";
 
 export function registerGetUningestedNews(server: McpServer): void {
@@ -30,19 +30,11 @@ export function registerGetUningestedNews(server: McpServer): void {
           MAX_LIMIT,
         );
 
-        const selected = getItems({
+        const { items: returned, hasMore } = takeUningestedItems({
           unit: "day",
           count,
           limit: adjustedLimit,
-          isIngested: 0,
         });
-
-        const hasMore = selected.length > adjustedLimit;
-        const returned = selected.slice(0, adjustedLimit);
-
-        for (const item of returned) {
-          markItemIngested(item.id);
-        }
 
         const message = hasMore
           ? [

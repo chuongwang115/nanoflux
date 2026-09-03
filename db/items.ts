@@ -10,7 +10,7 @@ import {
 } from "drizzle-orm";
 import { db } from "./database";
 import { getFeed } from "./feeds";
-import { feeds, items, DEFAULT_LIMIT, MAX_LIMIT } from "./schema";
+import { feeds, items, uningestedItems, DEFAULT_LIMIT, MAX_LIMIT } from "./schema";
 import { newItemId, decodeCursor, parseItemId, parseTimeRange, TimeUnit, toUtcIso } from "./utils";
 
 const COMMON_SECOND_LEVEL_SUFFIXES = new Set([
@@ -40,17 +40,18 @@ export function sourceFromLink(link: string): string {
   }
 }
 
-export function getItems(options?: {
+type ItemQueryOptions = {
   since?: string;
   until?: string;
   unit?: string;
   count?: number;
   isRead?: number;
-  isIngested?: number;
   status?: "passed" | "rejected" | "deleted";
   cursor?: string;
   limit?: number;
-}): any[] {
+};
+
+export function getItems(options?: ItemQueryOptions): any[] {
 
   try {
 
@@ -93,10 +94,6 @@ export function getItems(options?: {
       options?.isRead === 0 || options?.isRead === 1
         ? eq(items.is_read, options.isRead)
         : undefined;
-    const ingestedFilter =
-      options?.isIngested === 0 || options?.isIngested === 1
-        ? eq(items.is_ingested, options.isIngested)
-        : undefined;
     const statusFilter = eq(items.status, options?.status ?? "passed");
 
     const selected = db
@@ -111,13 +108,12 @@ export function getItems(options?: {
         cover: items.cover,
         published_at: items.published_at,
         is_read: items.is_read,
-        is_ingested: items.is_ingested,
         created_at: items.created_at,
         feed_title: feeds.title,
       })
       .from(items)
       .innerJoin(feeds, eq(items.feed_id, feeds.id))
-      .where(and(timeFilter, cursorFilter, readFilter, ingestedFilter, statusFilter))
+      .where(and(timeFilter, cursorFilter, readFilter, statusFilter))
       .orderBy(desc(items.published_at), desc(items.id))
       .limit(adjustedLimit + 1)
       .all();
@@ -223,25 +219,32 @@ export function addItems(
       const id = newItemId();
       const { status, status_reason } = newItem;
 
-      const inserted = db.insert(items)
-        .values({
-          id,
-          feed_id: feedId,
-          guid: newItem.guid,
-          title: newItem.title,
-          link: newItem.link,
-          source: sourceFromLink(newItem.link),
-          content: newItem.content,
-          cover: newItem.cover,
-          published_at: newItem.published_at,
-          is_read: 0,
-          is_ingested: 0,
-          status,
-          status_reason,
-        })
-        .onConflictDoNothing({ target: items.guid })
-        .returning()
-        .get();
+      const inserted = db.transaction((tx) => {
+        const item = tx.insert(items)
+          .values({
+            id,
+            feed_id: feedId,
+            guid: newItem.guid,
+            title: newItem.title,
+            link: newItem.link,
+            source: sourceFromLink(newItem.link),
+            content: newItem.content,
+            cover: newItem.cover,
+            published_at: newItem.published_at,
+            is_read: 0,
+            status,
+            status_reason,
+          })
+          .onConflictDoNothing({ target: items.guid })
+          .returning()
+          .get();
+
+        if (item?.status === "passed") {
+          tx.insert(uningestedItems).values({ item_id: item.id }).run();
+        }
+
+        return item;
+      });
 
 
       if (inserted) {
@@ -309,6 +312,8 @@ export function deleteItem(id: number, reason: string): boolean {
       .where(eq(items.id, id))
       .run();
 
+    db.delete(uningestedItems).where(eq(uningestedItems.item_id, id)).run();
+
     return true;
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
@@ -338,6 +343,17 @@ export function deleteItemsBySource(source: string): number {
       )
       .run();
 
+    db.delete(uningestedItems)
+      .where(
+        inArray(
+          uningestedItems.item_id,
+          db.select({ id: items.id })
+            .from(items)
+            .where(eq(items.source, normalizedSource)),
+        ),
+      )
+      .run();
+
     return result.changes;
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
@@ -360,18 +376,66 @@ export function markItemRead(id: number): void {
   }
 }
 
-export function markItemIngested(id: number): void {
-
+/**
+ * Takes queued, visible items for MCP consumption.
+ */
+export function takeUningestedItems(options: Pick<ItemQueryOptions, "since" | "until" | "unit" | "count" | "limit">): {
+  items: any[];
+  hasMore: boolean;
+} {
   try {
+    const requestedLimit = Math.min(Math.max(options.limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
+    const relativeRange = options.unit && options.count
+      ? parseTimeRange(options.unit, options.count)
+      : undefined;
+    const since = options.since ?? relativeRange?.since;
+    const until = options.until ?? relativeRange?.until;
+    const timeFilter = since || until
+      ? and(
+          since ? gte(items.published_at, since) : undefined,
+          until ? lte(items.published_at, until) : undefined,
+        )
+      : undefined;
 
-    db.update(items)
-    .set({ is_ingested: 1 })
-    .where(and(eq(items.id, id), eq(items.is_ingested, 0), eq(items.status, "passed")))
-    .run();
+    const selected = db
+      .select({
+        id: items.id,
+        feed_id: items.feed_id,
+        guid: items.guid,
+        title: items.title,
+        link: items.link,
+        source: items.source,
+        content: items.content,
+        cover: items.cover,
+        published_at: items.published_at,
+        is_read: items.is_read,
+        created_at: items.created_at,
+        feed_title: feeds.title,
+      })
+      .from(uningestedItems)
+      .innerJoin(items, eq(uningestedItems.item_id, items.id))
+      .innerJoin(feeds, eq(items.feed_id, feeds.id))
+      .where(and(timeFilter, eq(items.status, "passed")))
+      .orderBy(desc(items.published_at), desc(items.id))
+      .limit(requestedLimit + 1)
+      .all();
 
+    const hasMore = selected.length > requestedLimit;
+    const taken = selected.slice(0, requestedLimit).map((item) => ({
+      ...item,
+      created_at: toUtcIso(item.created_at),
+    }));
+
+    if (taken.length > 0) {
+      db.delete(uningestedItems)
+        .where(inArray(uningestedItems.item_id, taken.map((item) => item.id)))
+        .run();
+    }
+
+    return { items: taken, hasMore };
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to mark item ${id} as ingested: ${detail}`);
+    throw new Error(`Failed to take uningested items: ${detail}`);
   }
 }
 

@@ -13,7 +13,7 @@ NanoFlux continuously fetches RSS / Atom feeds, Google News keyword feeds, and W
 - Read the same news store with Fever clients such as Reeder
 - Push headlines or daily digests to a Telegram channel
 
-`is_ingested` (whether an agent has consumed an item) and `is_read` (whether a person has read it) are independent. Reading an item in the UI or an RSS reader does not affect MCP consumption, and MCP consumption does not mark an item as read.
+The ingestion queue (whether an agent still needs to consume an item) and `is_read` (whether a person has read it) are independent. Reading an item in the UI or an RSS reader does not affect MCP consumption, and MCP consumption does not mark an item as read.
 
 ## Highlights
 
@@ -110,7 +110,7 @@ Authorization: Bearer <your MCP token>
 
 The token is separate from `ADMIN_PASSWORD`; local MCP clients do not need it while remote access is disabled.
 
-A typical agent workflow is to create feeds with `add_feed`, `add_feed_by_keyword`, or `add_wechat_feed`; optionally set criteria with `update_filter_config`; then call `get_uningested_news` on a schedule. It returns passed, unconsumed items from the requested time window, ordered by `published_at` descending (newest first), then `id` descending when publication times match. Returned items are immediately marked as consumed. If it returns `hasMore: true`, keep paging with the same parameters until it returns `false`.
+A typical agent workflow is to create feeds with `add_feed`, `add_feed_by_keyword`, or `add_wechat_feed`; optionally set criteria with `update_filter_config`; then call `get_uningested_news` on a schedule. It returns passed items from the requested time window that are still in the ingestion queue, ordered by `published_at` descending (newest first), then `id` descending when publication times match. Returned items are immediately removed from the queue. If it returns `hasMore: true`, keep paging with the same parameters until it returns `false`.
 
 | Tool | Description |
 | --- | --- |
@@ -119,7 +119,7 @@ A typical agent workflow is to create feeds with `add_feed`, `add_feed_by_keywor
 | `add_wechat_feed` | Search for and subscribe to a WeChat official account; pass `fakeid` when multiple matches exist |
 | `get_feeds` | List feeds, optionally filter by title keyword, and page with `nextCursor`; ordered by `updated_at DESC`, then `id DESC` |
 | `update_feed` / `delete_feed` | Update or delete a feed |
-| `get_uningested_news` | Get and mark passed, unconsumed news as consumed, newest first (`published_at DESC`, then `id DESC`); default 20 items, maximum 50 |
+| `get_uningested_news` | Get and remove queued, passed news from the ingestion queue, newest first (`published_at DESC`, then `id DESC`); default 20 items, maximum 50 |
 | `delete_item` | Hide an item by ID so its GUID is not fetched again |
 | `get_filter_config` / `update_filter_config` | Read or update filter settings |
 | `get_current_time` | Get the server's current UTC time |
@@ -135,7 +135,7 @@ Enable Fever under **Settings → Fever**, then configure your client with:
 - URL: `http://<host>:<port>/fever`
 - Username and password: the Fever credentials saved in Settings
 
-Fever read state maps to `is_read` and remains independent from MCP's `is_ingested`. Starring is not currently supported.
+Fever read state maps to `is_read` and remains independent from the MCP ingestion queue. Starring is not currently supported.
 
 ## Configuration
 
