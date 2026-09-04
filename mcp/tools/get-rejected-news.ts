@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { getItems } from "../../db/items";
-import { DEFAULT_LIMIT, MAX_LIMIT } from "../../db/schema";
+import { MAX_LIMIT } from "../../db/schema";
 import { encodeCursor } from "../../db/utils";
 
 export function registerGetRejectedNews(server: McpServer): void {
@@ -12,13 +12,6 @@ export function registerGetRejectedNews(server: McpServer): void {
         "Fetch rejected news from the last count days without changing their ingestion status. Use nextCursor from the response as cursor to load the next page.",
       inputSchema: {
         count: z.number().int().min(1).describe("Number of days before now (e.g. 2 for the last 2 days)"),
-        limit: z
-          .number()
-          .int()
-          .min(1)
-          .max(MAX_LIMIT)
-          .optional()
-          .describe("Max news entries to return (default 20, max 50)"),
         cursor: z
           .string()
           .min(1)
@@ -27,23 +20,18 @@ export function registerGetRejectedNews(server: McpServer): void {
       },
     },
 
-    async ({ count, limit, cursor }) => {
+    async ({ count, cursor }) => {
       try {
-        const adjustedLimit = Math.min(
-          Math.max(limit ?? DEFAULT_LIMIT, 1),
-          MAX_LIMIT,
-        );
-
         const selected = getItems({
           unit: "day",
           count,
-          limit: adjustedLimit,
+          limit: MAX_LIMIT,
           status: "rejected",
           cursor,
         });
 
-        const hasMore = selected.length > adjustedLimit;
-        const returned = selected.slice(0, adjustedLimit);
+        const hasMore = selected.length > MAX_LIMIT;
+        const returned = selected.slice(0, MAX_LIMIT);
         const lastItem = returned.at(-1);
         const nextCursor = hasMore && lastItem
           ? encodeCursor(lastItem.published_at, lastItem.id)

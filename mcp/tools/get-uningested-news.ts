@@ -1,39 +1,27 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { takeUningestedItems } from "../../db/items";
-import { DEFAULT_LIMIT, MAX_LIMIT } from "../../db/schema";
+import { MAX_LIMIT } from "../../db/schema";
 
 export function registerGetUningestedNews(server: McpServer): void {
   server.registerTool(
     "get_uningested_news",
     {
       description:
-        "Fetch uningested news from the last count days. Returned news are marked as ingested. When hasMore is true, call again with the same count (and limit) to fetch the next batch until hasMore is false.",
+        "Fetch uningested news from the last count days. Returned news are marked as ingested. When hasMore is true, call again with the same count to fetch the next batch until hasMore is false.",
       inputSchema: {
         count: z.number().int().min(1).describe("Number of days before now (e.g. 2 for the last 2 days)"),
-        limit: z
-          .number()
-          .int()
-          .min(1)
-          .max(MAX_LIMIT)
-          .optional()
-          .describe("Max news entries to return (default 20, max 50)"),
       },
     },
 
-    async ({ count, limit }) => {
+    async ({ count }) => {
 
       try {
-
-        const adjustedLimit = Math.min(
-          Math.max(limit ?? DEFAULT_LIMIT, 1),
-          MAX_LIMIT,
-        );
 
         const { items: returned, hasMore } = takeUningestedItems({
           unit: "day",
           count,
-          limit: adjustedLimit,
+          limit: MAX_LIMIT,
         });
 
         const message = hasMore
@@ -41,7 +29,6 @@ export function registerGetUningestedNews(server: McpServer): void {
               "More uningested news remain.",
               "Call get_uningested_news again with the same parameters:",
               `count=${count}`,
-              `limit=${adjustedLimit}`,
             ].join(" ")
           : "No more uningested news in this window.";
 
