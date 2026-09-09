@@ -1,8 +1,10 @@
 import {
+  asc,
   and,
   desc,
   eq,
   gte,
+  gt,
   inArray,
   lt,
   lte,
@@ -10,7 +12,7 @@ import {
 } from "drizzle-orm";
 import { db } from "./database";
 import { getFeed } from "./feeds";
-import { feeds, items, uningestedItems, DEFAULT_LIMIT, MAX_LIMIT } from "./schema";
+import { feeds, items, DEFAULT_LIMIT, MAX_LIMIT } from "./schema";
 import { newItemId, decodeCursor, parseItemId, parseTimeRange, TimeUnit, toUtcIso } from "./utils";
 
 const COMMON_SECOND_LEVEL_SUFFIXES = new Set([
@@ -239,10 +241,6 @@ export function addItems(
           .returning()
           .get();
 
-        if (item?.status === "passed") {
-          tx.insert(uningestedItems).values({ item_id: item.id }).run();
-        }
-
         return item;
       });
 
@@ -312,8 +310,6 @@ export function deleteItem(id: number, reason: string): boolean {
       .where(eq(items.id, id))
       .run();
 
-    db.delete(uningestedItems).where(eq(uningestedItems.item_id, id)).run();
-
     return true;
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
@@ -343,17 +339,6 @@ export function deleteItemsBySource(source: string): number {
       )
       .run();
 
-    db.delete(uningestedItems)
-      .where(
-        inArray(
-          uningestedItems.item_id,
-          db.select({ id: items.id })
-            .from(items)
-            .where(eq(items.source, normalizedSource)),
-        ),
-      )
-      .run();
-
     return result.changes;
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
@@ -377,9 +362,9 @@ export function markItemRead(id: number): void {
 }
 
 /**
- * Takes queued, visible items for MCP consumption.
+ * Lists visible items for MCP consumption by ascending item ID.
  */
-export function takeUningestedItems(options: Pick<ItemQueryOptions, "since" | "until" | "unit" | "count" | "limit">): {
+export function getMcpItems(options: Pick<ItemQueryOptions, "since" | "until" | "unit" | "count" | "limit"> & { cursor?: number }): {
   items: any[];
   hasMore: boolean;
 } {
@@ -396,6 +381,9 @@ export function takeUningestedItems(options: Pick<ItemQueryOptions, "since" | "u
           until ? lte(items.published_at, until) : undefined,
         )
       : undefined;
+    const cursorFilter = options.cursor === undefined
+      ? undefined
+      : gt(items.id, options.cursor);
 
     const selected = db
       .select({
@@ -412,11 +400,10 @@ export function takeUningestedItems(options: Pick<ItemQueryOptions, "since" | "u
         created_at: items.created_at,
         feed_title: feeds.title,
       })
-      .from(uningestedItems)
-      .innerJoin(items, eq(uningestedItems.item_id, items.id))
+      .from(items)
       .innerJoin(feeds, eq(items.feed_id, feeds.id))
-      .where(and(timeFilter, eq(items.status, "passed")))
-      .orderBy(desc(items.published_at), desc(items.id))
+      .where(and(timeFilter, cursorFilter, eq(items.status, "passed")))
+      .orderBy(asc(items.id))
       .limit(requestedLimit + 1)
       .all();
 
@@ -426,16 +413,10 @@ export function takeUningestedItems(options: Pick<ItemQueryOptions, "since" | "u
       created_at: toUtcIso(item.created_at),
     }));
 
-    if (taken.length > 0) {
-      db.delete(uningestedItems)
-        .where(inArray(uningestedItems.item_id, taken.map((item) => item.id)))
-        .run();
-    }
-
     return { items: taken, hasMore };
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to take uningested items: ${detail}`);
+    throw new Error(`Failed to get MCP items: ${detail}`);
   }
 }
 

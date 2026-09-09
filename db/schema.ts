@@ -63,20 +63,6 @@ export const items = sqliteTable(
   ],
 );
 
-/** Items waiting to be returned by the MCP ingestion queue. */
-export const uningestedItems = sqliteTable(
-  "t_uningested_items",
-  {
-    item_id: integer("item_id")
-      .primaryKey()
-      .references(() => items.id, { onDelete: "cascade" }),
-    created_at: text("created_at")
-      .notNull()
-      .default(sql`(datetime('now'))`),
-  },
-  (table) => [index("idx_uningested_items_created_at").on(table.created_at)],
-);
-
 export type Feed = InferSelectModel<typeof feeds>;
 export type Item = InferSelectModel<typeof items>;
 

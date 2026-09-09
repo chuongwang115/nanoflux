@@ -183,6 +183,13 @@
       "when": 1788422400000,
       "tag": "0025_add_uningested_items_queue",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1788912000000,
+      "tag": "0026_drop_uningested_items_queue",
+      "breakpoints": true
     }
   ]
 }
