@@ -10,6 +10,7 @@ import { routes as itemsRoutes } from "./api/items";
 import { routes as feedsRoutes } from "./api/feeds";
 import { routes as filterRoutes } from "./api/filter";
 import { routes as translateRoutes } from "./api/translate";
+import { routes as dedupRoutes } from "./api/dedup";
 import { routes as feverRoutes } from "./api/fever";
 import { routes as mcpConfigRoutes } from "./api/mcp";
 import {
@@ -25,7 +26,8 @@ import {
 import { httpGet } from "./services/http-fetcher";
 import { getFilterConfig } from "./filter";
 import { getTranslateConfig } from "./translate";
-import { loadAppConfig } from "./config";
+import { getDedupState, getTokenizerState, loadAppConfig } from "./config";
+import { syncTitleTokens } from "./db/items";
 
 const PUBLIC_DIR = join(import.meta.dir, "public");
 const GOOGLE_CONNECTIVITY_URL = "https://www.google.com/generate_204";
@@ -76,7 +78,20 @@ await loadAppConfig();
     `[translate] config loaded enabled=${enabled} targetLang=${targetLang} promptChars=${prompt.trim().length}`,
   );
 }
+{
+  const { enabled, windowDays, minSimilarity, maxCandidates } = getDedupState();
+  console.log(
+    `[dedup] config loaded enabled=${enabled} windowDays=${windowDays} minSimilarity=${minSimilarity} maxCandidates=${maxCandidates}`,
+  );
+}
 console.log(`[fever] config loaded enabled=${isFeverEnabled()}`);
+{
+  const { stopwords } = getTokenizerState();
+  const updated = syncTitleTokens();
+  console.log(
+    `[tokenizer] config loaded stopwords=${stopwords.length} titleTokensUpdated=${updated}`,
+  );
+}
 
 const BIND_HOST = "0.0.0.0";
 
@@ -90,6 +105,7 @@ const restRoutes = new Elysia()
   .use(feedsRoutes)
   .use(filterRoutes)
   .use(translateRoutes)
+  .use(dedupRoutes)
   .use(feverRoutes)
   .use(mcpConfigRoutes);
 
@@ -137,6 +153,7 @@ const publicRoutes = new Elysia()
   .get("/filter", indexHtml)
   .get("/filters", ({ redirect }) => redirect("/settings"))
   .get("/translate", indexHtml)
+  .get("/dedup", indexHtml)
   .get("/export", indexHtml)
   .get("/fever", feverGet)
   .get("/fever/", feverGet)

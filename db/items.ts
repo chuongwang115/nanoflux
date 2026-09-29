@@ -9,11 +9,15 @@ import {
   lt,
   lte,
   or,
+  sql,
 } from "drizzle-orm";
+import type { SQLiteTransaction } from "drizzle-orm/sqlite-core";
 import { db } from "./database";
 import { getFeed } from "./feeds";
 import { feeds, items, DEFAULT_LIMIT, MAX_LIMIT } from "./schema";
 import { newItemId, decodeCursor, parseItemId, parseTimeRange, TimeUnit, toUtcIso } from "./utils";
+import { titleTokens } from "../utils/text";
+import { getTokenizerState } from "../config";
 
 const COMMON_SECOND_LEVEL_SUFFIXES = new Set([
   "ac", "co", "com", "edu", "firm", "gen", "go", "gob", "gov", "ind",
@@ -112,6 +116,7 @@ export function getItems(options?: ItemQueryOptions): any[] {
         is_read: items.is_read,
         created_at: items.created_at,
         feed_title: feeds.title,
+        sim_id: items.sim_id,
       })
       .from(items)
       .innerJoin(feeds, eq(items.feed_id, feeds.id))
@@ -120,8 +125,12 @@ export function getItems(options?: ItemQueryOptions): any[] {
       .limit(adjustedLimit + 1)
       .all();
 
-    return selected.map((row) => ({
+    const duplicateCounts = countDuplicates(
+      selected.filter((row) => row.sim_id === null).map((row) => row.id),
+    );
+    return withoutGenericCovers(selected).map((row) => ({
       ...row,
+      duplicate_count: row.sim_id === null ? duplicateCounts.get(row.id) ?? 0 : 0,
       created_at: toUtcIso(row.created_at),
     }));
   
@@ -129,6 +138,91 @@ export function getItems(options?: ItemQueryOptions): any[] {
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to get items: ${detail}`);
   }
+}
+
+/**
+ * The visible first report and duplicates of `id`'s cluster, newest first.
+ * Returns an empty list for an item that is not part of a cluster.
+ */
+export function getItemCluster(id: number): {
+  id: number;
+  title: string;
+  link: string;
+  source: string;
+  published_at: string;
+  is_read: number;
+  feed_title: string;
+  sim_id: number | null;
+}[] {
+  try {
+    const item = db
+      .select({ id: items.id, sim_id: items.sim_id })
+      .from(items)
+      .where(eq(items.id, id))
+      .get();
+    if (!item) return [];
+    const rootId = item.sim_id ?? item.id;
+
+    const members = db
+      .select({
+        id: items.id,
+        title: items.title,
+        link: items.link,
+        source: items.source,
+        published_at: items.published_at,
+        is_read: items.is_read,
+        feed_title: feeds.title,
+        sim_id: items.sim_id,
+      })
+      .from(items)
+      .innerJoin(feeds, eq(items.feed_id, feeds.id))
+      .where(
+        and(
+          or(eq(items.id, rootId), eq(items.sim_id, rootId)),
+          eq(items.status, "passed"),
+        ),
+      )
+      .orderBy(desc(items.published_at), desc(items.id))
+      .all();
+    return members.length > 1 ? members : [];
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to get item cluster: ${detail}`);
+  }
+}
+
+/** Number of visible items pointing at each first-report root. */
+function countDuplicates(rootIds: number[]): Map<number, number> {
+  if (rootIds.length === 0) return new Map();
+  const rows = db
+    .select({ root: items.sim_id, count: sql<number>`count(*)` })
+    .from(items)
+    .where(and(inArray(items.sim_id, rootIds), eq(items.status, "passed")))
+    .groupBy(items.sim_id)
+    .all();
+  return new Map(rows.map((row) => [row.root!, row.count]));
+}
+
+/** A cover shared by this many distinct stories is a site logo or default share image. */
+const GENERIC_COVER_STORIES = 3;
+
+/** Drops covers reused across unrelated stories (logos, default og:image) from query rows. */
+export function withoutGenericCovers<T extends { cover: string | null }>(rows: T[]): T[] {
+  const covers = [...new Set(rows.map((row) => row.cover).filter((cover): cover is string => !!cover))];
+  if (covers.length === 0) return rows;
+
+  const generic = new Set(
+    db
+      .select({ cover: items.cover })
+      .from(items)
+      .where(inArray(items.cover, covers))
+      .groupBy(items.cover)
+      .having(sql`count(distinct coalesce(${items.sim_id}, ${items.id})) >= ${GENERIC_COVER_STORIES}`)
+      .all()
+      .map((row) => row.cover),
+  );
+  if (generic.size === 0) return rows;
+  return rows.map((row) => (row.cover && generic.has(row.cover) ? { ...row, cover: null } : row));
 }
 
 /** Returns the stored cover for a visible item. Used by the same-origin cover proxy. */
@@ -199,6 +293,8 @@ export function addItems(
     published_at: string;
     status: "passed" | "rejected" | "deleted";
     status_reason: string | null;
+    /** Stored items judged to report the same news; merges them into one cluster. */
+    duplicate_ids?: number[];
   }[],
 ): any[] {
 
@@ -212,6 +308,7 @@ export function addItems(
 
     const feed_title = feed.title;
     const existingGuids = getExistingGuids(newItems.map((item) => item.guid));
+    const stopwords = new Set(getTokenizerState().stopwords);
 
     let insertedItems = [];
 
@@ -222,12 +319,16 @@ export function addItems(
       const { status, status_reason } = newItem;
 
       const inserted = db.transaction((tx) => {
+        const cluster = newItem.duplicate_ids?.length
+          ? resolveCluster(tx, id, newItem.published_at, newItem.duplicate_ids)
+          : null;
         const item = tx.insert(items)
           .values({
             id,
             feed_id: feedId,
             guid: newItem.guid,
             title: newItem.title,
+            title_tokens: titleTokens(newItem.title, stopwords),
             link: newItem.link,
             source: sourceFromLink(newItem.link),
             content: newItem.content,
@@ -236,10 +337,18 @@ export function addItems(
             is_read: 0,
             status,
             status_reason,
+            sim_id: cluster && cluster.rootId !== id ? cluster.rootId : null,
           })
           .onConflictDoNothing({ target: items.guid })
           .returning()
           .get();
+
+        if (item && cluster && cluster.rerootIds.length > 0) {
+          tx.update(items)
+            .set({ sim_id: cluster.rootId })
+            .where(or(inArray(items.id, cluster.rerootIds), inArray(items.sim_id, cluster.rerootIds)))
+            .run();
+        }
 
         return item;
       });
@@ -261,6 +370,94 @@ export function addItems(
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to add items: ${detail}`);
   }
+}
+
+/**
+ * Recompute `title_tokens` for every item and rewrite rows that differ.
+ * Runs after config load so new or edited stopwords apply to stored items.
+ */
+export function syncTitleTokens(): number {
+  const stopwords = new Set(getTokenizerState().stopwords);
+  const rows = db
+    .select({ id: items.id, title: items.title, title_tokens: items.title_tokens })
+    .from(items)
+    .all();
+
+  const changed = rows
+    .map((row) => ({ id: row.id, next: titleTokens(row.title, stopwords), prev: row.title_tokens }))
+    .filter((row) => row.next !== row.prev);
+  if (changed.length === 0) return 0;
+
+  db.transaction((tx) => {
+    for (const row of changed) {
+      tx.update(items)
+        .set({ title_tokens: row.next })
+        .where(eq(items.id, row.id))
+        .run();
+    }
+  });
+  return changed.length;
+}
+
+type Tx = SQLiteTransaction<"sync", any, any, any>;
+
+/**
+ * Pick the first-published root for a new item and its duplicates' clusters.
+ * `rerootIds` are old cluster roots whose members must now point at `rootId`.
+ * Ties keep the stored item as root (the new item counts as later).
+ */
+function resolveCluster(
+  tx: Tx,
+  newId: number,
+  publishedAt: string,
+  duplicateIds: number[],
+): { rootId: number; rerootIds: number[] } | null {
+  const duplicates = tx
+    .select({ id: items.id, sim_id: items.sim_id })
+    .from(items)
+    .where(inArray(items.id, duplicateIds))
+    .all();
+  const rootIds = [...new Set(duplicates.map((row) => row.sim_id ?? row.id))];
+  if (rootIds.length === 0) return null;
+
+  const roots = tx
+    .select({ id: items.id, published_at: items.published_at })
+    .from(items)
+    .where(inArray(items.id, rootIds))
+    .orderBy(asc(items.published_at), asc(items.id))
+    .all();
+  const earliest = roots[0];
+  const rootId = !earliest || publishedAt < earliest.published_at ? newId : earliest.id;
+  return { rootId, rerootIds: rootIds.filter((candidate) => candidate !== rootId) };
+}
+
+/**
+ * Visible items published within `windowMs` of `publishedAt`, for duplicate
+ * detection. Callers filter by shared tokens.
+ */
+export function getDedupCandidates(
+  publishedAt: string,
+  windowMs: number,
+): { id: number; title: string; title_tokens: string | null; content: string | null; published_at: string }[] {
+  const center = Date.parse(publishedAt);
+  if (Number.isNaN(center)) return [];
+  return db
+    .select({
+      id: items.id,
+      title: items.title,
+      title_tokens: items.title_tokens,
+      content: items.content,
+      published_at: items.published_at,
+    })
+    .from(items)
+    .where(
+      and(
+        gte(items.published_at, new Date(center - windowMs).toISOString()),
+        lte(items.published_at, new Date(center + windowMs).toISOString()),
+        eq(items.status, "passed"),
+      ),
+    )
+    .all();
 }
 
 export function markItemsRead(until: string): void {
@@ -337,9 +534,10 @@ export function deleteItemsBySource(source: string): number {
           eq(items.status, "passed"),
         ),
       )
-      .run();
+      .returning({ id: items.id })
+      .all();
 
-    return result.changes;
+    return result.length;
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to delete items from source: ${detail}`);
@@ -408,7 +606,7 @@ export function getMcpItems(options: Pick<ItemQueryOptions, "since" | "until" | 
       .all();
 
     const hasMore = selected.length > requestedLimit;
-    const taken = selected.slice(0, requestedLimit).map((item) => ({
+    const taken = withoutGenericCovers(selected.slice(0, requestedLimit)).map((item) => ({
       ...item,
       created_at: toUtcIso(item.created_at),
     }));

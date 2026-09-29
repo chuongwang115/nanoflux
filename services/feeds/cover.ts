@@ -6,6 +6,12 @@ const LINK_TAG = /<link\b[^>]*>/gi;
 const IMG_TAG = /<img\b[^>]*>/gi;
 const ATTR = /([^\s=<>/]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/gi;
 const BAD_IMAGE = /favicon|sprite|pixel|1x1|spacer|tracking|adservice|doubleclick/i;
+/** File names of a logo, icon, avatar or placeholder rather than article art. */
+const GENERIC_IMAGE =
+  /(?:^|[_.-])(?:logos?|icons?|avatars?|default|placeholder|blank|loading|share)(?=[_.-]|$)/i;
+/** Declared <img> dimensions below this are thumbnails/badges, not cover art. */
+const MIN_COVER_WIDTH = 200;
+const MIN_COVER_HEIGHT = 120;
 
 const META_KEYS = [
   "og:image",
@@ -83,6 +89,12 @@ export function asAbsoluteHttpUrl(value: unknown, baseUrl?: string): string | nu
 
 function usableImageUrl(url: string | null): string | null {
   if (!url || BAD_IMAGE.test(url)) return null;
+  try {
+    const fileName = new URL(url).pathname.split("/").pop() ?? "";
+    if (GENERIC_IMAGE.test(fileName)) return null;
+  } catch {
+    return null;
+  }
   return url;
 }
 
@@ -109,11 +121,11 @@ function pickFromMedia(values: unknown[], baseUrl: string): string | null {
   return null;
 }
 
-function tinyPixel(attrs: Record<string, string>): boolean {
+function tooSmall(attrs: Record<string, string>): boolean {
   const width = Number.parseInt(attrs.width ?? "", 10);
   const height = Number.parseInt(attrs.height ?? "", 10);
-  if (width === 1 || height === 1) return true;
-  if (width > 0 && width < 32 && height > 0 && height < 32) return true;
+  if (width > 0 && width < MIN_COVER_WIDTH) return true;
+  if (height > 0 && height < MIN_COVER_HEIGHT) return true;
   return false;
 }
 
@@ -122,7 +134,7 @@ export function pickCoverFromHtml(html: string | undefined, baseUrl: string): st
   IMG_TAG.lastIndex = 0;
   for (const [tag] of html.matchAll(IMG_TAG)) {
     const attrs = parseAttrs(tag);
-    if (tinyPixel(attrs)) continue;
+    if (tooSmall(attrs)) continue;
     const raw = attrs.src || attrs["data-src"] || attrs["data-original"] || attrs["data-lazy-src"];
     const url = usableImageUrl(asAbsoluteHttpUrl(raw, baseUrl));
     if (url) return url;

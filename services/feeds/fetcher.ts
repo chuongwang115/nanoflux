@@ -1,5 +1,5 @@
 import Parser from "rss-parser";
-import { addItems, getExistingGuids, sourceFromLink } from "../../db/items";
+import { getExistingGuids, sourceFromLink } from "../../db/items";
 import { getDueFeeds, updateFeedFetchState } from "../../db/feeds";
 import type { Feed } from "../../db/schema";
 import { parseFeedGuids, serializeFeedGuids } from "../../db/utils";
@@ -7,6 +7,7 @@ import { maxPublishedAt, parsePublishedAt } from "../../utils/date";
 import { isMd5Format, md5Hex } from "../../utils/hash";
 import { stripHtml } from "../../utils/html";
 import { enrichItemsContent } from "../content/extractor";
+import { addItemsWithDedup } from "../dedup";
 import { filterItems } from "../filters";
 import { translateItemTitles } from "../translate";
 import { fetchRssFeed } from "../rss";
@@ -137,7 +138,7 @@ export async function fetchFeed(feed: Feed): Promise<{
     }));
     const filtered = await filterItems(enriched);
     const translated = await translateItemTitles(filtered);
-    const inserted = addItems(feed.id, translated);
+    const inserted = await addItemsWithDedup(feed.id, translated);
 
     const nextInterval =
       remaining > 0

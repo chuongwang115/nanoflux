@@ -7,6 +7,7 @@
     type TranslateTargetLang,
   } from "../lib/api";
   import { t } from "../lib/locale.svelte";
+  import { DEFAULT_TRANSLATE_PROMPT } from "../../../shared/translate";
 
   const inputClass =
     "w-full border-0 border-b border-neutral-200 bg-transparent py-2 text-sm outline-none placeholder:text-neutral-300 focus:border-neutral-900 dark:border-neutral-700 dark:placeholder:text-neutral-600 dark:focus:border-neutral-100";
@@ -33,6 +34,11 @@
     return active
       ? "text-neutral-900 underline underline-offset-4 decoration-neutral-900 dark:text-neutral-100 dark:decoration-neutral-100"
       : "text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300";
+  }
+
+  function enable() {
+    enabled = true;
+    if (!prompt.trim()) prompt = DEFAULT_TRANSLATE_PROMPT;
   }
 
   async function loadTranslate() {
@@ -104,7 +110,7 @@
             class="transition-colors {toggleClass(enabled)}"
             aria-pressed={enabled}
             disabled={saving}
-            onclick={() => (enabled = true)}
+            onclick={enable}
           >
             {t("translate.on")}
           </button>

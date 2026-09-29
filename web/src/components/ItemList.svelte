@@ -1,12 +1,14 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import Ban from "@lucide/svelte/icons/ban";
-  import { t } from "../lib/locale.svelte";
+  import { t, tf } from "../lib/locale.svelte";
   import {
     blockSource,
+    fetchItemCluster,
     fetchItemsPage,
     markAllItemsRead,
     markItemRead,
+    type ClusterItem,
     type Item,
   } from "../lib/api";
   import { formatTime } from "../lib/utils";
@@ -26,7 +28,14 @@
   let filter = $state<ItemFilter>("unread");
   let loadGeneration = 0;
   let blockingSources = $state(new Set<string>());
-  let failedCovers = $state(new Set<number>());
+  let hiddenCovers = $state(new Set<number>());
+  /** Items whose first-report/duplicate list is expanded. */
+  let openClusters = $state(new Set<number>());
+  /** Loaded cluster members by item id; `null` while loading. */
+  let clusters = $state(new Map<number, ClusterItem[] | null>());
+  let clusterErrors = $state(new Map<number, string>());
+  const MIN_COVER_WIDTH = 200;
+  const MIN_COVER_HEIGHT = 120;
   /** Bumps every minute so relative timestamps stay current. */
   let now = $state(Date.now());
 
@@ -112,6 +121,16 @@
     });
   }
 
+  /** Hide covers too small or too oddly shaped to fill the 4:3 thumbnail. */
+  function handleCoverLoad(event: Event, item: Item): void {
+    const image = event.currentTarget;
+    if (!(image instanceof HTMLImageElement)) return;
+    const { naturalWidth: width, naturalHeight: height } = image;
+    const ratio = width / height;
+    if (width >= MIN_COVER_WIDTH && height >= MIN_COVER_HEIGHT && ratio <= 3 && ratio >= 0.5) return;
+    hiddenCovers = new Set([...hiddenCovers, item.id]);
+  }
+
   /** Retry through the same-origin proxy only when a direct image request fails. */
   function handleCoverError(event: Event, item: Item): void {
     const image = event.currentTarget;
@@ -123,7 +142,51 @@
       return;
     }
 
-    failedCovers = new Set([...failedCovers, item.id]);
+    hiddenCovers = new Set([...hiddenCovers, item.id]);
+  }
+
+  async function toggleCluster(item: Item): Promise<void> {
+    const open = new Set(openClusters);
+    if (open.delete(item.id)) {
+      openClusters = open;
+      return;
+    }
+    openClusters = new Set([...open, item.id]);
+    if (clusters.get(item.id)) return;
+
+    clusters = new Map(clusters).set(item.id, null);
+    const errors = new Map(clusterErrors);
+    errors.delete(item.id);
+    clusterErrors = errors;
+    try {
+      const members = await fetchItemCluster(item.id);
+      clusters = new Map(clusters).set(item.id, members);
+    } catch (e) {
+      const next = new Map(clusters);
+      next.delete(item.id);
+      clusters = next;
+      clusterErrors = new Map(clusterErrors).set(
+        item.id,
+        e instanceof Error ? e.message : t("items.clusterLoadFailed"),
+      );
+    }
+  }
+
+  /** Marks a cluster member read, including its row in the main list when present. */
+  function handleOpenClusterItem(member: ClusterItem) {
+    if (member.is_read) return;
+    const listed = items.find((n) => n.id === member.id);
+    if (listed) {
+      handleOpenItem(listed);
+    } else {
+      void markItemRead(member.id).catch(() => {});
+    }
+    clusters = new Map(
+      [...clusters].map(([id, members]) => [
+        id,
+        members?.map((m) => (m.id === member.id ? { ...m, is_read: true } : m)) ?? null,
+      ]),
+    );
   }
 
   async function handleBlockSource(source: string): Promise<void> {
@@ -220,23 +283,47 @@
                 {item.content}
               </p>
             {/if}
-            {#if item.source}
-              <p class="group mt-2 flex h-4 items-center gap-1 text-xs leading-4 text-neutral-400 dark:text-neutral-500">
-                <span>{item.source}</span>
-                <button
-                  type="button"
-                  class="inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded p-0 text-neutral-400 opacity-0 transition-[color,background-color,opacity] group-hover:opacity-100 focus-visible:opacity-100 hover:bg-red-50 hover:text-red-600 disabled:cursor-wait disabled:opacity-50 dark:hover:bg-red-950/40 dark:hover:text-red-400"
-                  aria-label={`${t("items.blockSource")} ${item.source}`}
-                  title={t("items.blockSource")}
-                  disabled={blockingSources.has(item.source)}
-                  onclick={() => void handleBlockSource(item.source)}
-                >
-                  <Ban size={14} strokeWidth={1.5} aria-hidden={true} />
-                </button>
-              </p>
+            {#if item.source || item.sim_id !== null || item.duplicate_count > 0}
+              <div class="mt-2 flex h-4 items-center justify-between gap-3 text-xs leading-4 text-neutral-400 dark:text-neutral-500">
+                <p class="group flex min-w-0 items-center gap-1">
+                  {#if item.source}
+                    <span>{item.source}</span>
+                    <button
+                      type="button"
+                      class="inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded p-0 text-neutral-400 opacity-0 transition-[color,background-color,opacity] group-hover:opacity-100 focus-visible:opacity-100 hover:bg-red-50 hover:text-red-600 disabled:cursor-wait disabled:opacity-50 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                      aria-label={`${t("items.blockSource")} ${item.source}`}
+                      title={t("items.blockSource")}
+                      disabled={blockingSources.has(item.source)}
+                      onclick={() => void handleBlockSource(item.source)}
+                    >
+                      <Ban size={14} strokeWidth={1.5} aria-hidden={true} />
+                    </button>
+                  {/if}
+                </p>
+                {#if item.sim_id !== null || item.duplicate_count > 0}
+                  <button
+                    type="button"
+                    class="-mx-1 shrink-0 cursor-pointer rounded px-1 hover:text-neutral-700 dark:hover:text-neutral-200 {item.sim_id ===
+                    null
+                      ? 'text-neutral-500 dark:text-neutral-400'
+                      : ''}"
+                    aria-expanded={openClusters.has(item.id)}
+                    title={t("items.showCluster")}
+                    onclick={() => void toggleCluster(item)}
+                  >
+                    {#if item.sim_id !== null}
+                      {t("items.duplicate")}
+                    {:else}
+                      {t("items.firstReport")}
+                      <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
+                      {tf("items.duplicateCount", { n: item.duplicate_count })}
+                    {/if}
+                  </button>
+                {/if}
+              </div>
             {/if}
           </div>
-          {#if item.cover && !failedCovers.has(item.id)}
+          {#if item.cover && !hiddenCovers.has(item.id)}
             <a
               href={item.link}
               target="_blank"
@@ -252,11 +339,56 @@
                 class="h-full w-full bg-neutral-100 object-cover dark:bg-neutral-800"
                 loading="lazy"
                 referrerpolicy="no-referrer"
+                onload={(event) => handleCoverLoad(event, item)}
                 onerror={(event) => handleCoverError(event, item)}
               />
             </a>
           {/if}
         </article>
+        {#if openClusters.has(item.id)}
+          <div class="mt-3 rounded-md bg-neutral-50 px-3 py-2 text-xs dark:bg-neutral-900">
+            {#if clusterErrors.has(item.id)}
+              <p class="py-1 text-red-500">{clusterErrors.get(item.id)}</p>
+            {:else if !clusters.get(item.id)}
+              <p class="py-1 text-neutral-400 dark:text-neutral-500">{t("items.loading")}</p>
+            {:else if clusters.get(item.id)?.length === 0}
+              <p class="py-1 text-neutral-400 dark:text-neutral-500">{t("items.clusterEmpty")}</p>
+            {:else}
+              <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
+                {#each clusters.get(item.id) ?? [] as member (member.id)}
+                  <li class="py-2">
+                    <div class="flex items-baseline gap-1.5 text-neutral-400 dark:text-neutral-500">
+                      <span class={member.sim_id === null ? "text-neutral-600 dark:text-neutral-300" : ""}>
+                        {member.sim_id === null ? t("items.firstReport") : t("items.duplicate")}
+                      </span>
+                      <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
+                      <time datetime={member.published_at}>
+                        {formatTime(member.published_at, now)}
+                      </time>
+                      <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
+                      <span class="truncate">{member.source || member.feed_title}</span>
+                      {#if member.id === item.id}
+                        <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
+                        <span>{t("items.clusterCurrent")}</span>
+                      {/if}
+                    </div>
+                    <a
+                      href={member.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onclick={() => handleOpenClusterItem(member)}
+                      class="mt-0.5 block leading-snug hover:text-neutral-600 dark:hover:text-neutral-300 {member.is_read
+                        ? 'text-neutral-500 dark:text-neutral-500'
+                        : 'text-neutral-800 dark:text-neutral-200'}"
+                    >
+                      {member.title}
+                    </a>
+                  </li>
+                {/each}
+              </ul>
+            {/if}
+          </div>
+        {/if}
       </li>
     {/each}
   </ul>

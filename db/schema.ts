@@ -43,6 +43,8 @@ export const items = sqliteTable(
       .references(() => feeds.id, { onDelete: "cascade" }),
     guid: text("guid").notNull(),
     title: text("title").notNull(),
+    /** Space-separated Intl.Segmenter tokens of `title`; NULL until tokenized. */
+    title_tokens: text("title_tokens"),
     content: text("content"),
     link: text("link").notNull(),
     source: text("source").notNull().default(""),
@@ -56,10 +58,14 @@ export const items = sqliteTable(
       .default("passed"),
     status_reason: text("status_reason"),
     is_read: integer("is_read").notNull().default(0),
+    /** Id of the first-published item this one duplicates; NULL for a first report. */
+    sim_id: integer("sim_id"),
   },
   (table) => [
     unique().on(table.guid),
     index("idx_items_published_at").on(table.published_at),
+    index("idx_items_sim_id").on(table.sim_id),
+    index("idx_items_cover").on(table.cover),
   ],
 );
 

@@ -24,6 +24,10 @@ export type Item = {
   published_at: string;
   is_read: boolean;
   feed_title: string;
+  /** Id of the first report this item duplicates; null for a first report. */
+  sim_id: number | null;
+  /** Visible duplicates of this item when it is a first report. */
+  duplicate_count: number;
 };
 
 export type ItemsPage = {
@@ -308,6 +312,23 @@ export async function markAllItemsRead(until: string) {
   assertApiOk(body);
 }
 
+/** One member of a duplicate cluster; the first report has `sim_id === null`. */
+export type ClusterItem = Pick<
+  Item,
+  "id" | "title" | "link" | "source" | "published_at" | "is_read" | "feed_title" | "sim_id"
+>;
+
+/** The first report and duplicates of an item's cluster, newest first. */
+export async function fetchItemCluster(id: number): Promise<ClusterItem[]> {
+  const body = await request<{
+    code: number;
+    message: string;
+    data?: (Omit<ClusterItem, "is_read"> & { is_read: number | boolean })[];
+  }>(`/api/items/${id}/cluster`);
+  assertApiOk(body);
+  return (body.data ?? []).map((item) => ({ ...item, is_read: Boolean(item.is_read) }));
+}
+
 export async function markItemRead(id: number) {
   const body = await request<ApiResult>(`/api/items/${id}/read`, {
     method: "POST",
@@ -472,6 +493,41 @@ export function updateTranslate(payload: {
       throw new Error(body.message || "Failed to update translate config");
     }
     return normalizeTranslateConfig(body.data, payload);
+  });
+}
+
+export type DedupConfig = {
+  enabled: boolean;
+  windowDays: number;
+  minSimilarity: number;
+  maxCandidates: number;
+};
+
+type DedupApiResult = {
+  code: number;
+  message: string;
+  data?: DedupConfig;
+};
+
+export async function fetchDedup(): Promise<DedupConfig> {
+  const body = await request<DedupApiResult>("/api/dedup");
+  assertApiOk(body);
+  if (!body.data) {
+    throw new Error(body.message || "Failed to load dedup config");
+  }
+  return body.data;
+}
+
+export function updateDedup(payload: Partial<DedupConfig>) {
+  return request<DedupApiResult>("/api/dedup", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }).then((body) => {
+    assertApiOk(body);
+    if (!body.data) {
+      throw new Error(body.message || "Failed to update dedup config");
+    }
+    return body.data;
   });
 }
 

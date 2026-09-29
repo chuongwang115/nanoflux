@@ -1,6 +1,7 @@
 import { Elysia } from "elysia";
 import {
   deleteItemsBySource,
+  getItemCluster,
   getItemCover,
   getItems,
   markItemsRead,
@@ -207,6 +208,20 @@ function markItemsReadHandler({ body }: {
   }
 }
 
+function getItemClusterHandler({ params }: { params: { id: string } }) {
+  try {
+    const id = parseItemId(params.id);
+    if (id === null) {
+      return { code: 400, message: "Invalid item id" };
+    }
+    return { code: 0, message: "ok", data: getItemCluster(id) };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to get item cluster";
+    return { code: 500, message };
+  }
+}
+
 function markItemReadHandler({ params }: {
   params: {
     id: string;
@@ -249,6 +264,7 @@ export const routes = new Elysia({ prefix: "/api/items" })
   .get("/", getItemsHandler)
   .get("/export.xlsx", exportItemsHandler)
   .get("/:id/cover", coverHandler)
+  .get("/:id/cluster", getItemClusterHandler)
   .post("/read-all", markItemsReadHandler)
   .post("/block-source", blockSourceHandler)
   .post("/:id/read", markItemReadHandler);

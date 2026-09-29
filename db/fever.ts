@@ -2,6 +2,7 @@ import { and, eq, gt, inArray, lt, lte, desc, asc, sql } from "drizzle-orm";
 import { getAllFeeds } from "./feeds";
 import { db } from "./database";
 import { items } from "./schema";
+import { withoutGenericCovers } from "./items";
 import type { Feed } from "./schema";
 
 const FEVER_ITEM_LIMIT = 50;
@@ -249,7 +250,7 @@ export function listFeverItems(options: {
       .from(items)
       .where(and(statusFilter, inArray(items.id, withIds)))
       .all();
-    return selected.map(toFeverItem);
+    return withoutGenericCovers(selected).map(toFeverItem);
   }
 
   if (options.maxId && options.maxId > 0) {
@@ -260,7 +261,7 @@ export function listFeverItems(options: {
       .orderBy(desc(items.id))
       .limit(FEVER_ITEM_LIMIT)
       .all();
-    return selected.map(toFeverItem);
+    return withoutGenericCovers(selected).map(toFeverItem);
   }
 
   if (options.sinceId && options.sinceId > 0) {
@@ -271,7 +272,7 @@ export function listFeverItems(options: {
       .orderBy(asc(items.id))
       .limit(FEVER_ITEM_LIMIT)
       .all();
-    return selected.map(toFeverItem);
+    return withoutGenericCovers(selected).map(toFeverItem);
   }
 
   const selected = db
@@ -282,5 +283,5 @@ export function listFeverItems(options: {
     .limit(FEVER_ITEM_LIMIT)
     .all();
 
-  return selected.map(toFeverItem);
+  return withoutGenericCovers(selected).map(toFeverItem);
 }

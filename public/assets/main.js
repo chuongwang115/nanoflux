@@ -6679,6 +6679,7 @@ var SUBPAGE_PATH_SUFFIXES = [
   "/filter/",
   "/filters/",
   "/translate/",
+  "/dedup/",
   "/export/",
   "/fever/",
   "/mcp-settings/"
@@ -6691,7 +6692,7 @@ function pathnameToRoute(pathname) {
     return "/feeds";
   if (pathname.endsWith("/export"))
     return "/export";
-  if (pathname.endsWith("/settings") || pathname.endsWith("/filter") || pathname.endsWith("/filters") || pathname.endsWith("/translate") || pathname.endsWith("/fever") || pathname.endsWith("/mcp-settings")) {
+  if (pathname.endsWith("/settings") || pathname.endsWith("/filter") || pathname.endsWith("/filters") || pathname.endsWith("/translate") || pathname.endsWith("/dedup") || pathname.endsWith("/fever") || pathname.endsWith("/mcp-settings")) {
     return "/settings";
   }
   return "/";
@@ -6727,12 +6728,14 @@ function settingsTabFromLocation() {
   const path = window.location.pathname;
   if (path.endsWith("/translate"))
     return "translate";
+  if (path.endsWith("/dedup"))
+    return "dedup";
   if (path.endsWith("/fever"))
     return "fever";
   if (path.endsWith("/mcp-settings"))
     return "mcp";
   const hash2 = window.location.hash.replace(/^#/, "");
-  if (hash2 === "preferences" || hash2 === "translate" || hash2 === "fever" || hash2 === "mcp" || hash2 === "filter") {
+  if (hash2 === "preferences" || hash2 === "translate" || hash2 === "dedup" || hash2 === "fever" || hash2 === "mcp" || hash2 === "filter") {
     return hash2;
   }
   return "preferences";
@@ -6740,7 +6743,7 @@ function settingsTabFromLocation() {
 function setSettingsTab(tab) {
   const url = new URL(window.location.href);
   url.hash = tab;
-  if (url.pathname.endsWith("/filter") || url.pathname.endsWith("/filters") || url.pathname.endsWith("/translate") || url.pathname.endsWith("/fever") || url.pathname.endsWith("/mcp-settings")) {
+  if (url.pathname.endsWith("/filter") || url.pathname.endsWith("/filters") || url.pathname.endsWith("/translate") || url.pathname.endsWith("/dedup") || url.pathname.endsWith("/fever") || url.pathname.endsWith("/mcp-settings")) {
     const settings = new URL(settingsHref(), window.location.href);
     url.pathname = settings.pathname;
   }
@@ -6900,6 +6903,7 @@ var messages = {
     "items.preferences": "Preferences",
     "items.filter": "Filter",
     "items.translate": "Translate",
+    "items.dedup": "Dedup",
     "items.fever": "Fever",
     "items.mcp": "MCP",
     "items.export": "导出",
@@ -6910,6 +6914,13 @@ var messages = {
     "items.markAllRead": "全部已读",
     "items.blockSource": "屏蔽此来源并删除已有新闻",
     "items.blockSourceFailed": "屏蔽来源失败",
+    "items.duplicate": "重复",
+    "items.firstReport": "首发",
+    "items.duplicateCount": "{n} 篇重复",
+    "items.showCluster": "查看首发与重复新闻",
+    "items.clusterCurrent": "当前",
+    "items.clusterEmpty": "没有相关新闻",
+    "items.clusterLoadFailed": "加载相关新闻失败",
     "items.filterBy": "筛选",
     "items.filterUnread": "未读",
     "items.filterAll": "全部",
@@ -6971,6 +6982,21 @@ var messages = {
     "filters.loadFailed": "加载失败",
     "filters.saveFailed": "保存失败",
     "filters.confirmClearPrompt": "提示词为空，保存会清空已有内容。确定继续？",
+    "dedup.hint": "对新抓取的资讯判重：先按标题分词相似度筛出候选，再由 AI 确认是否为同一事件。需配置 LLM 环境变量。",
+    "dedup.enabled": "AI 判重",
+    "dedup.on": "开启",
+    "dedup.off": "关闭",
+    "dedup.windowDays": "比较时间窗口（天）",
+    "dedup.windowDaysHint": "仅与发布时间相差在此天数内的资讯比较。",
+    "dedup.minSimilarity": "相似度阈值",
+    "dedup.minSimilarityHint": "标题相似度高于此值（0–1）的资讯才会交给 AI 确认。",
+    "dedup.maxCandidates": "AI 候选数",
+    "dedup.maxCandidatesHint": "每条资讯最多交给 AI 比较的候选数量。",
+    "dedup.save": "保存",
+    "dedup.saving": "保存中…",
+    "dedup.loadFailed": "加载失败",
+    "dedup.saveFailed": "保存失败",
+    "dedup.invalid": "请输入有效数值",
     "translate.hint": "设置翻译开关、目标语言与提示词。开启后仅翻译新抓取资讯的标题；关闭后提示词会保留。",
     "translate.enabled": "AI 翻译",
     "translate.on": "开启",
@@ -7072,6 +7098,7 @@ var messages = {
     "items.preferences": "Preferences",
     "items.filter": "Filter",
     "items.translate": "Translate",
+    "items.dedup": "Dedup",
     "items.fever": "Fever",
     "items.mcp": "MCP",
     "items.export": "匯出",
@@ -7082,6 +7109,13 @@ var messages = {
     "items.markAllRead": "全部已讀",
     "items.blockSource": "封鎖此來源並刪除既有新聞",
     "items.blockSourceFailed": "封鎖來源失敗",
+    "items.duplicate": "重複",
+    "items.firstReport": "首發",
+    "items.duplicateCount": "{n} 篇重複",
+    "items.showCluster": "查看首發與重複新聞",
+    "items.clusterCurrent": "目前",
+    "items.clusterEmpty": "沒有相關新聞",
+    "items.clusterLoadFailed": "載入相關新聞失敗",
     "items.filterBy": "篩選",
     "items.filterUnread": "未讀",
     "items.filterAll": "全部",
@@ -7143,6 +7177,21 @@ var messages = {
     "filters.loadFailed": "載入失敗",
     "filters.saveFailed": "儲存失敗",
     "filters.confirmClearPrompt": "提示詞為空，儲存會清空既有內容。確定繼續？",
+    "dedup.hint": "對新擷取的資訊判重：先按標題分詞相似度篩出候選，再由 AI 確認是否為同一事件。需設定 LLM 環境變數。",
+    "dedup.enabled": "AI 判重",
+    "dedup.on": "開啟",
+    "dedup.off": "關閉",
+    "dedup.windowDays": "比較時間窗口（天）",
+    "dedup.windowDaysHint": "僅與發佈時間相差在此天數內的資訊比較。",
+    "dedup.minSimilarity": "相似度閾值",
+    "dedup.minSimilarityHint": "標題相似度高於此值（0–1）的資訊才會交給 AI 確認。",
+    "dedup.maxCandidates": "AI 候選數",
+    "dedup.maxCandidatesHint": "每則資訊最多交給 AI 比較的候選數量。",
+    "dedup.save": "儲存",
+    "dedup.saving": "儲存中…",
+    "dedup.loadFailed": "載入失敗",
+    "dedup.saveFailed": "儲存失敗",
+    "dedup.invalid": "請輸入有效數值",
     "translate.hint": "設定翻譯開關、目標語言與提示詞。開啟後僅翻譯新擷取資訊的標題；關閉後提示詞會保留。",
     "translate.enabled": "AI 翻譯",
     "translate.on": "開啟",
@@ -7244,6 +7293,7 @@ var messages = {
     "items.preferences": "Preferences",
     "items.filter": "Filter",
     "items.translate": "Translate",
+    "items.dedup": "Dedup",
     "items.export": "Export",
     "items.fever": "Fever",
     "items.mcp": "MCP",
@@ -7254,6 +7304,13 @@ var messages = {
     "items.markAllRead": "Mark all as read",
     "items.blockSource": "Block this source and delete existing news",
     "items.blockSourceFailed": "Failed to block source",
+    "items.duplicate": "Duplicate",
+    "items.firstReport": "First report",
+    "items.duplicateCount": "{n} duplicates",
+    "items.showCluster": "Show first report and duplicates",
+    "items.clusterCurrent": "This item",
+    "items.clusterEmpty": "No related news",
+    "items.clusterLoadFailed": "Failed to load related news",
     "items.filterBy": "Filter",
     "items.filterUnread": "Unread",
     "items.filterAll": "All",
@@ -7315,6 +7372,21 @@ var messages = {
     "filters.loadFailed": "Failed to load",
     "filters.saveFailed": "Failed to save",
     "filters.confirmClearPrompt": "The prompt is empty. Saving will clear the existing prompt. Continue?",
+    "dedup.hint": "Detect duplicates among newly fetched items: title-token similarity picks candidates, then AI confirms whether they report the same story. Requires the LLM environment variables.",
+    "dedup.enabled": "AI dedup",
+    "dedup.on": "On",
+    "dedup.off": "Off",
+    "dedup.windowDays": "Comparison window (days)",
+    "dedup.windowDaysHint": "Only items published within this many days of each other are compared.",
+    "dedup.minSimilarity": "Similarity threshold",
+    "dedup.minSimilarityHint": "Only items whose title similarity exceeds this value (0–1) are sent to AI.",
+    "dedup.maxCandidates": "AI candidates",
+    "dedup.maxCandidatesHint": "Maximum candidates sent to AI per item.",
+    "dedup.save": "Save",
+    "dedup.saving": "Saving…",
+    "dedup.loadFailed": "Failed to load",
+    "dedup.saveFailed": "Failed to save",
+    "dedup.invalid": "Enter valid numbers",
     "translate.hint": "Set the translation switch, target language, and prompt. When on, only titles of newly fetched items are translated. Turning it off keeps the prompt.",
     "translate.enabled": "AI translation",
     "translate.on": "On",
@@ -7689,6 +7761,11 @@ async function markAllItemsRead(until) {
   });
   assertApiOk(body);
 }
+async function fetchItemCluster(id) {
+  const body = await request(`/api/items/${id}/cluster`);
+  assertApiOk(body);
+  return (body.data ?? []).map((item) => ({ ...item, is_read: Boolean(item.is_read) }));
+}
 async function markItemRead(id) {
   const body = await request(`/api/items/${id}/read`, {
     method: "POST"
@@ -7777,6 +7854,26 @@ function updateTranslate(payload) {
       throw new Error(body.message || "Failed to update translate config");
     }
     return normalizeTranslateConfig(body.data, payload);
+  });
+}
+async function fetchDedup() {
+  const body = await request("/api/dedup");
+  assertApiOk(body);
+  if (!body.data) {
+    throw new Error(body.message || "Failed to load dedup config");
+  }
+  return body.data;
+}
+function updateDedup(payload) {
+  return request("/api/dedup", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  }).then((body) => {
+    assertApiOk(body);
+    if (!body.data) {
+      throw new Error(body.message || "Failed to update dedup config");
+    }
+    return body.data;
   });
 }
 function normalizeFeverConfig(data, defaults) {
@@ -10038,14 +10135,311 @@ if (undefined) {}
 var FiltersManager_default = FiltersManager;
 delegate(["click", "keydown"]);
 
-// web/src/components/TranslateManager.svelte
+// web/src/components/DedupManager.svelte
 var root16 = from_html(`
     <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
   `, 1);
 var root_113 = from_html(`
+        <p class="text-sm text-red-500"> </p>
+      `, 1);
+var root_24 = from_html(`
+    <div class="space-y-8">
+      <div class="space-y-3">
+        <span> </span>
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm" role="group">
+          <button type="button"> </button>
+          <button type="button"> </button>
+        </div>
+      </div>
+
+      <label class="block space-y-2">
+        <span> </span>
+        <input type="number" min="1" max="30" step="1"/>
+        <p> </p>
+      </label>
+
+      <label class="block space-y-2">
+        <span> </span>
+        <input type="number" min="0" max="1" step="0.05"/>
+        <p> </p>
+      </label>
+
+      <label class="block space-y-2">
+        <span> </span>
+        <input type="number" min="1" max="20" step="1"/>
+        <p> </p>
+      </label>
+
+      <!>
+
+      <button type="button" class="text-sm text-neutral-900 underline-offset-4 hover:underline disabled:opacity-50 dark:text-neutral-100"> </button>
+    </div>
+  `, 1);
+var root_33 = from_html(`
+    <p class="mt-3 text-sm text-red-500"> </p>
+  `, 1);
+var root_43 = from_html(`
+
+<section class="mb-10">
+  <p class="mb-6 text-sm text-neutral-400 dark:text-neutral-500"> </p>
+  <!>
+  <!>
+</section>`, 1);
+function DedupManager($$anchor, $$props) {
+  push($$props, true);
+  const inputClass = "w-32 border-0 border-b border-neutral-200 bg-transparent py-2 text-sm outline-none placeholder:text-neutral-300 focus:border-neutral-900 dark:border-neutral-700 dark:placeholder:text-neutral-600 dark:focus:border-neutral-100";
+  const labelClass = "block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500";
+  const hintClass = "text-xs text-neutral-400 dark:text-neutral-500";
+  let enabled = state(true);
+  let windowDays = state(3);
+  let minSimilarity = state(0.6);
+  let maxCandidates = state(5);
+  let saved = state(null);
+  let formError = state("");
+  let loading = state(true);
+  let saving = state(false);
+  const isValid = user_derived(() => Number.isInteger(get2(windowDays)) && get2(windowDays) >= 1 && get2(windowDays) <= 30 && Number.isFinite(get2(minSimilarity)) && get2(minSimilarity) >= 0 && get2(minSimilarity) <= 1 && Number.isInteger(get2(maxCandidates)) && get2(maxCandidates) >= 1 && get2(maxCandidates) <= 20);
+  const isDirty = user_derived(() => get2(saved) !== null && (get2(enabled) !== get2(saved).enabled || get2(windowDays) !== get2(saved).windowDays || get2(minSimilarity) !== get2(saved).minSimilarity || get2(maxCandidates) !== get2(saved).maxCandidates));
+  const saveDisabled = user_derived(() => get2(saving) || get2(loading) || !get2(isDirty) || !get2(isValid));
+  function toggleClass(active) {
+    return active ? "text-neutral-900 underline underline-offset-4 decoration-neutral-900 dark:text-neutral-100 dark:decoration-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300";
+  }
+  function apply2(config) {
+    set(enabled, config.enabled, true);
+    set(windowDays, config.windowDays, true);
+    set(minSimilarity, config.minSimilarity, true);
+    set(maxCandidates, config.maxCandidates, true);
+    set(saved, config, true);
+  }
+  async function loadDedup() {
+    set(formError, "");
+    set(loading, true);
+    try {
+      apply2(await fetchDedup());
+    } catch (e) {
+      set(formError, e instanceof Error ? e.message : t("dedup.loadFailed"), true);
+    } finally {
+      set(loading, false);
+    }
+  }
+  async function handleSave() {
+    if (get2(saveDisabled))
+      return;
+    set(formError, "");
+    set(saving, true);
+    try {
+      apply2(await updateDedup({
+        enabled: get2(enabled),
+        windowDays: get2(windowDays),
+        minSimilarity: get2(minSimilarity),
+        maxCandidates: get2(maxCandidates)
+      }));
+    } catch (err) {
+      set(formError, err instanceof Error ? err.message : t("dedup.saveFailed"), true);
+    } finally {
+      set(saving, false);
+    }
+  }
+  onMount(() => {
+    loadDedup();
+  });
+  next();
+  var fragment = root_43();
+  var section = sibling(first_child(fragment));
+  var p = sibling(child(section));
+  var text2 = child(p);
+  reset(p);
+  var node = sibling(p, 2);
+  {
+    var consequent = ($$anchor2) => {
+      var fragment_1 = root16();
+      var p_1 = sibling(first_child(fragment_1));
+      var text_1 = child(p_1, true);
+      reset(p_1);
+      next();
+      template_effect(($0) => set_text(text_1, $0), [() => t("items.loading")]);
+      append($$anchor2, fragment_1);
+    };
+    var alternate = ($$anchor2) => {
+      var fragment_2 = root_24();
+      var div = sibling(first_child(fragment_2));
+      var div_1 = sibling(child(div));
+      var span = sibling(child(div_1));
+      set_class(span, 1, clsx2(labelClass));
+      var text_2 = child(span, true);
+      reset(span);
+      var div_2 = sibling(span, 2);
+      var button = sibling(child(div_2));
+      var text_3 = child(button);
+      reset(button);
+      var button_1 = sibling(button, 2);
+      var text_4 = child(button_1);
+      reset(button_1);
+      next();
+      reset(div_2);
+      next();
+      reset(div_1);
+      var label = sibling(div_1, 2);
+      var span_1 = sibling(child(label));
+      set_class(span_1, 1, clsx2(labelClass));
+      var text_5 = child(span_1, true);
+      reset(span_1);
+      var input = sibling(span_1, 2);
+      remove_input_defaults(input);
+      set_class(input, 1, clsx2(inputClass));
+      var p_2 = sibling(input, 2);
+      set_class(p_2, 1, clsx2(hintClass));
+      var text_6 = child(p_2, true);
+      reset(p_2);
+      next();
+      reset(label);
+      var label_1 = sibling(label, 2);
+      var span_2 = sibling(child(label_1));
+      set_class(span_2, 1, clsx2(labelClass));
+      var text_7 = child(span_2, true);
+      reset(span_2);
+      var input_1 = sibling(span_2, 2);
+      remove_input_defaults(input_1);
+      set_class(input_1, 1, clsx2(inputClass));
+      var p_3 = sibling(input_1, 2);
+      set_class(p_3, 1, clsx2(hintClass));
+      var text_8 = child(p_3, true);
+      reset(p_3);
+      next();
+      reset(label_1);
+      var label_2 = sibling(label_1, 2);
+      var span_3 = sibling(child(label_2));
+      set_class(span_3, 1, clsx2(labelClass));
+      var text_9 = child(span_3, true);
+      reset(span_3);
+      var input_2 = sibling(span_3, 2);
+      remove_input_defaults(input_2);
+      set_class(input_2, 1, clsx2(inputClass));
+      var p_4 = sibling(input_2, 2);
+      set_class(p_4, 1, clsx2(hintClass));
+      var text_10 = child(p_4, true);
+      reset(p_4);
+      next();
+      reset(label_2);
+      var node_1 = sibling(label_2, 2);
+      {
+        var consequent_1 = ($$anchor3) => {
+          var fragment_3 = root_113();
+          var p_5 = sibling(first_child(fragment_3));
+          var text_11 = child(p_5, true);
+          reset(p_5);
+          next();
+          template_effect(($0) => set_text(text_11, $0), [() => t("dedup.invalid")]);
+          append($$anchor3, fragment_3);
+        };
+        if_block(node_1, ($$render) => {
+          if (!get2(isValid))
+            $$render(consequent_1);
+        });
+      }
+      var button_2 = sibling(node_1, 2);
+      var text_12 = child(button_2);
+      reset(button_2);
+      next();
+      reset(div);
+      next();
+      template_effect(($0, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) => {
+        set_text(text_2, $0);
+        set_attribute2(div_2, "aria-label", $1);
+        set_class(button, 1, `transition-colors ${$2 ?? ""}`);
+        set_attribute2(button, "aria-pressed", get2(enabled));
+        button.disabled = get2(saving);
+        set_text(text_3, `
+            ${$3 ?? ""}
+          `);
+        set_class(button_1, 1, `transition-colors ${$4 ?? ""}`);
+        set_attribute2(button_1, "aria-pressed", !get2(enabled));
+        button_1.disabled = get2(saving);
+        set_text(text_4, `
+            ${$5 ?? ""}
+          `);
+        set_text(text_5, $6);
+        input.disabled = get2(saving);
+        set_text(text_6, $7);
+        set_text(text_7, $8);
+        input_1.disabled = get2(saving);
+        set_text(text_8, $9);
+        set_text(text_9, $10);
+        input_2.disabled = get2(saving);
+        set_text(text_10, $11);
+        button_2.disabled = get2(saveDisabled);
+        set_text(text_12, `
+        ${$12 ?? ""}
+      `);
+      }, [
+        () => t("dedup.enabled"),
+        () => t("dedup.enabled"),
+        () => toggleClass(get2(enabled)),
+        () => t("dedup.on"),
+        () => toggleClass(!get2(enabled)),
+        () => t("dedup.off"),
+        () => t("dedup.windowDays"),
+        () => t("dedup.windowDaysHint"),
+        () => t("dedup.minSimilarity"),
+        () => t("dedup.minSimilarityHint"),
+        () => t("dedup.maxCandidates"),
+        () => t("dedup.maxCandidatesHint"),
+        () => get2(saving) ? t("dedup.saving") : t("dedup.save")
+      ]);
+      delegated("click", button, () => set(enabled, true));
+      delegated("click", button_1, () => set(enabled, false));
+      bind_value(input, () => get2(windowDays), ($$value) => set(windowDays, $$value));
+      bind_value(input_1, () => get2(minSimilarity), ($$value) => set(minSimilarity, $$value));
+      bind_value(input_2, () => get2(maxCandidates), ($$value) => set(maxCandidates, $$value));
+      delegated("click", button_2, () => void handleSave());
+      append($$anchor2, fragment_2);
+    };
+    if_block(node, ($$render) => {
+      if (get2(loading))
+        $$render(consequent);
+      else
+        $$render(alternate, -1);
+    });
+  }
+  var node_2 = sibling(node, 2);
+  {
+    var consequent_2 = ($$anchor2) => {
+      var fragment_4 = root_33();
+      var p_6 = sibling(first_child(fragment_4));
+      var text_13 = child(p_6, true);
+      reset(p_6);
+      next();
+      template_effect(() => set_text(text_13, get2(formError)));
+      append($$anchor2, fragment_4);
+    };
+    if_block(node_2, ($$render) => {
+      if (get2(formError))
+        $$render(consequent_2);
+    });
+  }
+  next();
+  reset(section);
+  template_effect(($0) => set_text(text2, `
+    ${$0 ?? ""}
+  `), [() => t("dedup.hint")]);
+  append($$anchor, fragment);
+  pop();
+}
+if (undefined) {}
+var DedupManager_default = DedupManager;
+delegate(["click"]);
+
+// shared/translate.ts
+var DEFAULT_TRANSLATE_PROMPT = "Translate news titles accurately and naturally. Keep proper nouns, brand names, tickers, and numbers unchanged; use the established local name for well-known people, places, and organizations.";
+
+// web/src/components/TranslateManager.svelte
+var root17 = from_html(`
+    <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
+  `, 1);
+var root_114 = from_html(`
             <button type="button"> </button>
           `, 1);
-var root_24 = from_html(`
+var root_25 = from_html(`
     <div class="space-y-8">
       <div class="space-y-3">
         <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
@@ -10070,10 +10464,10 @@ var root_24 = from_html(`
       <button type="button" class="text-sm text-neutral-900 underline-offset-4 hover:underline disabled:opacity-50 dark:text-neutral-100"> </button>
     </div>
   `, 1);
-var root_33 = from_html(`
+var root_34 = from_html(`
     <p class="mt-3 text-sm text-red-500"> </p>
   `, 1);
-var root_43 = from_html(`
+var root_44 = from_html(`
 
 <section class="mb-10">
   <p class="mb-6 text-sm text-neutral-400 dark:text-neutral-500"> </p>
@@ -10097,6 +10491,11 @@ function TranslateManager($$anchor, $$props) {
   const saveDisabled = user_derived(() => get2(saving) || get2(loading) || !get2(isDirty));
   function toggleClass(active) {
     return active ? "text-neutral-900 underline underline-offset-4 decoration-neutral-900 dark:text-neutral-100 dark:decoration-neutral-100" : "text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300";
+  }
+  function enable() {
+    set(enabled, true);
+    if (!get2(prompt).trim())
+      set(prompt, DEFAULT_TRANSLATE_PROMPT, true);
   }
   async function loadTranslate() {
     set(formError, "");
@@ -10142,7 +10541,7 @@ function TranslateManager($$anchor, $$props) {
     loadTranslate();
   });
   next();
-  var fragment = root_43();
+  var fragment = root_44();
   var section = sibling(first_child(fragment));
   var p = sibling(child(section));
   var text2 = child(p);
@@ -10150,7 +10549,7 @@ function TranslateManager($$anchor, $$props) {
   var node = sibling(p, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root16();
+      var fragment_1 = root17();
       var p_1 = sibling(first_child(fragment_1));
       var text_1 = child(p_1, true);
       reset(p_1);
@@ -10159,7 +10558,7 @@ function TranslateManager($$anchor, $$props) {
       append($$anchor2, fragment_1);
     };
     var alternate = ($$anchor2) => {
-      var fragment_2 = root_24();
+      var fragment_2 = root_25();
       var div = sibling(first_child(fragment_2));
       var div_1 = sibling(child(div));
       var span = sibling(child(div_1));
@@ -10184,7 +10583,7 @@ function TranslateManager($$anchor, $$props) {
       var node_1 = sibling(child(div_4));
       each(node_1, 16, () => TRANSLATE_TARGET_LANGS, (lang) => lang, ($$anchor3, lang) => {
         next();
-        var fragment_3 = root_113();
+        var fragment_3 = root_114();
         var button_2 = sibling(first_child(fragment_3));
         var text_6 = child(button_2);
         reset(button_2);
@@ -10263,7 +10662,7 @@ function TranslateManager($$anchor, $$props) {
         () => t("translate.prompt"),
         () => get2(saving) ? t("translate.saving") : t("translate.save")
       ]);
-      delegated("click", button, () => set(enabled, true));
+      delegated("click", button, enable);
       delegated("click", button_1, () => set(enabled, false));
       bind_value(textarea, () => get2(prompt), ($$value) => set(prompt, $$value));
       delegated("click", button_3, () => void handleSave());
@@ -10279,7 +10678,7 @@ function TranslateManager($$anchor, $$props) {
   var node_2 = sibling(node, 2);
   {
     var consequent_1 = ($$anchor2) => {
-      var fragment_4 = root_33();
+      var fragment_4 = root_34();
       var p_2 = sibling(first_child(fragment_4));
       var text_9 = child(p_2, true);
       reset(p_2);
@@ -10306,7 +10705,7 @@ delegate(["click"]);
 
 // node_modules/@lucide/svelte/dist/icons/ban.svelte
 var rest_excludes11 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root17 = from_html(`<!--
+var root18 = from_html(`<!--
 @lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -10332,7 +10731,7 @@ function Ban($$anchor, $$props) {
     ["circle", { cx: "12", cy: "12", r: "10" }],
     ["path", { d: "M4.929 4.929 19.07 19.071" }]
   ];
-  var fragment = root17();
+  var fragment = root18();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -10348,7 +10747,7 @@ var ban_default = Ban;
 
 // node_modules/@lucide/svelte/dist/icons/check.svelte
 var rest_excludes12 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root18 = from_html(`<!--
+var root19 = from_html(`<!--
 @lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -10371,7 +10770,7 @@ Lucide SVG icon component, renders SVG Element with children.
 function Check($$anchor, $$props) {
   let props = rest_props($$props, rest_excludes12);
   const iconNode = [["path", { d: "M20 6 9 17l-5-5" }]];
-  var fragment = root18();
+  var fragment = root19();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -10386,7 +10785,7 @@ if (undefined) {}
 var check_default = Check;
 // node_modules/@lucide/svelte/dist/icons/check-check.svelte
 var rest_excludes13 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root19 = from_html(`<!--
+var root20 = from_html(`<!--
 @lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -10412,7 +10811,7 @@ function Check_check($$anchor, $$props) {
     ["path", { d: "M18 6 7 17l-5-5" }],
     ["path", { d: "m22 10-7.5 7.5L13 16" }]
   ];
-  var fragment = root19();
+  var fragment = root20();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -10428,7 +10827,7 @@ var check_check_default = Check_check;
 
 // node_modules/@lucide/svelte/dist/icons/copy.svelte
 var rest_excludes14 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root20 = from_html(`<!--
+var root21 = from_html(`<!--
 @lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -10469,7 +10868,7 @@ function Copy($$anchor, $$props) {
       }
     ]
   ];
-  var fragment = root20();
+  var fragment = root21();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -10484,7 +10883,7 @@ if (undefined) {}
 var copy_default = Copy;
 // node_modules/@lucide/svelte/dist/icons/eye-closed.svelte
 var rest_excludes15 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root21 = from_html(`<!--
+var root22 = from_html(`<!--
 @lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -10513,7 +10912,7 @@ function Eye_closed($$anchor, $$props) {
     ["path", { d: "m4 15 1.726-2.05" }],
     ["path", { d: "m9 18 .722-3.25" }]
   ];
-  var fragment = root21();
+  var fragment = root22();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -10529,7 +10928,7 @@ var eye_closed_default = Eye_closed;
 
 // node_modules/@lucide/svelte/dist/icons/eye.svelte
 var rest_excludes16 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root22 = from_html(`<!--
+var root23 = from_html(`<!--
 @lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -10560,7 +10959,7 @@ function Eye($$anchor, $$props) {
     ],
     ["circle", { cx: "12", cy: "12", r: "3" }]
   ];
-  var fragment = root22();
+  var fragment = root23();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -10576,7 +10975,7 @@ var eye_default = Eye;
 
 // node_modules/@lucide/svelte/dist/icons/moon.svelte
 var rest_excludes17 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root23 = from_html(`<!--
+var root24 = from_html(`<!--
 @lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -10606,7 +11005,7 @@ function Moon($$anchor, $$props) {
       }
     ]
   ];
-  var fragment = root23();
+  var fragment = root24();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -10622,7 +11021,7 @@ var moon_default = Moon;
 
 // node_modules/@lucide/svelte/dist/icons/sun.svelte
 var rest_excludes18 = new Set(["$$slots", "$$events", "$$legacy"]);
-var root24 = from_html(`<!--
+var root25 = from_html(`<!--
 @lucide/svelte v1.34.0 - ISC
 
 This source code is licensed under the ISC license.
@@ -10655,7 +11054,7 @@ function Sun($$anchor, $$props) {
     ["path", { d: "m6.34 17.66-1.41 1.41" }],
     ["path", { d: "m19.07 4.93-1.41 1.41" }]
   ];
-  var fragment = root24();
+  var fragment = root25();
   var node = first_child(fragment);
   var node_1 = sibling(node, 2);
   var node_2 = sibling(node_1, 2);
@@ -10679,14 +11078,14 @@ function isStrongPassword(password) {
 }
 
 // web/src/components/FeverManager.svelte
-var root25 = from_html(`
+var root26 = from_html(`
     <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
   `, 1);
-var root_114 = from_html(`
+var root_115 = from_html(`
               <!>
             `, 1);
-var root_25 = from_html(`<span class="block text-xs text-neutral-500 dark:text-neutral-400"> </span>`);
-var root_34 = from_html(`
+var root_26 = from_html(`<span class="block text-xs text-neutral-500 dark:text-neutral-400"> </span>`);
+var root_35 = from_html(`
     <div class="space-y-8">
       <div class="space-y-3">
         <span class="block text-xs uppercase tracking-widest text-neutral-400 dark:text-neutral-500"> </span>
@@ -10720,7 +11119,7 @@ var root_34 = from_html(`
       <button type="button" class="text-sm text-neutral-900 underline-offset-4 hover:underline disabled:opacity-50 dark:text-neutral-100"> </button>
     </div>
   `, 1);
-var root_44 = from_html(`
+var root_45 = from_html(`
     <p class="mt-3 text-sm text-red-500"> </p>
   `, 1);
 var root_52 = from_html(`
@@ -10819,7 +11218,7 @@ function FeverManager($$anchor, $$props) {
   var node = sibling(p, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root25();
+      var fragment_1 = root26();
       var p_1 = sibling(first_child(fragment_1));
       var text_1 = child(p_1, true);
       reset(p_1);
@@ -10828,7 +11227,7 @@ function FeverManager($$anchor, $$props) {
       append($$anchor2, fragment_1);
     };
     var alternate_1 = ($$anchor2) => {
-      var fragment_2 = root_34();
+      var fragment_2 = root_35();
       var div = sibling(first_child(fragment_2));
       var div_1 = sibling(child(div));
       var span = sibling(child(div_1));
@@ -10875,14 +11274,14 @@ function FeverManager($$anchor, $$props) {
       var node_1 = sibling(child(button_2));
       {
         var consequent_1 = ($$anchor3) => {
-          var fragment_3 = root_114();
+          var fragment_3 = root_115();
           var node_2 = sibling(first_child(fragment_3));
           check_default(node_2, { size: 17 });
           next();
           append($$anchor3, fragment_3);
         };
         var alternate = ($$anchor3) => {
-          var fragment_4 = root_114();
+          var fragment_4 = root_115();
           var node_3 = sibling(first_child(fragment_4));
           copy_default(node_3, { size: 17 });
           next();
@@ -10902,7 +11301,7 @@ function FeverManager($$anchor, $$props) {
       var node_4 = sibling(div_4, 2);
       {
         var consequent_2 = ($$anchor3) => {
-          var span_4 = root_25();
+          var span_4 = root_26();
           var text_9 = child(span_4, true);
           reset(span_4);
           template_effect(($0) => set_text(text_9, $0), [() => t("fever.copied")]);
@@ -10990,7 +11389,7 @@ function FeverManager($$anchor, $$props) {
   var node_5 = sibling(node, 2);
   {
     var consequent_3 = ($$anchor2) => {
-      var fragment_5 = root_44();
+      var fragment_5 = root_45();
       var p_2 = sibling(first_child(fragment_5));
       var text_11 = child(p_2, true);
       reset(p_2);
@@ -11016,17 +11415,17 @@ var FeverManager_default = FeverManager;
 delegate(["click"]);
 
 // web/src/components/McpManager.svelte
-var root26 = from_html(`
+var root27 = from_html(`
     <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
   `, 1);
-var root_115 = from_html(`
+var root_116 = from_html(`
                   <!>
                 `, 1);
-var root_26 = from_html(`<span class="block text-xs text-neutral-500 dark:text-neutral-400"> </span>`);
-var root_35 = from_html(`
+var root_27 = from_html(`<span class="block text-xs text-neutral-500 dark:text-neutral-400"> </span>`);
+var root_36 = from_html(`
               <span class="block text-xs text-amber-600 dark:text-amber-400"> </span>
             `, 1);
-var root_45 = from_html(`
+var root_46 = from_html(`
             <div class="flex items-center gap-2 rounded bg-neutral-100 p-3 dark:bg-neutral-800">
               <code class="min-w-0 flex-1 break-all text-sm text-neutral-800 dark:text-neutral-100"> </code>
               <button type="button" class="shrink-0 text-neutral-500 transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100">
@@ -11089,7 +11488,7 @@ var root_92 = from_html(`
     </div>
   `, 1);
 var root_102 = from_html(`<p class="mt-3 text-sm text-red-500"> </p>`);
-var root_116 = from_html(`
+var root_117 = from_html(`
 
 <section class="mb-10">
   <p class="mb-6 text-sm text-neutral-400 dark:text-neutral-500"> </p>
@@ -11197,7 +11596,7 @@ function McpManager($$anchor, $$props) {
   }
   onMount(() => void loadMcp());
   next();
-  var fragment = root_116();
+  var fragment = root_117();
   var section = sibling(first_child(fragment));
   var p = sibling(child(section));
   var text2 = child(p, true);
@@ -11205,7 +11604,7 @@ function McpManager($$anchor, $$props) {
   var node = sibling(p, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root26();
+      var fragment_1 = root27();
       var p_1 = sibling(first_child(fragment_1));
       var text_1 = child(p_1, true);
       reset(p_1);
@@ -11242,7 +11641,7 @@ function McpManager($$anchor, $$props) {
           var node_2 = sibling(span_1, 2);
           {
             var consequent_4 = ($$anchor4) => {
-              var fragment_4 = root_45();
+              var fragment_4 = root_46();
               var div_4 = sibling(first_child(fragment_4));
               var code = sibling(child(div_4));
               var text_6 = child(code);
@@ -11251,14 +11650,14 @@ function McpManager($$anchor, $$props) {
               var node_3 = sibling(child(button_2));
               {
                 var consequent_1 = ($$anchor5) => {
-                  var fragment_5 = root_115();
+                  var fragment_5 = root_116();
                   var node_4 = sibling(first_child(fragment_5));
                   check_default(node_4, { size: 17 });
                   next();
                   append($$anchor5, fragment_5);
                 };
                 var alternate = ($$anchor5) => {
-                  var fragment_6 = root_115();
+                  var fragment_6 = root_116();
                   var node_5 = sibling(first_child(fragment_6));
                   copy_default(node_5, { size: 17 });
                   next();
@@ -11278,7 +11677,7 @@ function McpManager($$anchor, $$props) {
               var node_6 = sibling(div_4, 2);
               {
                 var consequent_2 = ($$anchor5) => {
-                  var span_2 = root_26();
+                  var span_2 = root_27();
                   var text_7 = child(span_2, true);
                   reset(span_2);
                   template_effect(($0) => set_text(text_7, $0), [() => t("mcp.copied")]);
@@ -11292,7 +11691,7 @@ function McpManager($$anchor, $$props) {
               var node_7 = sibling(node_6, 2);
               {
                 var consequent_3 = ($$anchor5) => {
-                  var fragment_7 = root_35();
+                  var fragment_7 = root_36();
                   var span_3 = sibling(first_child(fragment_7));
                   var text_8 = child(span_3, true);
                   reset(span_3);
@@ -11380,7 +11779,7 @@ function McpManager($$anchor, $$props) {
       var node_11 = sibling(div_6, 2);
       {
         var consequent_7 = ($$anchor3) => {
-          var span_6 = root_26();
+          var span_6 = root_27();
           var text_12 = child(span_6, true);
           reset(span_6);
           template_effect(($0) => set_text(text_12, $0), [() => t("mcp.copied")]);
@@ -11434,7 +11833,7 @@ function McpManager($$anchor, $$props) {
       var node_15 = sibling(div_8, 2);
       {
         var consequent_9 = ($$anchor3) => {
-          var span_8 = root_26();
+          var span_8 = root_27();
           var text_15 = child(span_8, true);
           reset(span_8);
           template_effect(($0) => set_text(text_15, $0), [() => t("mcp.copied")]);
@@ -11528,13 +11927,13 @@ var McpManager_default = McpManager;
 delegate(["click"]);
 
 // web/src/components/SettingsManager.svelte
-var root27 = from_html(`
+var root28 = from_html(`
         <button type="button" role="tab"> </button>
       `, 1);
-var root_117 = from_html(`
+var root_118 = from_html(`
         <!>
       `, 1);
-var root_27 = from_html(`
+var root_28 = from_html(`
 
 <div class="flex min-w-0 flex-1 flex-col md:flex-row">
   <aside class="px-5 py-4 md:sticky md:top-4 md:m-4 md:flex md:h-[calc(100vh-2rem)] md:w-40 md:shrink-0 md:flex-col md:px-5 md:py-8">
@@ -11555,6 +11954,7 @@ function SettingsManager($$anchor, $$props) {
   const tabs = [
     { id: "preferences", key: "items.preferences" },
     { id: "filter", key: "items.filter" },
+    { id: "dedup", key: "items.dedup" },
     { id: "translate", key: "items.translate" },
     { id: "fever", key: "items.fever" },
     { id: "mcp", key: "items.mcp" }
@@ -11581,14 +11981,14 @@ function SettingsManager($$anchor, $$props) {
     };
   });
   next();
-  var fragment = root_27();
+  var fragment = root_28();
   var div = sibling(first_child(fragment));
   var aside = sibling(child(div));
   var nav = sibling(child(aside));
   var node = sibling(child(nav));
   each(node, 17, () => tabs, (item) => item.id, ($$anchor2, item) => {
     next();
-    var fragment_1 = root27();
+    var fragment_1 = root28();
     var button = sibling(first_child(fragment_1));
     var text2 = child(button);
     reset(button);
@@ -11615,49 +12015,58 @@ function SettingsManager($$anchor, $$props) {
   var node_1 = sibling(child(div_2));
   {
     var consequent = ($$anchor2) => {
-      var fragment_2 = root_117();
+      var fragment_2 = root_118();
       var node_2 = sibling(first_child(fragment_2));
       PreferencesManager_default(node_2, {});
       next();
       append($$anchor2, fragment_2);
     };
     var consequent_1 = ($$anchor2) => {
-      var fragment_3 = root_117();
+      var fragment_3 = root_118();
       var node_3 = sibling(first_child(fragment_3));
       FiltersManager_default(node_3, {});
       next();
       append($$anchor2, fragment_3);
     };
     var consequent_2 = ($$anchor2) => {
-      var fragment_4 = root_117();
+      var fragment_4 = root_118();
       var node_4 = sibling(first_child(fragment_4));
-      TranslateManager_default(node_4, {});
+      DedupManager_default(node_4, {});
       next();
       append($$anchor2, fragment_4);
     };
     var consequent_3 = ($$anchor2) => {
-      var fragment_5 = root_117();
+      var fragment_5 = root_118();
       var node_5 = sibling(first_child(fragment_5));
-      FeverManager_default(node_5, {});
+      TranslateManager_default(node_5, {});
       next();
       append($$anchor2, fragment_5);
     };
-    var alternate = ($$anchor2) => {
-      var fragment_6 = root_117();
+    var consequent_4 = ($$anchor2) => {
+      var fragment_6 = root_118();
       var node_6 = sibling(first_child(fragment_6));
-      McpManager_default(node_6, {});
+      FeverManager_default(node_6, {});
       next();
       append($$anchor2, fragment_6);
+    };
+    var alternate = ($$anchor2) => {
+      var fragment_7 = root_118();
+      var node_7 = sibling(first_child(fragment_7));
+      McpManager_default(node_7, {});
+      next();
+      append($$anchor2, fragment_7);
     };
     if_block(node_1, ($$render) => {
       if (get2(tab) === "preferences")
         $$render(consequent);
       else if (get2(tab) === "filter")
         $$render(consequent_1, 1);
-      else if (get2(tab) === "translate")
+      else if (get2(tab) === "dedup")
         $$render(consequent_2, 2);
-      else if (get2(tab) === "fever")
+      else if (get2(tab) === "translate")
         $$render(consequent_3, 3);
+      else if (get2(tab) === "fever")
+        $$render(consequent_4, 4);
       else
         $$render(alternate, -1);
     });
@@ -11677,10 +12086,10 @@ var SettingsManager_default = SettingsManager;
 delegate(["click"]);
 
 // web/src/components/ExportPage.svelte
-var root28 = from_html(`
+var root29 = from_html(`
       <p class="text-sm text-red-500"> </p>
     `, 1);
-var root_119 = from_html(`
+var root_120 = from_html(`
 
 <section class="space-y-8">
   <p class="text-sm text-neutral-400 dark:text-neutral-500"> </p>
@@ -11743,7 +12152,7 @@ function ExportPage($$anchor, $$props) {
     }
   }
   next();
-  var fragment = root_119();
+  var fragment = root_120();
   var section = sibling(first_child(fragment));
   var p = sibling(child(section));
   var text2 = child(p);
@@ -11779,7 +12188,7 @@ function ExportPage($$anchor, $$props) {
   var node_2 = sibling(button, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root28();
+      var fragment_1 = root29();
       var p_1 = sibling(first_child(fragment_1));
       var text_4 = child(p_1, true);
       reset(p_1);
@@ -11827,10 +12236,10 @@ var ExportPage_default = ExportPage;
 delegate(["click"]);
 
 // web/src/components/buttons/ItemFilterToggle.svelte
-var root29 = from_html(`
+var root30 = from_html(`
     <!>
   `, 1);
-var root_120 = from_html(`
+var root_121 = from_html(`
 
 <button type="button">
   <!>
@@ -11841,19 +12250,19 @@ function ItemFilterToggle($$anchor, $$props) {
   const label = user_derived(() => $$props.filter === "unread" ? t("items.switchToAll") : t("items.switchToUnread"));
   const title = user_derived(() => $$props.filter === "unread" ? t("items.filterUnread") : t("items.filterAll"));
   next();
-  var fragment = root_120();
+  var fragment = root_121();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root29();
+      var fragment_1 = root30();
       var node_1 = sibling(first_child(fragment_1));
       eye_default(node_1, spread_props(() => iconProps));
       next();
       append($$anchor2, fragment_1);
     };
     var alternate = ($$anchor2) => {
-      var fragment_2 = root29();
+      var fragment_2 = root30();
       var node_2 = sibling(first_child(fragment_2));
       eye_closed_default(node_2, spread_props(() => iconProps));
       next();
@@ -11885,7 +12294,7 @@ var ItemFilterToggle_default = ItemFilterToggle;
 delegate(["click"]);
 
 // web/src/components/buttons/MarkAllReadButton.svelte
-var root30 = from_html(`
+var root31 = from_html(`
 
 <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
   <!>
@@ -11895,7 +12304,7 @@ function MarkAllReadButton($$anchor, $$props) {
   const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
   const label = user_derived(() => t("items.markAllRead"));
   next();
-  var fragment = root30();
+  var fragment = root31();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   check_check_default(node, spread_props(() => iconProps));
@@ -11914,29 +12323,74 @@ var MarkAllReadButton_default = MarkAllReadButton;
 delegate(["click"]);
 
 // web/src/components/ItemList.svelte
-var root31 = from_html(`
+var root32 = from_html(`
   <p class="py-6 text-sm text-red-500"> </p>
 `, 1);
-var root_121 = from_html(`
+var root_123 = from_html(`
   <p class="text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root_28 = from_html(`
+var root_29 = from_html(`
               <p class="mt-2 line-clamp-2 text-sm text-neutral-400 dark:text-neutral-500"> </p>
             `, 1);
-var root_36 = from_html(`
-              <p class="group mt-2 flex h-4 items-center gap-1 text-xs leading-4 text-neutral-400 dark:text-neutral-500">
-                <span> </span>
-                <button type="button" class="inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded p-0 text-neutral-400 opacity-0 transition-[color,background-color,opacity] group-hover:opacity-100 focus-visible:opacity-100 hover:bg-red-50 hover:text-red-600 disabled:cursor-wait disabled:opacity-50 dark:hover:bg-red-950/40 dark:hover:text-red-400">
+var root_37 = from_html(`
+                    <span> </span>
+                    <button type="button" class="inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded p-0 text-neutral-400 opacity-0 transition-[color,background-color,opacity] group-hover:opacity-100 focus-visible:opacity-100 hover:bg-red-50 hover:text-red-600 disabled:cursor-wait disabled:opacity-50 dark:hover:bg-red-950/40 dark:hover:text-red-400">
+                      <!>
+                    </button>
+                  `, 1);
+var root_47 = from_html(` <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span> `, 1);
+var root_54 = from_html(`
+                  <button type="button">
+                    <!>
+                  </button>
+                `, 1);
+var root_63 = from_html(`
+              <div class="mt-2 flex h-4 items-center justify-between gap-3 text-xs leading-4 text-neutral-400 dark:text-neutral-500">
+                <p class="group flex min-w-0 items-center gap-1">
                   <!>
-                </button>
-              </p>
+                </p>
+                <!>
+              </div>
             `, 1);
-var root_46 = from_html(`
+var root_73 = from_html(`
             <a target="_blank" rel="noopener noreferrer" class="block aspect-[4/3] w-50 shrink-0 overflow-hidden rounded-md" tabindex="-1" aria-hidden="true">
               <img alt="" class="h-full w-full bg-neutral-100 object-cover dark:bg-neutral-800" loading="lazy" referrerpolicy="no-referrer"/>
             </a>
           `, 1);
-var root_54 = from_html(`
+var root_83 = from_html(`
+              <p class="py-1 text-red-500"> </p>
+            `, 1);
+var root_93 = from_html(`
+              <p class="py-1 text-neutral-400 dark:text-neutral-500"> </p>
+            `, 1);
+var root_103 = from_html(`
+                        <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
+                        <span> </span>
+                      `, 1);
+var root_119 = from_html(`
+                  <li class="py-2">
+                    <div class="flex items-baseline gap-1.5 text-neutral-400 dark:text-neutral-500">
+                      <span> </span>
+                      <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
+                      <time> </time>
+                      <span class="text-neutral-300 dark:text-neutral-600" aria-hidden="true">·</span>
+                      <span class="truncate"> </span>
+                      <!>
+                    </div>
+                    <a target="_blank" rel="noopener noreferrer"> </a>
+                  </li>
+                `, 1);
+var root_124 = from_html(`
+              <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
+                <!>
+              </ul>
+            `, 1);
+var root_133 = from_html(`
+          <div class="mt-3 rounded-md bg-neutral-50 px-3 py-2 text-xs dark:bg-neutral-900">
+            <!>
+          </div>
+        `, 1);
+var root_142 = from_html(`
       <li class="py-5">
         <article class="flex items-start gap-4">
           <div class="min-w-0 flex-1">
@@ -11951,17 +12405,18 @@ var root_54 = from_html(`
           </div>
           <!>
         </article>
+        <!>
       </li>
     `, 1);
-var root_63 = from_html(`
+var root_152 = from_html(`
   <ul class="divide-y divide-neutral-100 dark:divide-neutral-800">
     <!>
   </ul>
 `, 1);
-var root_73 = from_html(`
+var root_162 = from_html(`
   <p class="py-8 text-center text-sm text-neutral-300 dark:text-neutral-600"> </p>
 `, 1);
-var root_83 = from_html(`
+var root_172 = from_html(`
 
 <div class="mb-6 flex items-center justify-end gap-0.5">
   <!>
@@ -11985,7 +12440,12 @@ function ItemList($$anchor, $$props) {
   let filter = state("unread");
   let loadGeneration = 0;
   let blockingSources = state(proxy(new Set));
-  let failedCovers = state(proxy(new Set));
+  let hiddenCovers = state(proxy(new Set));
+  let openClusters = state(proxy(new Set));
+  let clusters = state(proxy(new Map));
+  let clusterErrors = state(proxy(new Map));
+  const MIN_COVER_WIDTH = 200;
+  const MIN_COVER_HEIGHT = 120;
   let now2 = state(proxy(Date.now()));
   const filterIsRead = user_derived(() => get2(filter) === "unread" ? 0 : undefined);
   function resetList() {
@@ -12057,6 +12517,16 @@ function ItemList($$anchor, $$props) {
       }
     });
   }
+  function handleCoverLoad(event2, item) {
+    const image = event2.currentTarget;
+    if (!(image instanceof HTMLImageElement))
+      return;
+    const { naturalWidth: width, naturalHeight: height } = image;
+    const ratio = width / height;
+    if (width >= MIN_COVER_WIDTH && height >= MIN_COVER_HEIGHT && ratio <= 3 && ratio >= 0.5)
+      return;
+    set(hiddenCovers, new Set([...get2(hiddenCovers), item.id]), true);
+  }
   function handleCoverError(event2, item) {
     const image = event2.currentTarget;
     if (!(image instanceof HTMLImageElement))
@@ -12066,7 +12536,44 @@ function ItemList($$anchor, $$props) {
       image.src = `/api/items/${item.id}/cover`;
       return;
     }
-    set(failedCovers, new Set([...get2(failedCovers), item.id]), true);
+    set(hiddenCovers, new Set([...get2(hiddenCovers), item.id]), true);
+  }
+  async function toggleCluster(item) {
+    const open = new Set(get2(openClusters));
+    if (open.delete(item.id)) {
+      set(openClusters, open, true);
+      return;
+    }
+    set(openClusters, new Set([...open, item.id]), true);
+    if (get2(clusters).get(item.id))
+      return;
+    set(clusters, new Map(get2(clusters)).set(item.id, null), true);
+    const errors2 = new Map(get2(clusterErrors));
+    errors2.delete(item.id);
+    set(clusterErrors, errors2, true);
+    try {
+      const members = await fetchItemCluster(item.id);
+      set(clusters, new Map(get2(clusters)).set(item.id, members), true);
+    } catch (e) {
+      const next2 = new Map(get2(clusters));
+      next2.delete(item.id);
+      set(clusters, next2, true);
+      set(clusterErrors, new Map(get2(clusterErrors)).set(item.id, e instanceof Error ? e.message : t("items.clusterLoadFailed")), true);
+    }
+  }
+  function handleOpenClusterItem(member) {
+    if (member.is_read)
+      return;
+    const listed = get2(items).find((n) => n.id === member.id);
+    if (listed) {
+      handleOpenItem(listed);
+    } else {
+      markItemRead(member.id).catch(() => {});
+    }
+    set(clusters, new Map([...get2(clusters)].map(([id, members]) => [
+      id,
+      members?.map((m) => m.id === member.id ? { ...m, is_read: true } : m) ?? null
+    ])), true);
   }
   async function handleBlockSource(source2) {
     if (get2(blockingSources).has(source2))
@@ -12115,7 +12622,7 @@ function ItemList($$anchor, $$props) {
   });
   var $$exports = { markAllRead };
   next();
-  var fragment = root_83();
+  var fragment = root_172();
   var div = sibling(first_child(fragment));
   var node = sibling(child(div));
   ItemFilterToggle_default(node, {
@@ -12131,7 +12638,7 @@ function ItemList($$anchor, $$props) {
   var node_2 = sibling(div, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root31();
+      var fragment_1 = root32();
       var p = sibling(first_child(fragment_1));
       var text2 = child(p, true);
       reset(p);
@@ -12140,7 +12647,7 @@ function ItemList($$anchor, $$props) {
       append($$anchor2, fragment_1);
     };
     var consequent_1 = ($$anchor2) => {
-      var fragment_2 = root_121();
+      var fragment_2 = root_123();
       var p_1 = sibling(first_child(fragment_2));
       var text_1 = child(p_1, true);
       reset(p_1);
@@ -12148,13 +12655,13 @@ function ItemList($$anchor, $$props) {
       template_effect(($0) => set_text(text_1, $0), [() => t("items.noItems")]);
       append($$anchor2, fragment_2);
     };
-    var alternate = ($$anchor2) => {
-      var fragment_3 = root_63();
+    var alternate_2 = ($$anchor2) => {
+      var fragment_3 = root_152();
       var ul = sibling(first_child(fragment_3));
       var node_3 = sibling(child(ul));
       each(node_3, 17, () => get2(items), (item) => item.id, ($$anchor3, item) => {
         next();
-        var fragment_4 = root_54();
+        var fragment_4 = root_142();
         var li = sibling(first_child(fragment_4));
         var article = sibling(child(li));
         var div_1 = sibling(child(article));
@@ -12173,7 +12680,7 @@ function ItemList($$anchor, $$props) {
         var node_4 = sibling(a_1, 2);
         {
           var consequent_2 = ($$anchor4) => {
-            var fragment_5 = root_28();
+            var fragment_5 = root_29();
             var p_2 = sibling(first_child(fragment_5));
             var text_5 = child(p_2);
             reset(p_2);
@@ -12190,45 +12697,117 @@ function ItemList($$anchor, $$props) {
         }
         var node_5 = sibling(node_4, 2);
         {
-          var consequent_3 = ($$anchor4) => {
-            var fragment_6 = root_36();
-            var p_3 = sibling(first_child(fragment_6));
-            var span_1 = sibling(child(p_3));
-            var text_6 = child(span_1, true);
-            reset(span_1);
-            var button = sibling(span_1, 2);
-            var node_6 = sibling(child(button));
-            ban_default(node_6, { size: 14, strokeWidth: 1.5, "aria-hidden": true });
-            next();
-            reset(button);
+          var consequent_6 = ($$anchor4) => {
+            var fragment_6 = root_63();
+            var div_3 = sibling(first_child(fragment_6));
+            var p_3 = sibling(child(div_3));
+            var node_6 = sibling(child(p_3));
+            {
+              var consequent_3 = ($$anchor5) => {
+                var fragment_7 = root_37();
+                var span_1 = sibling(first_child(fragment_7));
+                var text_6 = child(span_1, true);
+                reset(span_1);
+                var button = sibling(span_1, 2);
+                var node_7 = sibling(child(button));
+                ban_default(node_7, { size: 14, strokeWidth: 1.5, "aria-hidden": true });
+                next();
+                reset(button);
+                next();
+                template_effect(($0, $1, $2) => {
+                  set_text(text_6, get2(item).source);
+                  set_attribute2(button, "aria-label", $0);
+                  set_attribute2(button, "title", $1);
+                  button.disabled = $2;
+                }, [
+                  () => `${t("items.blockSource")} ${get2(item).source}`,
+                  () => t("items.blockSource"),
+                  () => get2(blockingSources).has(get2(item).source)
+                ]);
+                delegated("click", button, () => void handleBlockSource(get2(item).source));
+                append($$anchor5, fragment_7);
+              };
+              if_block(node_6, ($$render) => {
+                if (get2(item).source)
+                  $$render(consequent_3);
+              });
+            }
             next();
             reset(p_3);
+            var node_8 = sibling(p_3, 2);
+            {
+              var consequent_5 = ($$anchor5) => {
+                var fragment_8 = root_54();
+                var button_1 = sibling(first_child(fragment_8));
+                var node_9 = sibling(child(button_1));
+                {
+                  var consequent_4 = ($$anchor6) => {
+                    var text_7 = text();
+                    template_effect(($0) => set_text(text_7, `
+                      ${$0 ?? ""}
+                    `), [() => t("items.duplicate")]);
+                    append($$anchor6, text_7);
+                  };
+                  var alternate = ($$anchor6) => {
+                    var fragment_10 = root_47();
+                    var text_8 = first_child(fragment_10);
+                    var text_9 = sibling(text_8, 2);
+                    template_effect(($0, $1) => {
+                      set_text(text_8, `
+                      ${$0 ?? ""}
+                      `);
+                      set_text(text_9, `
+                      ${$1 ?? ""}
+                    `);
+                    }, [
+                      () => t("items.firstReport"),
+                      () => tf("items.duplicateCount", { n: get2(item).duplicate_count })
+                    ]);
+                    append($$anchor6, fragment_10);
+                  };
+                  if_block(node_9, ($$render) => {
+                    if (get2(item).sim_id !== null)
+                      $$render(consequent_4);
+                    else
+                      $$render(alternate, -1);
+                  });
+                }
+                next();
+                reset(button_1);
+                next();
+                template_effect(($0, $1) => {
+                  set_class(button_1, 1, `-mx-1 shrink-0 cursor-pointer rounded px-1 hover:text-neutral-700 dark:hover:text-neutral-200 ${get2(item).sim_id === null ? "text-neutral-500 dark:text-neutral-400" : ""}`);
+                  set_attribute2(button_1, "aria-expanded", $0);
+                  set_attribute2(button_1, "title", $1);
+                }, [
+                  () => get2(openClusters).has(get2(item).id),
+                  () => t("items.showCluster")
+                ]);
+                delegated("click", button_1, () => void toggleCluster(get2(item)));
+                append($$anchor5, fragment_8);
+              };
+              if_block(node_8, ($$render) => {
+                if (get2(item).sim_id !== null || get2(item).duplicate_count > 0)
+                  $$render(consequent_5);
+              });
+            }
             next();
-            template_effect(($0, $1, $2) => {
-              set_text(text_6, get2(item).source);
-              set_attribute2(button, "aria-label", $0);
-              set_attribute2(button, "title", $1);
-              button.disabled = $2;
-            }, [
-              () => `${t("items.blockSource")} ${get2(item).source}`,
-              () => t("items.blockSource"),
-              () => get2(blockingSources).has(get2(item).source)
-            ]);
-            delegated("click", button, () => void handleBlockSource(get2(item).source));
+            reset(div_3);
+            next();
             append($$anchor4, fragment_6);
           };
           if_block(node_5, ($$render) => {
-            if (get2(item).source)
-              $$render(consequent_3);
+            if (get2(item).source || get2(item).sim_id !== null || get2(item).duplicate_count > 0)
+              $$render(consequent_6);
           });
         }
         next();
         reset(div_1);
-        var node_7 = sibling(div_1, 2);
+        var node_10 = sibling(div_1, 2);
         {
-          var consequent_4 = ($$anchor4) => {
-            var fragment_7 = root_46();
-            var a_2 = sibling(first_child(fragment_7));
+          var consequent_7 = ($$anchor4) => {
+            var fragment_11 = root_73();
+            var a_2 = sibling(first_child(fragment_11));
             var img = sibling(child(a_2));
             next();
             reset(a_2);
@@ -12238,18 +12817,147 @@ function ItemList($$anchor, $$props) {
               set_attribute2(img, "src", get2(item).cover);
             });
             delegated("click", a_2, () => handleOpenItem(get2(item)));
+            event("load", img, (event2) => handleCoverLoad(event2, get2(item)));
             event("error", img, (event2) => handleCoverError(event2, get2(item)));
             replay_events(img);
-            append($$anchor4, fragment_7);
+            append($$anchor4, fragment_11);
           };
-          var d = user_derived(() => get2(item).cover && !get2(failedCovers).has(get2(item).id));
-          if_block(node_7, ($$render) => {
+          var d = user_derived(() => get2(item).cover && !get2(hiddenCovers).has(get2(item).id));
+          if_block(node_10, ($$render) => {
             if (get2(d))
-              $$render(consequent_4);
+              $$render(consequent_7);
           });
         }
         next();
         reset(article);
+        var node_11 = sibling(article, 2);
+        {
+          var consequent_12 = ($$anchor4) => {
+            var fragment_12 = root_133();
+            var div_4 = sibling(first_child(fragment_12));
+            var node_12 = sibling(child(div_4));
+            {
+              var consequent_8 = ($$anchor5) => {
+                var fragment_13 = root_83();
+                var p_4 = sibling(first_child(fragment_13));
+                var text_10 = child(p_4, true);
+                reset(p_4);
+                next();
+                template_effect(($0) => set_text(text_10, $0), [() => get2(clusterErrors).get(get2(item).id)]);
+                append($$anchor5, fragment_13);
+              };
+              var d_1 = user_derived(() => get2(clusterErrors).has(get2(item).id));
+              var consequent_9 = ($$anchor5) => {
+                var fragment_14 = root_93();
+                var p_5 = sibling(first_child(fragment_14));
+                var text_11 = child(p_5, true);
+                reset(p_5);
+                next();
+                template_effect(($0) => set_text(text_11, $0), [() => t("items.loading")]);
+                append($$anchor5, fragment_14);
+              };
+              var d_2 = user_derived(() => !get2(clusters).get(get2(item).id));
+              var consequent_10 = ($$anchor5) => {
+                var fragment_15 = root_93();
+                var p_6 = sibling(first_child(fragment_15));
+                var text_12 = child(p_6, true);
+                reset(p_6);
+                next();
+                template_effect(($0) => set_text(text_12, $0), [() => t("items.clusterEmpty")]);
+                append($$anchor5, fragment_15);
+              };
+              var d_3 = user_derived(() => get2(clusters).get(get2(item).id)?.length === 0);
+              var alternate_1 = ($$anchor5) => {
+                var fragment_16 = root_124();
+                var ul_1 = sibling(first_child(fragment_16));
+                var node_13 = sibling(child(ul_1));
+                each(node_13, 17, () => get2(clusters).get(get2(item).id) ?? [], (member) => member.id, ($$anchor6, member) => {
+                  next();
+                  var fragment_17 = root_119();
+                  var li_1 = sibling(first_child(fragment_17));
+                  var div_5 = sibling(child(li_1));
+                  var span_2 = sibling(child(div_5));
+                  var text_13 = child(span_2);
+                  reset(span_2);
+                  var time_1 = sibling(span_2, 4);
+                  var text_14 = child(time_1);
+                  reset(time_1);
+                  var span_3 = sibling(time_1, 4);
+                  var text_15 = child(span_3, true);
+                  reset(span_3);
+                  var node_14 = sibling(span_3, 2);
+                  {
+                    var consequent_11 = ($$anchor7) => {
+                      var fragment_18 = root_103();
+                      var span_4 = sibling(first_child(fragment_18), 3);
+                      var text_16 = child(span_4, true);
+                      reset(span_4);
+                      next();
+                      template_effect(($0) => set_text(text_16, $0), [() => t("items.clusterCurrent")]);
+                      append($$anchor7, fragment_18);
+                    };
+                    if_block(node_14, ($$render) => {
+                      if (get2(member).id === get2(item).id)
+                        $$render(consequent_11);
+                    });
+                  }
+                  next();
+                  reset(div_5);
+                  var a_3 = sibling(div_5, 2);
+                  var text_17 = child(a_3);
+                  reset(a_3);
+                  next();
+                  reset(li_1);
+                  next();
+                  template_effect(($0, $1) => {
+                    set_class(span_2, 1, clsx2(get2(member).sim_id === null ? "text-neutral-600 dark:text-neutral-300" : ""));
+                    set_text(text_13, `
+                        ${$0 ?? ""}
+                      `);
+                    set_attribute2(time_1, "datetime", get2(member).published_at);
+                    set_text(text_14, `
+                        ${$1 ?? ""}
+                      `);
+                    set_text(text_15, get2(member).source || get2(member).feed_title);
+                    set_attribute2(a_3, "href", get2(member).link);
+                    set_class(a_3, 1, `mt-0.5 block leading-snug hover:text-neutral-600 dark:hover:text-neutral-300 ${get2(member).is_read ? "text-neutral-500 dark:text-neutral-500" : "text-neutral-800 dark:text-neutral-200"}`);
+                    set_text(text_17, `
+                      ${get2(member).title ?? ""}
+                    `);
+                  }, [
+                    () => get2(member).sim_id === null ? t("items.firstReport") : t("items.duplicate"),
+                    () => formatTime(get2(member).published_at, get2(now2))
+                  ]);
+                  delegated("click", a_3, () => handleOpenClusterItem(get2(member)));
+                  append($$anchor6, fragment_17);
+                });
+                next();
+                reset(ul_1);
+                next();
+                append($$anchor5, fragment_16);
+              };
+              if_block(node_12, ($$render) => {
+                if (get2(d_1))
+                  $$render(consequent_8);
+                else if (get2(d_2))
+                  $$render(consequent_9, 1);
+                else if (get2(d_3))
+                  $$render(consequent_10, 2);
+                else
+                  $$render(alternate_1, -1);
+              });
+            }
+            next();
+            reset(div_4);
+            next();
+            append($$anchor4, fragment_12);
+          };
+          var d_4 = user_derived(() => get2(openClusters).has(get2(item).id));
+          if_block(node_11, ($$render) => {
+            if (get2(d_4))
+              $$render(consequent_12);
+          });
+        }
         next();
         reset(li);
         next();
@@ -12279,42 +12987,42 @@ function ItemList($$anchor, $$props) {
       else if (get2(items).length === 0 && !get2(loading))
         $$render(consequent_1, 1);
       else
-        $$render(alternate, -1);
+        $$render(alternate_2, -1);
     });
   }
-  var node_8 = sibling(node_2, 2);
+  var node_15 = sibling(node_2, 2);
   {
-    var consequent_5 = ($$anchor2) => {
-      var fragment_8 = root_73();
-      var p_4 = sibling(first_child(fragment_8));
-      var text_7 = child(p_4);
-      reset(p_4);
+    var consequent_13 = ($$anchor2) => {
+      var fragment_19 = root_162();
+      var p_7 = sibling(first_child(fragment_19));
+      var text_18 = child(p_7);
+      reset(p_7);
       next();
-      template_effect(($0) => set_text(text_7, `
+      template_effect(($0) => set_text(text_18, `
     ${$0 ?? ""}
   `), [() => t("items.loading")]);
-      append($$anchor2, fragment_8);
+      append($$anchor2, fragment_19);
     };
-    var consequent_6 = ($$anchor2) => {
-      var fragment_9 = root_73();
-      var p_5 = sibling(first_child(fragment_9));
-      var text_8 = child(p_5);
-      reset(p_5);
+    var consequent_14 = ($$anchor2) => {
+      var fragment_20 = root_162();
+      var p_8 = sibling(first_child(fragment_20));
+      var text_19 = child(p_8);
+      reset(p_8);
       next();
-      template_effect(($0) => set_text(text_8, `
+      template_effect(($0) => set_text(text_19, `
     ${$0 ?? ""}
   `), [() => t("items.noMore")]);
-      append($$anchor2, fragment_9);
+      append($$anchor2, fragment_20);
     };
-    if_block(node_8, ($$render) => {
+    if_block(node_15, ($$render) => {
       if (get2(loading))
-        $$render(consequent_5);
+        $$render(consequent_13);
       else if (!get2(hasMore) && get2(items).length > 0)
-        $$render(consequent_6, 1);
+        $$render(consequent_14, 1);
     });
   }
-  var div_3 = sibling(node_8, 2);
-  bind_this(div_3, ($$value) => set(sentinel, $$value), () => get2(sentinel));
+  var div_6 = sibling(node_15, 2);
+  bind_this(div_6, ($$value) => set(sentinel, $$value), () => get2(sentinel));
   append($$anchor, fragment);
   return pop($$exports);
 }
@@ -12323,7 +13031,7 @@ var ItemList_default = ItemList;
 delegate(["click"]);
 
 // web/src/components/buttons/LanguageToggle.svelte
-var root32 = from_html(`
+var root33 = from_html(`
 
 <button type="button" class="inline-flex min-w-[2rem] cursor-pointer items-center justify-center rounded-md p-1.5 text-xs font-medium text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"> </button>`, 1);
 function LanguageToggle($$anchor, $$props) {
@@ -12332,7 +13040,7 @@ function LanguageToggle($$anchor, $$props) {
   const label = user_derived(() => get2(next2) === "en" ? "EN" : get2(next2) === "zh-Hans" ? "简" : "繁");
   const aria = user_derived(() => get2(next2) === "en" ? t("lang.switchToEn") : get2(next2) === "zh-Hans" ? t("lang.switchToZhHans") : t("lang.switchToZhHant"));
   next();
-  var fragment = root32();
+  var fragment = root33();
   var button = sibling(first_child(fragment));
   var text2 = child(button);
   reset(button);
@@ -12354,10 +13062,10 @@ var LanguageToggle_default = LanguageToggle;
 delegate(["click"]);
 
 // web/src/components/buttons/ThemeToggle.svelte
-var root33 = from_html(`
+var root34 = from_html(`
     <!>
   `, 1);
-var root_123 = from_html(`
+var root_125 = from_html(`
 
 <button type="button" class="inline-flex cursor-pointer items-center justify-center rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
   <!>
@@ -12367,19 +13075,19 @@ function ThemeToggle($$anchor, $$props) {
   const iconProps = { size: 18, strokeWidth: 1.5, "aria-hidden": true };
   init();
   next();
-  var fragment = root_123();
+  var fragment = root_125();
   var button = sibling(first_child(fragment));
   var node = sibling(child(button));
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root33();
+      var fragment_1 = root34();
       var node_1 = sibling(first_child(fragment_1));
       sun_default(node_1, spread_props(() => iconProps));
       next();
       append($$anchor2, fragment_1);
     };
     var alternate = ($$anchor2) => {
-      var fragment_2 = root33();
+      var fragment_2 = root34();
       var node_2 = sibling(first_child(fragment_2));
       moon_default(node_2, spread_props(() => iconProps));
       next();
@@ -12412,10 +13120,10 @@ var ThemeToggle_default = ThemeToggle;
 delegate(["click"]);
 
 // web/src/components/LoginGate.svelte
-var root34 = from_html(`
+var root35 = from_html(`
       <p class="mt-3 text-sm text-red-500"> </p>
     `, 1);
-var root_125 = from_html(`
+var root_126 = from_html(`
 
 <main class="flex min-h-screen items-center justify-center px-5">
   <form class="w-full max-w-sm">
@@ -12462,7 +13170,7 @@ function LoginGate($$anchor, $$props) {
     }
   }
   next();
-  var fragment = root_125();
+  var fragment = root_126();
   var main = sibling(first_child(fragment));
   var form = sibling(child(main));
   var div = sibling(child(form));
@@ -12490,7 +13198,7 @@ function LoginGate($$anchor, $$props) {
   var node_2 = sibling(label, 2);
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root34();
+      var fragment_1 = root35();
       var p_1 = sibling(first_child(fragment_1));
       var text_2 = child(p_1, true);
       reset(p_1);
@@ -12536,19 +13244,19 @@ if (undefined) {}
 var LoginGate_default = LoginGate;
 
 // web/src/App.svelte
-var root35 = from_html(`
+var root36 = from_html(`
   <main class="flex min-h-screen items-center justify-center px-5 text-sm text-neutral-400"> </main>
 `, 1);
-var root_126 = from_html(`
+var root_127 = from_html(`
   <!>
 `, 1);
-var root_29 = from_html(`
+var root_210 = from_html(`
       <!>
     `, 1);
-var root_37 = from_html(`
+var root_38 = from_html(`
             <!>
           `, 1);
-var root_47 = from_html(`
+var root_48 = from_html(`
       <div class="min-w-0 flex-1">
         <div class="mx-auto max-w-page px-5 py-10 md:py-16">
           <!>
@@ -12577,7 +13285,7 @@ function App($$anchor, $$props) {
   var node = sibling(first_child(fragment));
   {
     var consequent = ($$anchor2) => {
-      var fragment_1 = root35();
+      var fragment_1 = root36();
       var main = sibling(first_child(fragment_1));
       var text2 = child(main);
       reset(main);
@@ -12588,7 +13296,7 @@ function App($$anchor, $$props) {
       append($$anchor2, fragment_1);
     };
     var consequent_1 = ($$anchor2) => {
-      var fragment_2 = root_126();
+      var fragment_2 = root_127();
       var node_1 = sibling(first_child(fragment_2));
       LoginGate_default(node_1, {});
       next();
@@ -12602,34 +13310,34 @@ function App($$anchor, $$props) {
       var node_3 = sibling(node_2, 2);
       {
         var consequent_2 = ($$anchor3) => {
-          var fragment_4 = root_29();
+          var fragment_4 = root_210();
           var node_4 = sibling(first_child(fragment_4));
           SettingsManager_default(node_4, {});
           next();
           append($$anchor3, fragment_4);
         };
         var alternate_1 = ($$anchor3) => {
-          var fragment_5 = root_47();
+          var fragment_5 = root_48();
           var div = sibling(first_child(fragment_5));
           var div_1 = sibling(child(div));
           var node_5 = sibling(child(div_1));
           {
             var consequent_3 = ($$anchor4) => {
-              var fragment_6 = root_37();
+              var fragment_6 = root_38();
               var node_6 = sibling(first_child(fragment_6));
               FeedsManager_default(node_6, {});
               next();
               append($$anchor4, fragment_6);
             };
             var consequent_4 = ($$anchor4) => {
-              var fragment_7 = root_37();
+              var fragment_7 = root_38();
               var node_7 = sibling(first_child(fragment_7));
               ExportPage_default(node_7, {});
               next();
               append($$anchor4, fragment_7);
             };
             var alternate = ($$anchor4) => {
-              var fragment_8 = root_37();
+              var fragment_8 = root_38();
               var node_8 = sibling(first_child(fragment_8));
               ItemList_default(node_8, {});
               next();

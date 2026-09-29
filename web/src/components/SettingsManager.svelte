@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import PreferencesManager from "./PreferencesManager.svelte";
   import FiltersManager from "./FiltersManager.svelte";
+  import DedupManager from "./DedupManager.svelte";
   import TranslateManager from "./TranslateManager.svelte";
   import FeverManager from "./FeverManager.svelte";
   import McpManager from "./McpManager.svelte";
@@ -17,6 +18,7 @@
   const tabs = [
     { id: "preferences" as const, key: "items.preferences" as const },
     { id: "filter" as const, key: "items.filter" as const },
+    { id: "dedup" as const, key: "items.dedup" as const },
     { id: "translate" as const, key: "items.translate" as const },
     { id: "fever" as const, key: "items.fever" as const },
     { id: "mcp" as const, key: "items.mcp" as const },
@@ -79,6 +81,8 @@
         <PreferencesManager />
       {:else if tab === "filter"}
         <FiltersManager />
+      {:else if tab === "dedup"}
+        <DedupManager />
       {:else if tab === "translate"}
         <TranslateManager />
       {:else if tab === "fever"}

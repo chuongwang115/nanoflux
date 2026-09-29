@@ -193,6 +193,7 @@ NO_PROXY=localhost,127.0.0.1
 
 - When `filter.enabled` is on, source domains, title keywords, and then the LLM prompt are evaluated in that order. Domain and keyword matches do not call the LLM.
 - `translate.targetLang` supports `en`, `zh-Hans`, and `zh-Hant`.
+- Turning translation on with an empty `translate.prompt` fills in a default prompt.
 - If the LLM is not configured or a request fails, items that do not match a domain or keyword still pass through; translation failures preserve the original title.
 - Filtering and translation apply only to newly fetched news; existing items are not reprocessed.
 - Fever requires a username and a strong password when enabled. Passwords are never returned by public configuration endpoints.
